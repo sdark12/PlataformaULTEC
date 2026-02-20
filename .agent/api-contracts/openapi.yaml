@@ -1,0 +1,14 @@
+Define formalmente:
+
+Endpoints
+
+Métodos HTTP
+
+Payloads
+
+Respuestas
+
+Errores
+
+Seguridad (Bearer JWT)
+Esto evita que frontend e Insforge se desacoplen mal.

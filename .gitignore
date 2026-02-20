@@ -35,5 +35,4 @@ backend-insforge/.env
 *.sw?
 
 # Agent
-.agent/
 .gemini/
