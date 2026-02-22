@@ -22,7 +22,8 @@ api.interceptors.request.use((config: any) => {
 api.interceptors.response.use(
     (response: any) => response,
     (error: any) => {
-        if (error.response?.status === 401) {
+        const isLoginRequest = error.config?.url?.includes('/auth/login');
+        if (error.response?.status === 401 && !isLoginRequest) {
             // Handle unauthorized access (e.g., redirect to login)
             localStorage.removeItem('token');
             window.location.href = '/login';

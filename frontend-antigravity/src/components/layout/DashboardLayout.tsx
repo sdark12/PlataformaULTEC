@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, DollarSign, FileText, Calendar, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, DollarSign, FileText, Calendar, BarChart3, Award, FileBadge } from 'lucide-react';
 
 const SidebarItem = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
     const location = useLocation();
@@ -29,7 +29,7 @@ const DashboardLayout = () => {
     return (
         <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
             {/* Sidebar */}
-            <div className="w-72 bg-slate-900 flex flex-col shadow-xl relative z-20">
+            <div className="w-72 bg-slate-900 flex flex-col shadow-xl relative z-20 print:hidden">
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-slate-800/50 to-transparent pointer-events-none" />
 
@@ -53,11 +53,14 @@ const DashboardLayout = () => {
                         <SidebarItem to="/courses" icon={BookOpen} label="Cursos" />
                         <SidebarItem to="/students" icon={Users} label="Estudiantes" />
                         <SidebarItem to="/enrollments" icon={GraduationCap} label="Inscripciones" />
+                        <SidebarItem to="/attendance" icon={Calendar} label="Asistencia" />
+                        <SidebarItem to="/grades" icon={Award} label="Calificaciones" />
+                        <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" />
+                        <SidebarItem to="/report-cards" icon={FileBadge} label="Boletas" />
 
                         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Finanzas</p>
                         <SidebarItem to="/payments" icon={DollarSign} label="Pagos" />
                         <SidebarItem to="/invoices" icon={FileText} label="Facturas" />
-                        <SidebarItem to="/attendance" icon={Calendar} label="Asistencia" />
                     </nav>
                 </div>
 

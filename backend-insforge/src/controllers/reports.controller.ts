@@ -80,7 +80,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
 export const getFinancialReport = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
-    const { start_date, end_date } = req.query;
+    const { start_date, end_date, method } = req.query;
 
     try {
         let query = client.database
@@ -89,6 +89,7 @@ export const getFinancialReport = async (req: Request, res: Response) => {
                 payment_date,
                 amount,
                 method,
+                created_by,
                 enrollments!inner (
                     branch_id,
                     students (full_name),
@@ -99,10 +100,13 @@ export const getFinancialReport = async (req: Request, res: Response) => {
             .order('payment_date', { ascending: false });
 
         if (start_date) {
-            query = query.gte('payment_date', start_date as string);
+            query = query.gte('payment_date', `${start_date}T00:00:00.000Z`);
         }
         if (end_date) {
-            query = query.lte('payment_date', end_date as string);
+            query = query.lte('payment_date', `${end_date}T23:59:59.999Z`);
+        }
+        if (method) {
+            query = query.eq('method', method as string);
         }
 
         const { data, error } = await query;
@@ -113,6 +117,7 @@ export const getFinancialReport = async (req: Request, res: Response) => {
             payment_date: p.payment_date,
             amount: p.amount,
             method: p.method,
+            collector_name: 'N/A',
             student_name: p.enrollments?.students?.full_name,
             course_name: p.enrollments?.courses?.name
         }));

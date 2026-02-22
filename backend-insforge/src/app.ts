@@ -20,6 +20,7 @@ import paymentRoutes from './routes/payments.routes';
 import invoiceRoutes from './routes/invoices.routes';
 import attendanceRoutes from './routes/attendance.routes';
 import reportRoutes from './routes/reports.routes';
+import gradesRoutes from './routes/grades.routes';
 
 app.use('/auth', authRoutes);
 app.use('/api', academicRoutes);
@@ -27,6 +28,7 @@ app.use('/api', paymentRoutes);
 app.use('/api', invoiceRoutes);
 app.use('/api', attendanceRoutes);
 app.use('/api', reportRoutes);
+app.use('/api', gradesRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

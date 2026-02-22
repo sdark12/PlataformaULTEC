@@ -11,6 +11,9 @@ import PaymentsList from './features/finance/PaymentsList';
 import InvoicesList from './features/finance/InvoicesList';
 import Attendance from './features/academic/Attendance';
 import Reports from './features/finance/Reports';
+import Grades from './features/academic/Grades';
+import ReportCard from './features/academic/ReportCard';
+import CourseGradebook from './features/academic/CourseGradebook';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats } from './features/finance/reportService';
 import { Users, BookOpen, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
@@ -122,16 +125,19 @@ const StatCard = ({ title, value, icon: Icon, color }: any) => {
   );
 };
 
-function App() {
+const ProtectedRoute = () => {
   const isAuthenticated = !!localStorage.getItem('token');
+  return isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />;
+};
 
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
 
-          <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}>
+          <Route element={<ProtectedRoute />}>
             <Route path="/" element={<DashboardHome />} />
             <Route path="/courses" element={<CoursesList />} />
             <Route path="/students" element={<StudentsList />} />
@@ -139,6 +145,9 @@ function App() {
             <Route path="/payments" element={<PaymentsList />} />
             <Route path="/invoices" element={<InvoicesList />} />
             <Route path="/attendance" element={<Attendance />} />
+            <Route path="/grades" element={<Grades />} />
+            <Route path="/course-gradebook" element={<CourseGradebook />} />
+            <Route path="/report-cards" element={<ReportCard />} />
             <Route path="/reports" element={<Reports />} />
           </Route>
 

@@ -28,16 +28,25 @@ const StudentsList = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filterGender, setFilterGender] = useState<'' | 'M' | 'F'>('');
+    const [filterMedicalNotes, setFilterMedicalNotes] = useState(false);
+    const [filterInstitution, setFilterInstitution] = useState('');
 
     const { data: students, isLoading, isError } = useQuery({
         queryKey: ['students'],
         queryFn: getStudents,
     });
 
+    // Extract unique institutions dynamically
+    const uniqueInstitutions = Array.from(new Set(students?.map((s: any) => s.previous_school).filter(Boolean))).sort();
+
     const createMutation = useMutation({
         mutationFn: createStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
             setIsModalOpen(false);
             resetForm();
             setErrorMsg('');
@@ -52,6 +61,8 @@ const StudentsList = () => {
         mutationFn: ({ id, data }: { id: string; data: any }) => updateStudent(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
             setIsModalOpen(false);
             setIsEditing(false);
             resetForm();
@@ -67,6 +78,8 @@ const StudentsList = () => {
         mutationFn: deleteStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
         },
         onError: (err: any) => {
             console.error('Error deleting student:', err);
@@ -115,9 +128,20 @@ const StudentsList = () => {
         }
     };
 
-    const filteredStudents = students?.filter((s: any) =>
-        s.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredStudents = students?.filter((s: any) => {
+        const matchesSearch =
+            s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.identification_document && s.identification_document.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (s.phone && s.phone.includes(searchTerm));
+
+        const matchesGender = filterGender ? s.gender === filterGender : true;
+
+        const matchesMedicalNotes = filterMedicalNotes ? (s.medical_notes && s.medical_notes.trim().length > 0) : true;
+
+        const matchesInstitution = filterInstitution ? s.previous_school === filterInstitution : true;
+
+        return matchesSearch && matchesGender && matchesMedicalNotes && matchesInstitution;
+    });
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
@@ -152,16 +176,80 @@ const StudentsList = () => {
                     <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <input
                         type="text"
-                        placeholder="Buscar por nombre..."
+                        placeholder="Buscar por nombre, documento o teléfono..."
                         className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all shadow-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm font-medium">
-                    <Filter className="h-5 w-5" />
-                    <span>Filtros</span>
-                </button>
+                <div className="relative">
+                    <button
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className={`flex items-center justify-center space-x-2 px-6 py-3 border rounded-2xl transition-colors shadow-sm font-medium w-full md:w-auto ${isFilterOpen || filterGender || filterMedicalNotes || filterInstitution ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    >
+                        <Filter className="h-5 w-5" />
+                        <span>Filtros {(filterGender || filterMedicalNotes || filterInstitution) ? '(Activos)' : ''}</span>
+                    </button>
+
+                    {isFilterOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-5 z-20 animate-in fade-in slide-in-from-top-2">
+                            <h4 className="font-bold text-slate-800 mb-4 border-b pb-2">Filtros Avanzados</h4>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Escuela de Procedencia</label>
+                                    <select
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 mb-4"
+                                        value={filterInstitution}
+                                        onChange={(e) => setFilterInstitution(e.target.value)}
+                                    >
+                                        <option value="">Todas las instituciones</option>
+                                        {uniqueInstitutions.map((inst: any) => (
+                                            <option key={inst} value={inst}>{inst}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Género</label>
+                                    <select
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                        value={filterGender}
+                                        onChange={(e) => setFilterGender(e.target.value as '' | 'M' | 'F')}
+                                    >
+                                        <option value="">Todos los géneros</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                    </select>
+                                </div>
+
+                                <div className="pt-2">
+                                    <label className="flex items-center space-x-3 cursor-pointer group">
+                                        <div className="relative flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                className="peer sr-only"
+                                                checked={filterMedicalNotes}
+                                                onChange={(e) => setFilterMedicalNotes(e.target.checked)}
+                                            />
+                                            <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </div>
+                                        <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors select-none">Mostrar solo con Notas Médicas</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {(filterGender || filterMedicalNotes || filterInstitution) && (
+                                <button
+                                    onClick={() => { setFilterGender(''); setFilterMedicalNotes(false); setFilterInstitution(''); setIsFilterOpen(false); }}
+                                    className="mt-5 w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors py-2"
+                                >
+                                    Limpiar Filtros
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {isError && (
