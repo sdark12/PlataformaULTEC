@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPayments, createPayment, updatePayment, deletePayment } from '../../features/finance/paymentService';
 import { getEnrollments } from '../../features/academic/academicService';
-import { Plus, Loader2, DollarSign, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Loader2, DollarSign, Edit2, Trash2, Search } from 'lucide-react';
 
 const PaymentsList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newPayment, setNewPayment] = useState({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [newPayment, setNewPayment] = useState({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
     const [selectedPayment, setSelectedPayment] = useState<any>(null);
 
     const { data: payments, isLoading } = useQuery({
@@ -26,7 +28,8 @@ const PaymentsList = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
             setIsModalOpen(false);
-            setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '' });
+            setSearchTerm('');
+            setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al registrar pago");
@@ -39,7 +42,8 @@ const PaymentsList = () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
             setIsModalOpen(false);
             setSelectedPayment(null);
-            setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '' });
+            setSearchTerm('');
+            setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al actualizar pago");
@@ -70,7 +74,9 @@ const PaymentsList = () => {
             method: newPayment.method,
             reference_number: newPayment.reference_number,
             description: newPayment.description,
-            tuition_month: newPayment.tuition_month
+            tuition_month: newPayment.payment_type === 'TUITION' ? newPayment.tuition_month : undefined,
+            payment_type: newPayment.payment_type,
+            discount: Number(newPayment.discount)
         };
 
         if (selectedPayment) {
@@ -88,16 +94,24 @@ const PaymentsList = () => {
             method: payment.method,
             reference_number: payment.reference_number || '',
             description: payment.description || '',
-            tuition_month: payment.tuition_month || ''
+            tuition_month: payment.tuition_month || '',
+            payment_type: payment.payment_type || 'TUITION',
+            discount: payment.discount ? payment.discount.toString() : '0'
         });
         setIsModalOpen(true);
     };
 
     const handleNewPayment = () => {
         setSelectedPayment(null);
-        setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '' });
+        setSearchTerm('');
+        setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
         setIsModalOpen(true);
     };
+
+    const filteredEnrollments = enrollments?.filter((e: any) =>
+        e.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.course_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
 
@@ -120,7 +134,7 @@ const PaymentsList = () => {
                         <tr>
                             <th className="px-6 py-4 font-medium text-slate-500">Estudiante</th>
                             <th className="px-6 py-4 font-medium text-slate-500">Curso</th>
-                            <th className="px-6 py-4 font-medium text-slate-500">Mes / Desc</th>
+                            <th className="px-6 py-4 font-medium text-slate-500">Concepto</th>
                             <th className="px-6 py-4 font-medium text-slate-500">Monto</th>
                             <th className="px-6 py-4 font-medium text-slate-500">Método</th>
                             <th className="px-6 py-4 font-medium text-slate-500">Fecha</th>
@@ -133,10 +147,32 @@ const PaymentsList = () => {
                                 <td className="px-6 py-4 font-medium text-slate-900">{payment.student_name}</td>
                                 <td className="px-6 py-4 text-slate-600">{payment.course_name}</td>
                                 <td className="px-6 py-4">
-                                    <div className="text-sm font-medium text-slate-900">{payment.tuition_month ? new Date(payment.tuition_month + '-01T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : '-'}</div>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${payment.payment_type === 'TUITION' ? 'bg-blue-100 text-blue-700' :
+                                            payment.payment_type === 'ENROLLMENT' ? 'bg-purple-100 text-purple-700' :
+                                                payment.payment_type === 'UNIFORM' ? 'bg-emerald-100 text-emerald-700' :
+                                                    payment.payment_type === 'MATERIALS' ? 'bg-amber-100 text-amber-700' :
+                                                        'bg-slate-100 text-slate-700'
+                                            }`}>
+                                            {payment.payment_type === 'TUITION' ? 'Mensualidad' :
+                                                payment.payment_type === 'ENROLLMENT' ? 'Inscripción' :
+                                                    payment.payment_type === 'UNIFORM' ? 'Uniforme' :
+                                                        payment.payment_type === 'MATERIALS' ? 'Materiales' : 'Otro'}
+                                        </span>
+                                        {payment.payment_type === 'TUITION' && payment.tuition_month && (
+                                            <span className="text-xs text-slate-500 font-medium border border-slate-200 px-2 py-0.5 rounded-full">
+                                                {new Date(payment.tuition_month + '-01T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="text-xs text-slate-500 truncate max-w-[150px]">{payment.description || '-'}</div>
                                 </td>
-                                <td className="px-6 py-4 font-bold text-green-600">Q{payment.amount}</td>
+                                <td className="px-6 py-4">
+                                    <div className="font-bold text-green-600">Q{payment.amount}</div>
+                                    {Number(payment.discount) > 0 && (
+                                        <div className="text-xs font-medium text-rose-500 mt-0.5"> Desc: Q{payment.discount}</div>
+                                    )}
+                                </td>
                                 <td className="px-6 py-4 text-slate-600">
                                     <span className="text-xs font-medium px-2 py-1 bg-slate-100 rounded">{payment.method}</span>
                                 </td>
@@ -179,23 +215,78 @@ const PaymentsList = () => {
                         <h3 className="text-xl font-bold mb-4">{selectedPayment ? 'Editar Pago' : 'Registrar Pago'}</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {!selectedPayment && (
+                                <div className="relative">
+                                    <label className="block text-sm font-medium text-slate-700">Inscripción (Buscar Estudiante / Curso)</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            className="w-full mt-1 pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Escriba para buscar..."
+                                            value={searchTerm}
+                                            onChange={(e) => {
+                                                setSearchTerm(e.target.value);
+                                                setIsDropdownOpen(true);
+                                                setNewPayment({ ...newPayment, enrollment_id: '' }); // Reset selection while typing
+                                            }}
+                                            onFocus={() => setIsDropdownOpen(true)}
+                                            onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)} // Delay to allow click
+                                        />
+                                    </div>
+
+                                    {isDropdownOpen && (
+                                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                            {filteredEnrollments && filteredEnrollments.length > 0 ? (
+                                                filteredEnrollments.map((e: any) => (
+                                                    <div
+                                                        key={e.id}
+                                                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                                                        onClick={() => {
+                                                            setNewPayment({ ...newPayment, enrollment_id: e.id });
+                                                            setSearchTerm(`${e.student_name} - ${e.course_name}`);
+                                                            setIsDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        <div className="font-medium text-slate-900">{e.student_name}</div>
+                                                        <div className="text-sm text-slate-500">{e.course_name}</div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="px-4 py-2 text-sm text-slate-500">No se encontraron resultados</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700">Inscripción (Estudiante - Curso)</label>
+                                    <label className="block text-sm font-medium text-slate-700">Tipo de Cobro</label>
                                     <select
                                         required
                                         className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        value={newPayment.enrollment_id}
-                                        onChange={(e) => setNewPayment({ ...newPayment, enrollment_id: e.target.value })}
+                                        value={newPayment.payment_type}
+                                        onChange={(e) => setNewPayment({ ...newPayment, payment_type: e.target.value })}
                                     >
-                                        <option value="">Seleccione...</option>
-                                        {enrollments?.map((e: any) => (
-                                            <option key={e.id} value={e.id}>{e.student_name} - {e.course_name}</option>
-                                        ))}
+                                        <option value="TUITION">Mensualidad</option>
+                                        <option value="ENROLLMENT">Inscripción</option>
+                                        <option value="UNIFORM">Uniforme(s)</option>
+                                        <option value="MATERIALS">Materiales</option>
+                                        <option value="OTHER">Otro concepto</option>
                                     </select>
                                 </div>
-                            )}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700">Descuento aplicado (Q)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        value={newPayment.discount}
+                                        onChange={(e) => setNewPayment({ ...newPayment, discount: e.target.value })}
+                                    />
+                                </div>
+                            </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">Monto (Q)</label>
+                                <label className="block text-sm font-medium text-slate-700">Monto Neto a Pagar (Q)</label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                                     <input
@@ -221,15 +312,18 @@ const PaymentsList = () => {
                                     <option value="CARD">Tarjeta</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700">Mes de Colegiatura</label>
-                                <input
-                                    type="month"
-                                    className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    value={newPayment.tuition_month}
-                                    onChange={(e) => setNewPayment({ ...newPayment, tuition_month: e.target.value })}
-                                />
-                            </div>
+                            {newPayment.payment_type === 'TUITION' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700">Mes de Colegiatura</label>
+                                    <input
+                                        type="month"
+                                        required
+                                        className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        value={newPayment.tuition_month}
+                                        onChange={(e) => setNewPayment({ ...newPayment, tuition_month: e.target.value })}
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700">Descripción</label>
                                 <input

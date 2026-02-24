@@ -128,3 +128,94 @@ export const getFinancialReport = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error retrieving financial report' });
     }
 };
+
+export const getPendingPaymentsReport = async (req: Request, res: Response) => {
+    const branchId = req.currentUser?.branch_id;
+    // Ensure we count months correctly
+    const currentDate = new Date();
+
+    try {
+        // 1. Fetch active enrollments with their courses and student details
+        const { data: enrollments, error: enrollError } = await client.database
+            .from('enrollments')
+            .select(`
+                id,
+                student_id,
+                course_id,
+                enrollment_date,
+                students!inner (full_name),
+                courses!inner (name, monthly_fee, duration_months)
+            `)
+            .eq('branch_id', branchId)
+            .eq('is_active', true);
+
+        if (enrollError) throw enrollError;
+
+        // 2. Fetch all successful TUITION payments for this branch
+        const { data: payments, error: paymentsError } = await client.database
+            .from('payments')
+            .select(`
+                enrollment_id,
+                amount,
+                enrollments!inner (branch_id)
+            `)
+            .eq('enrollments.branch_id', branchId)
+            .eq('payment_type', 'TUITION'); // IMPORTANT! Only count TUITION payments to clear debt
+
+        if (paymentsError) throw paymentsError;
+
+        // Group payments by enrollment
+        const paymentsByEnrollment: Record<number, number> = {};
+        payments?.forEach((p: any) => {
+            if (!paymentsByEnrollment[p.enrollment_id]) {
+                paymentsByEnrollment[p.enrollment_id] = 0;
+            }
+            paymentsByEnrollment[p.enrollment_id] += Number(p.amount);
+        });
+
+        // 3. Calculate pending debt
+        const pendingData: any[] = [];
+
+        enrollments?.forEach((enrollment: any) => {
+            const enrollmentDate = new Date(enrollment.enrollment_date);
+            const monthlyFee = Number(enrollment.courses.monthly_fee);
+
+            // Si el curso creado antes de la migración no tiene duration_months, usar 11 por defecto
+            const durationMonths = enrollment.courses.duration_months || 11;
+
+            let monthsElapsed = 0;
+            if (currentDate > enrollmentDate) {
+                // Approximate months elapsed (can be more precise depending on business rules)
+                const yearsDiff = currentDate.getFullYear() - enrollmentDate.getFullYear();
+                const monthsDiff = currentDate.getMonth() - enrollmentDate.getMonth();
+                monthsElapsed = (yearsDiff * 12) + monthsDiff + 1; // +1 to include the current month if partial
+            } else {
+                monthsElapsed = 1; // At least one month is charged when starting
+            }
+
+            // Cap the months to the course duration
+            const effectiveMonths = Math.min(monthsElapsed, durationMonths);
+
+            const totalDue = effectiveMonths * monthlyFee;
+            const totalPaid = paymentsByEnrollment[enrollment.id] || 0;
+            const pendingAmount = totalDue - totalPaid;
+
+            if (pendingAmount > 0) {
+                pendingData.push({
+                    student_name: enrollment.students.full_name,
+                    course_name: enrollment.courses.name,
+                    monthly_fee: monthlyFee,
+                    months_overdue: Math.ceil(pendingAmount / monthlyFee),
+                    pending_amount: pendingAmount
+                });
+            }
+        });
+
+        res.json(pendingData);
+
+    } catch (error) {
+        console.error('Error calculating pending payments:', error);
+        res.status(500).json({ message: 'Error retrieving pending payments report' });
+    }
+};
+

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStudents, createStudent, updateStudent, deleteStudent } from '../../features/academic/academicService';
-import { Plus, Loader2, Users, Search, Filter, Mail, Calendar, UserPlus, X, Phone, MapPin, Heart, Shield, GraduationCap, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Users, Search, Filter, Calendar, UserPlus, X, Phone, MapPin, Heart, Shield, GraduationCap, Pencil, Trash2 } from 'lucide-react';
 
 const StudentsList = () => {
     const queryClient = useQueryClient();

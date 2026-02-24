@@ -20,3 +20,8 @@ export const getFinancialReport = async (startDate?: string, endDate?: string) =
     const response = await api.get<any[]>('/api/reports/financial', { params });
     return response.data;
 };
+
+export const getPendingPaymentsReport = async () => {
+    const response = await api.get<any[]>('/api/reports/pending-payments');
+    return response.data;
+};

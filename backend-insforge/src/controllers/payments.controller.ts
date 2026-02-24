@@ -16,6 +16,8 @@ export const getPayments = async (req: Request, res: Response) => {
                 reference_number,
                 description,
                 tuition_month,
+                payment_type,
+                discount,
                 enrollments!inner (
                     branch_id,
                     students (full_name),
@@ -36,7 +38,9 @@ export const getPayments = async (req: Request, res: Response) => {
             method: p.method,
             reference_number: p.reference_number,
             description: p.description,
-            tuition_month: p.tuition_month
+            tuition_month: p.tuition_month,
+            payment_type: p.payment_type || 'TUITION',
+            discount: p.discount || 0
         }));
 
         res.json(flatData);
@@ -48,10 +52,25 @@ export const getPayments = async (req: Request, res: Response) => {
 
 // Register Payment
 export const createPayment = async (req: Request, res: Response) => {
-    const { enrollment_id, amount, method, reference_number, description, tuition_month } = req.body;
+    const { enrollment_id, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0 } = req.body;
     const userId = req.currentUser?.id;
 
     try {
+        // 0. Validation for duplicate tuition
+        if (payment_type === 'TUITION' && tuition_month) {
+            const { data: existingOption } = await client.database
+                .from('payments')
+                .select('id')
+                .eq('enrollment_id', enrollment_id)
+                .eq('tuition_month', tuition_month)
+                .eq('payment_type', 'TUITION')
+                .maybeSingle();
+
+            if (existingOption) {
+                return res.status(400).json({ message: `Este estudiante ya tiene registrado el pago de la colegiatura para el mes seleccionado (${tuition_month}).` });
+            }
+        }
+
         // 1. Insert Payment
         const { data: payment, error: paymentError } = await client.database
             .from('payments')
@@ -61,7 +80,9 @@ export const createPayment = async (req: Request, res: Response) => {
                 method,
                 reference_number,
                 description,
-                tuition_month,
+                tuition_month: payment_type === 'TUITION' ? tuition_month : null,
+                payment_type,
+                discount,
                 created_by: userId
             }])
             .select()
@@ -69,33 +90,35 @@ export const createPayment = async (req: Request, res: Response) => {
 
         if (paymentError) throw paymentError;
 
-        // 2. Update Financial Status
-        // Find oldest pending status
-        const { data: pendingList, error: pendingError } = await client.database
-            .from('financial_status')
-            .select('id, amount_due, amount_paid')
-            .eq('enrollment_id', enrollment_id)
-            .eq('status', 'PENDING')
-            .order('month', { ascending: true })
-            .limit(1);
-
-        if (!pendingError && pendingList && pendingList.length > 0) {
-            const fs = pendingList[0];
-            const newPaid = Number(fs.amount_paid) + Number(amount);
-            let newStatus = 'PENDING';
-            if (newPaid >= Number(fs.amount_due)) {
-                newStatus = 'PAID';
-            }
-
-            const { error: updateError } = await client.database
+        // 2. Update Financial Status ONLY IF IT IS TUITION
+        if (payment_type === 'TUITION') {
+            // Find oldest pending status
+            const { data: pendingList, error: pendingError } = await client.database
                 .from('financial_status')
-                .update({ amount_paid: newPaid, status: newStatus })
-                .eq('id', fs.id);
+                .select('id, amount_due, amount_paid')
+                .eq('enrollment_id', enrollment_id)
+                .eq('status', 'PENDING')
+                .order('month', { ascending: true })
+                .limit(1);
 
-            if (updateError) {
-                console.error('Failed to update financial status', updateError);
-                // Optional: Should we rollback payment? 
-                // For now, logging error. Payment is recorded, just status not updated.
+            if (!pendingError && pendingList && pendingList.length > 0) {
+                const fs = pendingList[0];
+                const newPaid = Number(fs.amount_paid) + Number(amount);
+                let newStatus = 'PENDING';
+                if (newPaid >= Number(fs.amount_due)) {
+                    newStatus = 'PAID';
+                }
+
+                const { error: updateError } = await client.database
+                    .from('financial_status')
+                    .update({ amount_paid: newPaid, status: newStatus })
+                    .eq('id', fs.id);
+
+                if (updateError) {
+                    console.error('Failed to update financial status', updateError);
+                    // Optional: Should we rollback payment? 
+                    // For now, logging error. Payment is recorded, just status not updated.
+                }
             }
         }
 
@@ -108,13 +131,21 @@ export const createPayment = async (req: Request, res: Response) => {
 
 export const updatePayment = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { amount, method, reference_number, description, tuition_month } = req.body;
+    const { amount, method, reference_number, description, tuition_month, payment_type, discount } = req.body;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
     try {
         const { data, error } = await db
             .from('payments')
-            .update({ amount, method, reference_number, description, tuition_month })
+            .update({
+                amount,
+                method,
+                reference_number,
+                description,
+                tuition_month: payment_type === 'TUITION' ? tuition_month : null,
+                payment_type,
+                discount
+            })
             .eq('id', id)
             .select()
             .single();
