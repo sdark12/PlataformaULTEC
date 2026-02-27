@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
+import { broadcastNotification } from '../services/notification.service';
 
 export const enrollStudent = async (req: Request, res: Response) => {
     const { student_id, course_id } = req.body;
@@ -64,6 +65,16 @@ export const enrollStudent = async (req: Request, res: Response) => {
                 await db.from('enrollments').delete().eq('id', enrollment.id);
                 return res.status(500).json({ message: 'Error creating financial record' });
             }
+        }
+
+        if (enrollment) {
+            await broadcastNotification(
+                client,
+                branchId || enrollment.branch_id,
+                'Nueva Inscripción',
+                `Se ha registrado una nueva inscripción en el curso.`,
+                'ENROLLMENT'
+            );
         }
 
         res.status(201).json(enrollment);
@@ -158,6 +169,17 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
             .eq('id', id);
 
         if (error) throw error;
+
+        const branchId = req.currentUser?.branch_id;
+        if (branchId) {
+            await broadcastNotification(
+                client,
+                branchId,
+                'Inscripción Eliminada',
+                `Se ha eliminado una inscripción del sistema.`,
+                'DELETE'
+            );
+        }
 
         res.json({ message: 'Enrollment deleted successfully' });
     } catch (error) {

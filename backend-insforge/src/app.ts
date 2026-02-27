@@ -22,6 +22,8 @@ import attendanceRoutes from './routes/attendance.routes';
 import reportRoutes from './routes/reports.routes';
 import gradesRoutes from './routes/grades.routes';
 import subgradesRoutes from './routes/subgrades.routes';
+import notificationsRoutes from './routes/notifications.routes';
+import usersRoutes from './routes/users.routes';
 
 app.use('/auth', authRoutes);
 app.use('/api', academicRoutes);
@@ -31,6 +33,8 @@ app.use('/api', attendanceRoutes);
 app.use('/api', reportRoutes);
 app.use('/api', gradesRoutes);
 app.use('/api', subgradesRoutes);
+app.use('/api', notificationsRoutes);
+app.use('/api/users', usersRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

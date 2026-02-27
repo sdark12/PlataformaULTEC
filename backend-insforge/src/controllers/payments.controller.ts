@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
+import { broadcastNotification } from '../services/notification.service';
 
 // Get Payments
 export const getPayments = async (req: Request, res: Response) => {
@@ -54,6 +55,7 @@ export const getPayments = async (req: Request, res: Response) => {
 export const createPayment = async (req: Request, res: Response) => {
     const { enrollment_id, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0 } = req.body;
     const userId = req.currentUser?.id;
+    const branchId = req.currentUser?.branch_id;
 
     try {
         // 0. Validation for duplicate tuition
@@ -122,7 +124,84 @@ export const createPayment = async (req: Request, res: Response) => {
             }
         }
 
-        res.status(201).json(payment);
+        // 3. Automatically Create Invoice
+        let invoiceId = null;
+        let targetBranchId = branchId;
+        try {
+            // Get Enrollment Info for Branch
+            const { data: enrollmentInfo } = await client.database
+                .from('enrollments')
+                .select('branch_id')
+                .eq('id', enrollment_id)
+                .single();
+
+            targetBranchId = enrollmentInfo?.branch_id || branchId;
+
+            // Generate Invoice Number
+            let invoiceNumber = `REC-${Date.now()}`;
+            const { data: seqData } = await client.database
+                .from('invoice_sequences')
+                .select('series, current_number')
+                .eq('branch_id', targetBranchId)
+                .maybeSingle();
+
+            if (seqData) {
+                const nextNum = seqData.current_number + 1;
+                await client.database
+                    .from('invoice_sequences')
+                    .update({ current_number: nextNum })
+                    .eq('branch_id', targetBranchId);
+                invoiceNumber = `${seqData.series}-${String(userId).slice(0, 4)}-${nextNum.toString().padStart(6, '0')}`;
+            }
+
+            // Create Invoice
+            const { data: invoice, error: invoiceError } = await client.database
+                .from('invoices')
+                .insert([{
+                    branch_id: targetBranchId,
+                    enrollment_id,
+                    invoice_number: invoiceNumber,
+                    total_amount: amount,
+                    created_by: userId
+                }])
+                .select()
+                .single();
+
+            if (!invoiceError && invoice) {
+                invoiceId = invoice.id;
+                // Create Invoice Item
+                const description = payment_type === 'TUITION'
+                    ? `Colegiatura de ${tuition_month}`
+                    : payment_type === 'ENROLLMENT' ? 'Inscripción'
+                        : payment_type === 'UNIFORM' ? 'Uniforme'
+                            : payment_type === 'MATERIALS' ? 'Materiales'
+                                : 'Otro concepto';
+
+                await client.database
+                    .from('invoice_items')
+                    .insert([{
+                        invoice_id: invoiceId,
+                        description: description,
+                        quantity: 1,
+                        unit_price: amount,
+                        total_price: amount
+                    }]);
+            }
+        } catch (invoiceErr) {
+            console.error('Failed to auto-create invoice', invoiceErr);
+            // We don't fail the payment if invoice fails
+        }
+
+        res.status(201).json({ ...payment, invoice_id: invoiceId });
+
+        // Broadcast notification targetting branch admins
+        await broadcastNotification(
+            client,
+            targetBranchId,
+            'Nuevo Pago',
+            `Se ha registrado un nuevo pago por Q.${amount}`,
+            'PAYMENT'
+        );
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error registering payment' });
@@ -170,6 +249,17 @@ export const deletePayment = async (req: Request, res: Response) => {
             .eq('id', id);
 
         if (error) throw error;
+
+        const branchId = req.currentUser?.branch_id;
+        if (branchId) {
+            await broadcastNotification(
+                client,
+                branchId,
+                'Pago Eliminado',
+                `Se ha eliminado el registro de un pago del sistema.`,
+                'DELETE'
+            );
+        }
 
         res.json({ message: 'Payment deleted successfully' });
     } catch (error) {

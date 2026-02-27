@@ -12,6 +12,7 @@ import InvoicesList from './features/finance/InvoicesList';
 import Attendance from './features/academic/Attendance';
 import Reports from './features/finance/Reports';
 import Grades from './features/academic/Grades';
+import UsersList from './features/users/UsersList';
 import ReportCard from './features/academic/ReportCard';
 import CourseGradebook from './features/academic/CourseGradebook';
 import { useQuery } from '@tanstack/react-query';
@@ -34,8 +35,8 @@ const DashboardHome = () => {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Panel Principal</h1>
-        <p className="text-slate-500 mt-1">Resumen general del estado de la academia.</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Panel Principal</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Resumen general del estado de la academia.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -66,38 +67,39 @@ const DashboardHome = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden group">
+        <div className="lg:col-span-2 glass-card p-8 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 h-full flex items-center justify-center transition-transform group-hover:scale-110 duration-700 opacity-5 pointer-events-none">
             <BookOpen className="h-64 w-64 text-blue-600" />
           </div>
           <div className="relative z-10">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Bienvenido a Ultra Tecnología</h2>
-            <p className="text-slate-600 max-w-lg leading-relaxed mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Bienvenido a Ultra Tecnología</h2>
+            <p className="text-slate-600 dark:text-slate-300 max-w-lg leading-relaxed mb-8">
               Tu plataforma integral para la gestión académica y financiera. Aquí puedes supervisar el progreso de tus estudiantes, controlar los flujos de caja y optimizar la administración de tus cursos.
             </p>
             <div className="flex flex-wrap gap-4">
-              <div className="px-6 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 cursor-pointer">
+              <div className="px-6 py-3 bg-brand-blue text-white font-bold rounded-2xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(13,89,242,0.4)] cursor-pointer">
                 Ver Reportes Detallados
               </div>
-              <div className="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors cursor-pointer">
+              <div className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-transparent dark:border-slate-700">
                 Documentación
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-blue-500/20 blur-[60px] rounded-full" />
+        <div className="bg-gradient-to-br from-brand-card to-slate-900 dark:from-slate-900 dark:to-black p-8 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col justify-between border border-slate-200 dark:border-white/5">
+          <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-brand-purple/20 blur-[60px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-brand-blue/20 blur-[60px] rounded-full pointer-events-none" />
           <div className="relative z-10">
             <h3 className="text-xl font-bold text-white mb-2">Soporte Directo</h3>
             <p className="text-slate-400 text-sm">¿Necesitas ayuda con la plataforma? Estamos para servirte.</p>
           </div>
           <div className="mt-8 relative z-10">
-            <button className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl border border-white/10 backdrop-blur-sm transition-all active:scale-95">
+            <button className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl border border-white/10 backdrop-blur-sm transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
               Contactar Soporte
             </button>
           </div>
-          <p className="text-[10px] text-slate-500 text-center mt-6">Versión 1.2.0 Enterprise Edition</p>
+          <p className="text-[10px] text-slate-500 text-center mt-6 z-10 relative">Versión 1.3.0 Premium Edition</p>
         </div>
       </div>
     </div>
@@ -106,20 +108,20 @@ const DashboardHome = () => {
 
 const StatCard = ({ title, value, icon: Icon, color }: any) => {
   const colors: any = {
-    blue: "bg-blue-50 text-blue-600",
-    indigo: "bg-indigo-50 text-indigo-600",
-    green: "bg-green-50 text-green-600",
-    amber: "bg-amber-50 text-amber-600"
+    blue: "bg-blue-50 text-brand-blue dark:bg-brand-blue/10",
+    indigo: "bg-indigo-50 text-brand-purple dark:bg-brand-purple/10",
+    green: "bg-green-50 text-brand-success dark:bg-brand-success/10",
+    amber: "bg-amber-50 text-brand-warning dark:bg-brand-warning/10"
   };
 
   return (
-    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center space-x-5 transition-all hover:shadow-xl hover:shadow-slate-200/50 group">
-      <div className={`p-4 ${colors[color]} rounded-2xl group-hover:scale-110 transition-transform duration-300 font-bold`}>
+    <div className="glass-card p-6 flex items-center space-x-5 group">
+      <div className={`p-4 ${colors[color]} rounded-2xl group-hover:scale-110 transition-transform duration-300 font-bold shadow-sm`}>
         <Icon className="h-7 w-7" />
       </div>
       <div>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{title}</p>
-        <p className="text-3xl font-black text-slate-900 mt-1 tracking-tight">{value}</p>
+        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{title}</p>
+        <p className="text-3xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">{value}</p>
       </div>
     </div>
   );
@@ -139,6 +141,7 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<DashboardHome />} />
+            <Route path="/users" element={<UsersList />} />
             <Route path="/courses" element={<CoursesList />} />
             <Route path="/students" element={<StudentsList />} />
             <Route path="/enrollments" element={<EnrollmentsList />} />

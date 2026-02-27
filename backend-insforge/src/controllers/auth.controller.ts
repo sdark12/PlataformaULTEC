@@ -48,3 +48,38 @@ export const login = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+export const adminResetPassword = async (req: Request, res: Response) => {
+    const { userId, newPassword } = req.body;
+
+    if (!userId || !newPassword) {
+        return res.status(400).json({ message: 'Se requiere el ID del usuario y la nueva contraseña.' });
+    }
+
+    try {
+        // We need the SERVICE ROLE KEY to update another user's password
+        const { createClient } = require('@insforge/sdk');
+        const adminClient = createClient({
+            baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
+            // WARNING: Must use service_role key here, but fallback to anon if we don't have it for this scope
+            anonKey: process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_API_KEY || 'ik_065cc96706290cd59a1103c714006c96'
+        });
+
+        // Given that Insforge SDK doesn't expose auth.admin, we call a trusted Postgres RPC 
+        // to update the password securely via the database.
+        const { data, error } = await adminClient.database.rpc('admin_change_user_password', {
+            target_user_id: userId,
+            new_password: newPassword
+        });
+
+        if (error) {
+            console.error('Admin reset password error:', error);
+            return res.status(400).json({ message: 'Error al actualizar contraseña. (Asegúrese de ejecutar el script SQL).', details: error.message });
+        }
+
+        res.json({ message: 'Contraseña actualizada correctamente.' });
+    } catch (error: any) {
+        console.error('Admin reset password generic error:', error);
+        res.status(500).json({ message: 'Error interno del servidor.', details: error.message });
+    }
+};

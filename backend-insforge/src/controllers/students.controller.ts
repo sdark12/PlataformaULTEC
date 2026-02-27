@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
+import { broadcastNotification } from '../services/notification.service';
 
 export const getStudents = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
@@ -131,6 +132,16 @@ export const deleteStudent = async (req: Request, res: Response) => {
             .eq('branch_id', branchId);
 
         if (error) throw error;
+
+        if (branchId) {
+            await broadcastNotification(
+                client,
+                branchId,
+                'Estudiante Eliminado',
+                `Se ha eliminado un estudiante del sistema.`,
+                'DELETE'
+            );
+        }
 
         res.json({ message: 'Student deleted successfully' });
     } catch (error) {

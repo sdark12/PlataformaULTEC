@@ -154,8 +154,8 @@ const StudentsList = () => {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Registro de Estudiantes</h2>
-                    <p className="text-slate-500 mt-1">Base de datos centralizada de alumnos inscritos.</p>
+                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Registro de Estudiantes</h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Base de datos centralizada de alumnos inscritos.</p>
                 </div>
                 <button
                     onClick={() => {
@@ -164,7 +164,7 @@ const StudentsList = () => {
                         resetForm();
                         setIsModalOpen(true);
                     }}
-                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/25 active:scale-95 font-semibold"
+                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
                 >
                     <UserPlus className="h-5 w-5" />
                     <span>Registrar Estudiante</span>
@@ -173,11 +173,11 @@ const StudentsList = () => {
 
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                    <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 group-focus-within:text-brand-blue transition-colors" />
                     <input
                         type="text"
                         placeholder="Buscar por nombre, documento o teléfono..."
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all shadow-sm"
+                        className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all shadow-sm backdrop-blur-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -185,21 +185,21 @@ const StudentsList = () => {
                 <div className="relative">
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className={`flex items-center justify-center space-x-2 px-6 py-3 border rounded-2xl transition-colors shadow-sm font-medium w-full md:w-auto ${isFilterOpen || filterGender || filterMedicalNotes || filterInstitution ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                        className={`flex items-center justify-center space-x-2 px-6 py-3 border rounded-xl transition-colors shadow-sm font-medium w-full md:w-auto backdrop-blur-sm ${isFilterOpen || filterGender || filterMedicalNotes || filterInstitution ? 'bg-brand-blue/10 border-brand-blue/30 text-brand-blue dark:text-brand-teal' : 'bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'}`}
                     >
                         <Filter className="h-5 w-5" />
                         <span>Filtros {(filterGender || filterMedicalNotes || filterInstitution) ? '(Activos)' : ''}</span>
                     </button>
 
                     {isFilterOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-5 z-20 animate-in fade-in slide-in-from-top-2">
-                            <h4 className="font-bold text-slate-800 mb-4 border-b pb-2">Filtros Avanzados</h4>
+                        <div className="absolute right-0 top-full mt-2 w-72 glass-card p-5 z-20 animate-in fade-in slide-in-from-top-2 border border-slate-200 dark:border-white/10">
+                            <h4 className="font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">Filtros Avanzados</h4>
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Escuela de Procedencia</label>
+                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">Escuela de Procedencia</label>
                                     <select
-                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 mb-4"
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue mb-4"
                                         value={filterInstitution}
                                         onChange={(e) => setFilterInstitution(e.target.value)}
                                     >
@@ -211,9 +211,9 @@ const StudentsList = () => {
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Género</label>
+                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">Género</label>
                                     <select
-                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
                                         value={filterGender}
                                         onChange={(e) => setFilterGender(e.target.value as '' | 'M' | 'F')}
                                     >
@@ -232,9 +232,9 @@ const StudentsList = () => {
                                                 checked={filterMedicalNotes}
                                                 onChange={(e) => setFilterMedicalNotes(e.target.checked)}
                                             />
-                                            <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                            <div className="w-10 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-blue/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue shadow-inner border border-transparent dark:border-slate-600"></div>
                                         </div>
-                                        <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors select-none">Mostrar solo con Notas Médicas</span>
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors select-none">Mostrar solo con Notas Médicas</span>
                                     </label>
                                 </div>
                             </div>
@@ -242,7 +242,7 @@ const StudentsList = () => {
                             {(filterGender || filterMedicalNotes || filterInstitution) && (
                                 <button
                                     onClick={() => { setFilterGender(''); setFilterMedicalNotes(false); setFilterInstitution(''); setIsFilterOpen(false); }}
-                                    className="mt-5 w-full text-center text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors py-2"
+                                    className="mt-5 w-full text-center text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors py-2"
                                 >
                                     Limpiar Filtros
                                 </button>
@@ -258,33 +258,33 @@ const StudentsList = () => {
                 </div>
             )}
 
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="glass-card rounded-3xl overflow-hidden">
                 <div className="min-w-full inline-block align-middle">
-                    <table className="min-w-full divide-y divide-slate-200">
-                        <thead className="bg-slate-50">
+                    <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700/50">
+                        <thead className="bg-slate-50/50 dark:bg-slate-800/80">
                             <tr>
-                                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Estudiante</th>
-                                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Fecha de Nacimiento</th>
-                                <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+                                <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Estudiante</th>
+                                <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fecha de Nacimiento</th>
+                                <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                             {filteredStudents?.map((student: any) => (
-                                <tr key={student.id} className="hover:bg-blue-50/30 transition-colors group">
+                                <tr key={student.id} className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="px-8 py-6">
                                         <div className="flex items-center space-x-4">
-                                            <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                                            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-brand-blue/20 to-brand-purple/20 text-brand-blue dark:text-brand-teal border border-brand-blue/10 flex items-center justify-center font-bold uppercase shadow-sm">
                                                 {student.full_name.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900">{student.full_name}</p>
-                                                <p className="text-xs text-slate-500">ID: #{student.id.toString().padStart(4, '0')}</p>
+                                                <p className="font-bold text-slate-900 dark:text-slate-100">{student.full_name}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">ID: #{student.id.toString().padStart(4, '0')}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <div className="flex items-center text-slate-600">
-                                            <Calendar className="h-4 w-4 mr-2 text-slate-400" />
+                                        <div className="flex items-center text-slate-600 dark:text-slate-300">
+                                            <Calendar className="h-4 w-4 mr-2 text-slate-400 dark:text-slate-500" />
                                             <span className="font-medium">
                                                 {student.birth_date ? new Date(student.birth_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No registrada'}
                                             </span>
@@ -297,12 +297,12 @@ const StudentsList = () => {
                                                     setSelectedStudent(student);
                                                     setIsViewModalOpen(true);
                                                 }}
-                                                className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all text-sm font-bold opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0">
+                                                className="inline-flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-brand-blue hover:text-white dark:hover:bg-brand-blue transition-all text-sm font-bold opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0">
                                                 Ver Perfil
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(student.id)}
-                                                className="inline-flex items-center p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+                                                className="inline-flex items-center p-2 bg-brand-danger/10 text-brand-danger rounded-lg hover:bg-brand-danger hover:text-white transition-all opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
                                                 title="Eliminar Estudiante"
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -315,12 +315,12 @@ const StudentsList = () => {
                                 <tr>
                                     <td colSpan={3} className="px-8 py-20 text-center">
                                         <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
+                                            <div className="h-16 w-16 bg-white/50 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-600">
                                                 <Users className="h-8 w-8" />
                                             </div>
                                             <div>
-                                                <p className="text-slate-900 font-bold">No se encontraron estudiantes</p>
-                                                <p className="text-slate-500 text-sm mt-1">Intenta con otro término de búsqueda o registra uno nuevo.</p>
+                                                <p className="text-slate-900 dark:text-white font-bold">No se encontraron estudiantes</p>
+                                                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Intenta con otro término de búsqueda o registra uno nuevo.</p>
                                             </div>
                                         </div>
                                     </td>

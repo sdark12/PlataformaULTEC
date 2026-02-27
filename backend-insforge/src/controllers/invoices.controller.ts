@@ -154,47 +154,136 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
             .eq('invoice_id', invoiceId);
 
         // Generate PDF
-        const doc = new PDFDocument();
+        const doc = new PDFDocument({ margin: 0, size: 'A4' });
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoice_number}.pdf`);
 
         doc.pipe(res);
 
-        // Header
-        doc.fontSize(20).text(invoice.branches?.name || 'ULTEC', { align: 'center' });
-        doc.fontSize(10).text(invoice.branches?.address || 'Dirección no disponible', { align: 'center' });
-        doc.moveDown();
+        // --- COLORS & LAYOUT ---
+        const colors = {
+            dark: '#1F2937',      // Sidebar
+            orange: '#F97316',    // Accents / Table Header
+            redOrange: '#EA580C', // Bottom Highlight
+            lightGray: '#F3F4F6', // Table Alternate
+            textDark: '#111827',
+            textLight: '#6B7280',
+            white: '#FFFFFF'
+        };
 
-        // Invoice Info
-        doc.fontSize(12).text(`Factura No: ${invoice.invoice_number}`);
-        doc.text(`Fecha: ${new Date(invoice.issue_date || invoice.created_at).toLocaleDateString()}`);
-        doc.text(`Cliente: ${invoice.enrollments?.students?.full_name}`);
-        doc.moveDown();
+        const sidebarWidth = 180;
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
 
-        // Items Table Header
-        doc.fontSize(10).font('Helvetica-Bold');
-        doc.text('Descripción', 50, doc.y);
-        doc.text('Cant', 300, doc.y);
-        doc.text('Precio', 350, doc.y);
-        doc.text('Total', 450, doc.y);
-        doc.moveDown();
-        doc.font('Helvetica');
+        // --- DRAW SIDEBAR ---
+        doc.rect(0, 0, sidebarWidth, pageHeight).fill(colors.dark);
 
-        // Items
+        // --- DRAW TOP ORANGE ACCENT (Sidebar) ---
+        doc.rect(0, 30, sidebarWidth, 20).fill(colors.orange);
+
+        // --- DRAW BOTTOM RED-ORANGE ACCENT (Sidebar) ---
+        doc.polygon(
+            [0, pageHeight - 150],
+            [sidebarWidth, pageHeight - 220],
+            [sidebarWidth, pageHeight],
+            [0, pageHeight]
+        ).fill(colors.redOrange);
+        doc.rect(0, pageHeight - 150, sidebarWidth, 150).fill(colors.redOrange); // Fill below polygon to be safe
+
+        // --- SIDEBAR CONTENT ---
+        // Logo / Name (In sidebar)
+        doc.fillColor(colors.white).fontSize(20).font('Helvetica-Bold')
+            .text('ULTRA', 30, 80)
+            .text('TECNOLOGÍA', 30, 100);
+
+        doc.fontSize(9).font('Helvetica')
+            .text('PANEL ADMINISTRATIVO', 30, 125, { characterSpacing: 1, text: 'PANEL ADMINISTRATIVO' } as any);
+
+        doc.moveDown(4);
+        doc.fontSize(11).font('Helvetica-Bold').text('CONTACTO', 30, doc.y);
+        doc.moveDown(1);
+        doc.fontSize(9).font('Helvetica')
+            .text('Dir: ' + (invoice.branches?.address || 'Ciudad de Guatemala'), 30, doc.y, { width: 120 })
+            .moveDown(1)
+            .text('Tel: +502 1234-5678')
+            .moveDown(0.5)
+            .text('info@ultratecnologia.com');
+
+        // --- MAIN AREA CONTENT ---
+        const startX = sidebarWidth + 40;
+
+        // --- TOP RIGHT ORANGE BLOCK (Logo/Title Area) ---
+        doc.rect(pageWidth - 200, 30, 200, 60).fill(colors.orange);
+        doc.fillColor(colors.white).fontSize(24).font('Helvetica-Bold')
+            .text('INVOICE', pageWidth - 180, 45, { align: 'right', width: 160 });
+        doc.fontSize(10).font('Helvetica')
+            .text('RECIBO DE PAGO', pageWidth - 180, 70, { align: 'right', width: 160 });
+
+        // --- INVOICE DETAILS ---
+        const detailY = 150;
+
+        // Column 1: Client
+        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('FACTURAR A:', startX, detailY);
+        doc.fillColor(colors.textLight).font('Helvetica')
+            .text(invoice.enrollments?.students?.full_name?.toUpperCase() || 'CLIENTE', startX, detailY + 15)
+            .text('Estudiante Activo', startX, detailY + 30);
+
+        // Column 2: Details
+        const col2X = startX + 180;
+        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('NO. FACTURA:', col2X, detailY);
+        doc.fillColor(colors.textLight).font('Helvetica').text(invoice.invoice_number, col2X, detailY + 15);
+
+        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('FECHA:', col2X, detailY + 40);
+        doc.fillColor(colors.textLight).font('Helvetica').text(new Date(invoice.issue_date || invoice.created_at).toLocaleDateString(), col2X, detailY + 55);
+
+        // --- TABLE SECTION ---
+        const tableTop = 280;
+        const colDesc = startX;
+        const colQty = startX + 180;
+        const colUnit = startX + 230;
+        const colTotal = startX + 300;
+
+        // Table Header
+        doc.rect(startX, tableTop, pageWidth - startX - 40, 25).fill(colors.orange);
+        doc.fillColor(colors.white).fontSize(10).font('Helvetica-Bold')
+            .text('DESCRIPCIÓN', colDesc + 10, tableTop + 8)
+            .text('CANT', colQty, tableTop + 8)
+            .text('PRECIO', colUnit, tableTop + 8)
+            .text('TOTAL', colTotal, tableTop + 8);
+
+        // Table Rows
+        let rowY = tableTop + 25;
+        doc.font('Helvetica').fontSize(9);
+
         if (items) {
-            for (const item of items) {
-                const y = doc.y;
-                doc.text(item.description, 50, y);
-                doc.text(item.quantity.toString(), 300, y);
-                doc.text(Number(item.unit_price).toFixed(2), 350, y);
-                doc.text(Number(item.total_price).toFixed(2), 450, y);
-                doc.moveDown();
-            }
+            items.forEach((item: any, i: number) => {
+                // Alternate row background
+                if (i % 2 === 0) {
+                    doc.rect(startX, rowY, pageWidth - startX - 40, 30).fill(colors.lightGray);
+                }
+
+                doc.fillColor(colors.textDark)
+                    .text(item.description, colDesc + 10, rowY + 10, { width: 160 })
+                    .text(item.quantity.toString(), colQty, rowY + 10)
+                    .text(`Q${Number(item.unit_price).toFixed(2)}`, colUnit, rowY + 10)
+                    .text(`Q${Number(item.total_price).toFixed(2)}`, colTotal, rowY + 10);
+
+                rowY += 30;
+            });
         }
 
-        doc.moveDown();
-        doc.fontSize(14).font('Helvetica-Bold').text(`Total: Q${Number(invoice.total_amount).toFixed(2)}`, { align: 'right' });
+        // --- TOTALS AREA ---
+        rowY += 20;
+        doc.rect(colTotal - 40, rowY, 120, 30).fill(colors.redOrange);
+        doc.fillColor(colors.white).font('Helvetica-Bold').fontSize(10)
+            .text('TOTAL:', colTotal - 30, rowY + 10)
+            .text(`Q${Number(invoice.total_amount).toFixed(2)}`, colTotal + 15, rowY + 10);
+
+        // Footer / Notes
+        doc.fillColor(colors.textLight).font('Helvetica').fontSize(8)
+            .text('Gracias por su pago.', startX, doc.page.height - 80)
+            .text('Este documento es un comprobante de pago electrónico sin validez fiscal a menos que se indique lo contrario.', startX, doc.page.height - 70, { width: 300 });
 
         doc.end();
 

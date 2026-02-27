@@ -5,6 +5,8 @@ export interface Course {
     name: string;
     description: string;
     monthly_fee: number;
+    start_date?: string;
+    end_date?: string;
 }
 
 export interface Student {

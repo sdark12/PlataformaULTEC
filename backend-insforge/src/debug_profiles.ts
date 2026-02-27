@@ -1,18 +1,18 @@
 import client from './config/insforge';
 
-async function checkProfileStructure() {
-    try {
-        const { data, error } = await client.database
-            .from('profiles')
-            .select('*')
-            .limit(1);
+async function checkProfiles() {
+    console.log('Fetching recent profiles...');
+    const { data, error } = await client.database
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-        if (error) throw error;
-
-        console.log('Sample Profile:', JSON.stringify(data[0], null, 2));
-    } catch (err) {
-        console.error('Error checking structure:', err);
+    if (error) {
+        console.error('Error fetching profiles:', error);
+    } else {
+        console.log('Recent profiles:', JSON.stringify(data, null, 2));
     }
 }
 
-checkProfileStructure();
+checkProfiles();

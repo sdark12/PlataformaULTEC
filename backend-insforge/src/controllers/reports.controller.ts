@@ -144,7 +144,7 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
                 course_id,
                 enrollment_date,
                 students!inner (full_name),
-                courses!inner (name, monthly_fee, duration_months)
+                courses!inner (name, monthly_fee, duration_months, start_date, end_date)
             `)
             .eq('branch_id', branchId)
             .eq('is_active', true);
@@ -183,11 +183,16 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
             // Si el curso creado antes de la migración no tiene duration_months, usar 11 por defecto
             const durationMonths = enrollment.courses.duration_months || 11;
 
+            // Si el curso tiene fecha de inicio (start_date), usarla preferiblemente
+            const baseDateForCalculation = enrollment.courses.start_date
+                ? new Date(enrollment.courses.start_date)
+                : enrollmentDate;
+
             let monthsElapsed = 0;
-            if (currentDate > enrollmentDate) {
+            if (currentDate > baseDateForCalculation) {
                 // Approximate months elapsed (can be more precise depending on business rules)
-                const yearsDiff = currentDate.getFullYear() - enrollmentDate.getFullYear();
-                const monthsDiff = currentDate.getMonth() - enrollmentDate.getMonth();
+                const yearsDiff = currentDate.getFullYear() - baseDateForCalculation.getFullYear();
+                const monthsDiff = currentDate.getMonth() - baseDateForCalculation.getMonth();
                 monthsElapsed = (yearsDiff * 12) + monthsDiff + 1; // +1 to include the current month if partial
             } else {
                 monthsElapsed = 1; // At least one month is charged when starting

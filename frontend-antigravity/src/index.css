@@ -5,8 +5,12 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-slate-50 text-slate-900 font-sans antialiased transition-colors duration-300;
     font-family: 'Inter', sans-serif;
+  }
+
+  .dark body {
+    @apply bg-brand-dark text-slate-100;
   }
 
   /* Custom Scrollbar */
@@ -23,14 +27,34 @@
     @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
   }
 
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 hover:bg-slate-600;
+  }
+
   /* Selection Color */
   ::selection {
     @apply bg-blue-500/30 text-blue-900;
+  }
+
+  .dark ::selection {
+    @apply bg-brand-blue/30 text-blue-200;
   }
 }
 
 @layer utilities {
   .glass {
     @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-lg;
+  }
+
+  .dark .glass {
+    @apply backdrop-blur-md bg-brand-card/60 border border-white/10 shadow-glass;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/60 border border-white/20 rounded-2xl shadow-xl transition-all hover:shadow-2xl;
+  }
+
+  .dark .glass-card {
+    @apply backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl shadow-2xl transition-all hover:bg-slate-800/60;
   }
 }

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
+import { broadcastNotification } from '../services/notification.service';
 
 export const getCourses = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
@@ -38,7 +39,7 @@ export const getCourses = async (req: Request, res: Response) => {
 };
 
 export const createCourse = async (req: Request, res: Response) => {
-    const { name, description, monthly_fee } = req.body;
+    const { name, description, monthly_fee, start_date, end_date } = req.body;
     const branchId = req.currentUser?.branch_id;
     const db = req.dbUserClient || client;
 
@@ -47,7 +48,7 @@ export const createCourse = async (req: Request, res: Response) => {
     try {
         const { data, error } = await db.database
             .from('courses')
-            .insert([{ branch_id: branchId, name, description, monthly_fee }])
+            .insert([{ branch_id: branchId, name, description, monthly_fee, start_date, end_date }])
             .select()
             .single();
 
@@ -62,13 +63,13 @@ export const createCourse = async (req: Request, res: Response) => {
 
 export const updateCourse = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, description, monthly_fee, is_active } = req.body;
+    const { name, description, monthly_fee, is_active, start_date, end_date } = req.body;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
     try {
         const { data, error } = await db
             .from('courses')
-            .update({ name, description, monthly_fee, is_active })
+            .update({ name, description, monthly_fee, is_active, start_date, end_date })
             .eq('id', id)
             .select()
             .single();
@@ -93,6 +94,17 @@ export const deleteCourse = async (req: Request, res: Response) => {
             .eq('id', id);
 
         if (error) throw error;
+
+        const branchId = req.currentUser?.branch_id;
+        if (branchId) {
+            await broadcastNotification(
+                client,
+                branchId,
+                'Curso Eliminado',
+                `Se ha eliminado un curso del sistema.`,
+                'DELETE'
+            );
+        }
 
         res.json({ message: 'Course deleted successfully' });
     } catch (error) {

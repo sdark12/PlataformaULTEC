@@ -6,7 +6,7 @@ import { Plus, Loader2, BookOpen, Edit2, Trash2 } from 'lucide-react';
 const CoursesList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0 });
+    const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
     const [selectedCourse, setSelectedCourse] = useState<any>(null);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -20,7 +20,7 @@ const CoursesList = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             setIsModalOpen(false);
-            setNewCourse({ name: '', description: '', monthly_fee: 0 });
+            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -35,7 +35,7 @@ const CoursesList = () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             setIsModalOpen(false);
             setSelectedCourse(null);
-            setNewCourse({ name: '', description: '', monthly_fee: 0 });
+            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -79,7 +79,9 @@ const CoursesList = () => {
         setNewCourse({
             name: course.name,
             description: course.description || '',
-            monthly_fee: course.monthly_fee
+            monthly_fee: course.monthly_fee,
+            start_date: course.start_date ? course.start_date.split('T')[0] : '',
+            end_date: course.end_date ? course.end_date.split('T')[0] : ''
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -87,7 +89,7 @@ const CoursesList = () => {
 
     const handleNewCourse = () => {
         setSelectedCourse(null);
-        setNewCourse({ name: '', description: '', monthly_fee: 0 });
+        setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
         setErrorMsg('');
         setIsModalOpen(true);
     };
@@ -103,12 +105,12 @@ const CoursesList = () => {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Cursos Disponibles</h2>
-                    <p className="text-slate-500 mt-1">Gestión de oferta académica y cuotas mensuales.</p>
+                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Cursos Disponibles</h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión de oferta académica y cuotas mensuales.</p>
                 </div>
                 <button
                     onClick={handleNewCourse}
-                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/25 active:scale-95 font-semibold"
+                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
                 >
                     <Plus className="h-5 w-5" />
                     <span>Nuevo Curso</span>
@@ -125,35 +127,38 @@ const CoursesList = () => {
                 {courses?.map((course: any) => (
                     <div
                         key={course.id}
-                        className="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 relative overflow-hidden"
+                        className="group glass-card p-6 border border-slate-200 dark:border-white/10 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-300 relative overflow-hidden"
                     >
                         <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-[10px] px-2 py-1 bg-green-100 text-green-700 rounded-full font-bold uppercase tracking-wider">Activo</span>
+                            <span className="text-[10px] px-2 py-1 bg-brand-success/20 text-brand-success rounded-full font-bold uppercase tracking-wider border border-brand-success/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]">Activo</span>
                         </div>
 
                         <div className="mb-4">
-                            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                            <div className="h-12 w-12 rounded-xl bg-gradient-to-tr from-brand-blue/20 to-brand-purple/20 flex items-center justify-center text-brand-blue dark:text-brand-teal border border-brand-blue/10 mb-4 group-hover:bg-brand-blue group-hover:text-white transition-colors duration-300 shadow-inner">
                                 <BookOpen className="h-6 w-6" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{course.name}</h3>
-                            <p className="text-slate-500 mt-2 text-sm line-clamp-2 leading-relaxed">{course.description || 'Sin descripción disponible.'}</p>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-brand-blue dark:group-hover:text-brand-teal transition-colors">{course.name}</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm line-clamp-2 leading-relaxed">{course.description || 'Sin descripción disponible.'}</p>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                        <div className="pt-4 border-t border-slate-200 dark:border-slate-700/50 flex justify-between items-center">
                             <div>
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Cuota Mensual</p>
-                                <span className="text-2xl font-bold text-slate-900 tracking-tight">Q{course.monthly_fee}</span>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest">Cuota Mensual</p>
+                                <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Q{course.monthly_fee}</span>
+                                {course.start_date && (
+                                    <p className="text-[10px] text-brand-blue font-bold tracking-widest mt-1">Inició: {course.start_date.split('T')[0]}</p>
+                                )}
                             </div>
                             <div className="flex space-x-1">
                                 <button
                                     onClick={() => handleEdit(course)}
-                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    className="p-2 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                                 >
                                     <Edit2 className="h-4 w-4" />
                                 </button>
                                 <button
                                     onClick={() => handleDelete(course.id)}
-                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="p-2 text-slate-400 hover:text-brand-danger hover:bg-brand-danger/10 rounded-lg transition-colors"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -163,13 +168,13 @@ const CoursesList = () => {
                 ))}
 
                 {courses?.length === 0 && !isLoading && (
-                    <div className="col-span-full bg-slate-100/50 border-2 border-dashed border-slate-200 rounded-3xl py-20 text-center flex flex-col items-center justify-center space-y-4">
-                        <div className="h-16 w-16 bg-slate-200 rounded-full flex items-center justify-center text-slate-400">
+                    <div className="col-span-full bg-white/50 dark:bg-slate-800/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl py-20 text-center flex flex-col items-center justify-center space-y-4 backdrop-blur-sm">
+                        <div className="h-16 w-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500">
                             <BookOpen className="h-8 w-8" />
                         </div>
                         <div className="max-w-xs">
-                            <h3 className="text-lg font-bold text-slate-900">No hay cursos aún</h3>
-                            <p className="text-slate-500 text-sm mt-1">Comienza agregando tu primer curso para la academia.</p>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">No hay cursos aún</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Comienza agregando tu primer curso para la academia.</p>
                         </div>
                     </div>
                 )}
@@ -226,6 +231,27 @@ const CoursesList = () => {
                                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
                                             value={newCourse.monthly_fee}
                                             onChange={(e) => setNewCourse({ ...newCourse, monthly_fee: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700 ml-1">Fecha de Inicio</label>
+                                        <input
+                                            type="date"
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                            value={newCourse.start_date}
+                                            onChange={(e) => setNewCourse({ ...newCourse, start_date: e.target.value })}
+                                        />
+                                        <p className="text-[10px] text-slate-400 mt-1 ml-1 leading-tight">Define desde qué mes se empieza a cobrar (Morosidad).</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700 ml-1">Fecha de Fin (Opcional)</label>
+                                        <input
+                                            type="date"
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                            value={newCourse.end_date}
+                                            onChange={(e) => setNewCourse({ ...newCourse, end_date: e.target.value })}
                                         />
                                     </div>
                                 </div>

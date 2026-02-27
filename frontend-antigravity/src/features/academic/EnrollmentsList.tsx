@@ -112,12 +112,12 @@ const EnrollmentsList = () => {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Inscripciones</h2>
-                    <p className="text-slate-500 mt-1">Gestión de alumnos asignados a cursos.</p>
+                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Inscripciones</h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión de alumnos asignados a cursos.</p>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/25 active:scale-95 font-semibold"
+                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
                 >
                     <Plus className="h-5 w-5" />
                     <span>Nueva Inscripción</span>
@@ -128,21 +128,21 @@ const EnrollmentsList = () => {
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="flex flex-1 w-full gap-4 flex-col md:flex-row">
                     <div className="relative flex-1 max-w-md group">
-                        <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 group-focus-within:text-brand-blue transition-colors" />
                         <input
                             type="text"
                             placeholder="Buscar alumno o curso..."
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all shadow-sm"
+                            className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all shadow-sm backdrop-blur-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <div className="relative">
-                        <div className="absolute left-4 top-3.5 flex items-center pointer-events-none text-slate-400">
+                        <div className="absolute left-4 top-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                             <Filter className="h-5 w-5" />
                         </div>
                         <select
-                            className="w-full md:w-64 pl-12 pr-10 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all shadow-sm appearance-none font-medium cursor-pointer hover:bg-slate-50"
+                            className="w-full md:w-64 pl-12 pr-10 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all shadow-sm appearance-none font-medium cursor-pointer hover:bg-white dark:hover:bg-slate-800 backdrop-blur-sm"
                             value={filterCourse}
                             onChange={(e) => setFilterCourse(e.target.value)}
                         >
@@ -157,45 +157,45 @@ const EnrollmentsList = () => {
                     </div>
                 </div>
 
-                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex space-x-1 self-start w-full md:w-auto overflow-x-auto">
+                <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex space-x-1 self-start w-full md:w-auto overflow-x-auto">
                     <button
                         onClick={() => setFilterStatus('all')}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterStatus === 'all' ? 'bg-slate-100 text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterStatus === 'all' ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
                     >
                         Todas
                     </button>
                     <button
                         onClick={() => setFilterStatus('active')}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterStatus === 'active' ? 'bg-green-100/50 text-green-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterStatus === 'active' ? 'bg-brand-success/20 text-brand-success shadow-sm border border-brand-success/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
                     >
                         Activas
                     </button>
                     <button
                         onClick={() => setFilterStatus('inactive')}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterStatus === 'inactive' ? 'bg-red-100/50 text-red-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterStatus === 'inactive' ? 'bg-brand-danger/20 text-brand-danger shadow-sm border border-brand-danger/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
                     >
                         Inactivas
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="glass-card rounded-3xl overflow-hidden">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200">
+                    <thead className="bg-slate-50/50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50">
                         <tr>
-                            <th className="px-6 py-4 font-medium text-slate-500">Estudiante</th>
-                            <th className="px-6 py-4 font-medium text-slate-500">Curso</th>
-                            <th className="px-6 py-4 font-medium text-slate-500">Fecha de Inscripción</th>
-                            <th className="px-6 py-4 font-medium text-slate-500">Estado</th>
-                            <th className="px-6 py-4 font-medium text-slate-500 text-right">Acciones</th>
+                            <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Estudiante</th>
+                            <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Curso</th>
+                            <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Fecha de Inscripción</th>
+                            <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Estado</th>
+                            <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                         {filteredEnrollments?.map((enrollment: any) => (
-                            <tr key={enrollment.id} className="hover:bg-slate-50 transition group">
-                                <td className="px-6 py-4 font-bold text-slate-900">{enrollment.student_name}</td>
-                                <td className="px-6 py-4 font-medium text-slate-600 bg-slate-50/50">{enrollment.course_name}</td>
-                                <td className="px-6 py-4 text-slate-500">
+                            <tr key={enrollment.id} className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition group">
+                                <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{enrollment.student_name}</td>
+                                <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-800/30">{enrollment.course_name}</td>
+                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
                                     {new Date(enrollment.enrollment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </td>
                                 <td className="px-6 py-4">
@@ -203,11 +203,11 @@ const EnrollmentsList = () => {
                                         onClick={() => handleToggleStatus(enrollment)}
                                         disabled={updateMutation.isPending}
                                         className={`px-3 py-1 rounded-full text-xs font-bold transition-all inline-flex items-center justify-center space-x-1 border ${enrollment.is_active
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                            ? 'bg-brand-success/10 text-brand-success border-brand-success/20 hover:bg-brand-success/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]'
+                                            : 'bg-brand-danger/10 text-brand-danger border-brand-danger/20 hover:bg-brand-danger/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]'
                                             }`}
                                     >
-                                        <div className={`w-1.5 h-1.5 rounded-full ${enrollment.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${enrollment.is_active ? 'bg-brand-success' : 'bg-brand-danger'}`}></div>
                                         <span>{enrollment.is_active ? 'ACTIVA' : 'INACTIVA'}</span>
                                         {updateMutation.isPending && <RefreshCw className="h-3 w-3 animate-spin ml-1" />}
                                     </button>
@@ -215,7 +215,7 @@ const EnrollmentsList = () => {
                                 <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => handleDelete(enrollment.id)}
-                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 text-slate-400 hover:text-brand-danger hover:bg-brand-danger/10 rounded-lg transition-colors"
                                         title="Eliminar Inscripción"
                                     >
                                         <Trash2 className="h-5 w-5" />
@@ -225,7 +225,7 @@ const EnrollmentsList = () => {
                         ))}
                         {filteredEnrollments?.length === 0 && (
                             <tr>
-                                <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                                <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                     No hay inscripciones registradas.
                                 </td>
                             </tr>
@@ -236,15 +236,19 @@ const EnrollmentsList = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6">
-                        <h3 className="text-xl font-bold mb-4">Inscribir Estudiante</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="bg-gradient-to-r from-brand-blue to-brand-teal p-6 text-white border-b border-white/10">
+                            <h3 className="text-2xl font-bold">Inscribir Estudiante</h3>
+                            <p className="text-blue-100 text-sm mt-1">Asigna un alumno a un curso.</p>
+                        </div>
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">Estudiante</label>
+                                <label className="block text-sm font-semibold text-slate-700 ml-1">Estudiante</label>
                                 <select
                                     required
-                                    className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700"
                                     value={newEnrollment.student_id}
                                     onChange={(e) => setNewEnrollment({ ...newEnrollment, student_id: e.target.value })}
                                 >
@@ -255,10 +259,10 @@ const EnrollmentsList = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">Curso</label>
+                                <label className="block text-sm font-semibold text-slate-700 ml-1">Curso</label>
                                 <select
                                     required
-                                    className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700"
                                     value={newEnrollment.course_id}
                                     onChange={(e) => setNewEnrollment({ ...newEnrollment, course_id: e.target.value })}
                                 >
@@ -268,20 +272,20 @@ const EnrollmentsList = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="flex justify-end space-x-3 mt-6">
+                            <div className="flex space-x-4 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createMutation.isPending}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex-1 px-6 py-3 bg-brand-blue text-white font-bold rounded-xl hover:bg-blue-600 shadow-[0_0_15px_rgba(13,89,242,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
                                 >
-                                    {createMutation.isPending ? 'Inscribiendo...' : 'Inscribir'}
+                                    {createMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <span>Inscribir</span>}
                                 </button>
                             </div>
                         </form>
