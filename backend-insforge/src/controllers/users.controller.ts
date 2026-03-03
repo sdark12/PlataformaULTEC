@@ -125,8 +125,7 @@ export const updateUser = async (req: Request, res: Response) => {
         const updatePayload: any = {
             full_name,
             email,
-            role,
-            updated_at: new Date().toISOString()
+            role
         };
 
         if (phone !== undefined) updatePayload.phone = phone;
@@ -141,6 +140,32 @@ export const updateUser = async (req: Request, res: Response) => {
 
         if (error) throw error;
         if (!data) return res.status(404).json({ message: 'User not found' });
+
+        // Handle student linking if role is student and student_id is provided
+        const { student_id } = req.body;
+        if (role === 'student' && student_id) {
+            // Unlink any existing student for this user first
+            await client.database
+                .from('students')
+                .update({ user_id: null })
+                .eq('user_id', id);
+
+            // Link the new student
+            const { error: studentLinkError } = await client.database
+                .from('students')
+                .update({ user_id: id })
+                .eq('id', student_id);
+
+            if (studentLinkError) {
+                console.error('Student linking error during update:', studentLinkError);
+            }
+        } else if (role !== 'student') {
+            // If role is changed from student to something else, optionally unlink
+            await client.database
+                .from('students')
+                .update({ user_id: null })
+                .eq('user_id', id);
+        }
 
         res.json(data);
     } catch (error) {

@@ -35,20 +35,30 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
             edgeFunctionToken: token
         });
 
-        // Validate token by trying to fetch the user's profile directly
-        // (RLS policies will ensure we only get our own profile)
-        const { data: profileList, error: profileError } = await verifyClient.database
-            .from('profiles')
-            .select('*');
+        // Decode JWT manually to get the user's ID
+        const payloadBase64 = token.split('.')[1];
+        const payloadStr = Buffer.from(payloadBase64, 'base64').toString('utf-8');
+        const payload = JSON.parse(payloadStr);
+        const authUserId = payload.sub;
 
-        if (profileError || !profileList || profileList.length === 0) {
-            console.error('Auth Middleware: Invalid token or profile not found', profileError);
+        if (!authUserId) {
+            console.error('Auth Middleware: No valid sub in token payload');
+            return res.status(401).json({ message: 'Invalid token payload' });
+        }
+
+        // Validate token by trying to fetch the user's explicit profile
+        const { data: profile, error: profileError } = await verifyClient.database
+            .from('profiles')
+            .select('*')
+            .eq('id', authUserId)
+            .single();
+
+        if (profileError || !profile) {
+            console.error('Auth Middleware: Invalid token or profile not found for user', authUserId, profileError);
             return res.status(401).json({ message: 'Invalid token' });
         }
 
-        const profile = profileList[0];
-
-        // We can trust this ID because RLS enforced it matches the token's auth.uid()
+        // We can trust this ID because it came from the token payload
         const userId = profile.id;
 
         req.currentUser = {

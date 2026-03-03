@@ -21,7 +21,8 @@ const StudentsList = () => {
         emergency_contact_name: '',
         emergency_contact_phone: '',
         medical_notes: '',
-        previous_school: ''
+        previous_school: '',
+        user_id: ''
     });
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -36,6 +37,11 @@ const StudentsList = () => {
     const { data: students, isLoading, isError } = useQuery({
         queryKey: ['students'],
         queryFn: getStudents,
+    });
+
+    const { data: users } = useQuery({
+        queryKey: ['users'],
+        queryFn: () => fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json()),
     });
 
     // Extract unique institutions dynamically
@@ -109,7 +115,8 @@ const StudentsList = () => {
             emergency_contact_name: '',
             emergency_contact_phone: '',
             medical_notes: '',
-            previous_school: ''
+            previous_school: '',
+            user_id: ''
         });
     };
 
@@ -374,6 +381,30 @@ const StudentsList = () => {
                                         value={newStudent.birth_date}
                                         onChange={(e) => setNewStudent({ ...newStudent, birth_date: e.target.value })}
                                     />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 flex flex-col md:flex-row gap-4">
+                                        <div className="flex-1">
+                                            <label className="text-sm font-bold text-brand-blue flex items-center mb-2">
+                                                Enlazar a Cuenta de Plataforma
+                                            </label>
+                                            <select
+                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                                value={newStudent.user_id || ''}
+                                                onChange={(e) => setNewStudent({ ...newStudent, user_id: e.target.value })}
+                                            >
+                                                <option value="">No enlazado / Crear perfil primero</option>
+                                                {users?.filter((u: any) => u.role === 'student')?.map((user: any) => (
+                                                    <option key={user.id} value={user.id}>
+                                                        {user.full_name} ({user.email})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <p className="text-xs text-slate-500 mt-2">
+                                                * El alumno debe tener una cuenta de tipo "estudiante" creada en Gestión de Usuarios para poder ser seleccionada aquí.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Género</label>

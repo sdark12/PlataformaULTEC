@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getFinancialReport, getPendingPaymentsReport } from './reportService';
 import { Loader2, Search, Filter, Printer, TrendingUp, CreditCard, Receipt, AlignJustify, AlertTriangle, Users } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Reports = () => {
     const [activeTab, setActiveTab] = useState<'income' | 'pending'>('income');
@@ -9,6 +11,14 @@ const Reports = () => {
     const [endDate, setEndDate] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterMethod, setFilterMethod] = useState('');
+    const [sortConfigIncome, setSortConfigIncome] = useState<{ field: string; order: 'asc' | 'desc' }[]>([
+        { field: 'payment_date', order: 'desc' }
+    ]);
+    const [sortConfigPending, setSortConfigPending] = useState<{ field: string; order: 'asc' | 'desc' }[]>([
+        { field: 'student_name', order: 'asc' }
+    ]);
+    const [filterCoursePending, setFilterCoursePending] = useState('');
+    const [minMonthsPending, setMinMonthsPending] = useState<number>(0);
 
     const { data: report, isLoading } = useQuery({
         queryKey: ['financialReport', startDate, endDate],
@@ -21,6 +31,7 @@ const Reports = () => {
     });
 
     const uniqueMethods = Array.from(new Set(report?.map(item => item.method).filter(Boolean))).sort();
+    const uniqueCoursesPending = Array.from(new Set(pendingReport?.map(item => item.course_name).filter(Boolean))).sort();
 
     const filteredReport = report?.filter((item) => {
         const studentName = item.student_name || '';
@@ -33,7 +44,42 @@ const Reports = () => {
         const matchesMethod = filterMethod ? item.method === filterMethod : true;
 
         return matchesSearch && matchesMethod;
+    }).sort((a: any, b: any) => {
+        for (const config of sortConfigIncome) {
+            let valA = a[config.field];
+            let valB = b[config.field];
+
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+
+            if (valA < valB) return config.order === 'asc' ? -1 : 1;
+            if (valA > valB) return config.order === 'asc' ? 1 : -1;
+        }
+        return 0;
     });
+
+    const handleSortIncome = (field: string) => {
+        setSortConfigIncome(prev => {
+            const existingIndex = prev.findIndex(c => c.field === field);
+            const newOrder: 'asc' | 'desc' = (existingIndex === 0 && prev[0].order === 'asc') ? 'desc' : 'asc';
+            const filtered = prev.filter(c => c.field !== field);
+            return [{ field, order: newOrder }, ...filtered].slice(0, 3);
+        });
+    };
+
+    const getSortIndicatorIncome = (field: string) => {
+        const index = sortConfigIncome.findIndex(c => c.field === field);
+        if (index === -1) return null;
+        const order = sortConfigIncome[index].order;
+        return (
+            <span className="inline-flex items-center text-[9px] gap-0.5 whitespace-nowrap bg-brand-success/10 text-brand-success px-1 rounded animate-in fade-in zoom-in duration-300">
+                {order === 'asc' ? '↑' : '↓'}
+                {sortConfigIncome.length > 1 && <span className="font-black opacity-70">{index + 1}</span>}
+            </span>
+        );
+    };
 
     const totalIncome = filteredReport?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
     const transactionCount = filteredReport?.length || 0;
@@ -42,14 +88,145 @@ const Reports = () => {
     const filteredPending = pendingReport?.filter((item) => {
         const studentName = item.student_name || '';
         const courseName = item.course_name || '';
-        return studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             courseName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCourse = filterCoursePending ? item.course_name === filterCoursePending : true;
+        const matchesMonths = item.months_overdue >= minMonthsPending;
+
+        return matchesSearch && matchesCourse && matchesMonths;
+    }).sort((a, b) => {
+        for (const config of sortConfigPending) {
+            let valA: any = a[config.field as keyof typeof a];
+            let valB: any = b[config.field as keyof typeof b];
+
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+
+            if (valA < valB) return config.order === 'asc' ? -1 : 1;
+            if (valA > valB) return config.order === 'asc' ? 1 : -1;
+        }
+        return 0;
     });
+
+    const handleSortPending = (field: string) => {
+        setSortConfigPending(prev => {
+            const existingIndex = prev.findIndex(c => c.field === field);
+            const newOrder: 'asc' | 'desc' = (existingIndex === 0 && prev[0].order === 'asc') ? 'desc' : 'asc';
+            const filtered = prev.filter(c => c.field !== field);
+            return [{ field, order: newOrder }, ...filtered].slice(0, 3);
+        });
+    };
+
+    const getSortIndicator = (field: string) => {
+        const index = sortConfigPending.findIndex(c => c.field === field);
+        if (index === -1) return null;
+        const order = sortConfigPending[index].order;
+        return (
+            <span className="inline-flex items-center text-[9px] gap-0.5 whitespace-nowrap bg-brand-blue/10 text-brand-blue px-1 rounded animate-in fade-in zoom-in duration-300">
+                {order === 'asc' ? '↑' : '↓'}
+                {sortConfigPending.length > 1 && <span className="font-black opacity-70">{index + 1}</span>}
+            </span>
+        );
+    };
 
     const totalPendingDebt = filteredPending?.reduce((sum, item) => sum + Number(item.pending_amount), 0) || 0;
 
-    const handlePrint = () => {
-        window.print();
+    const generatePDF = () => {
+        const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
+        const title = activeTab === 'income' ? 'REPORTE FINANCIERO DE INGRESOS' : 'REPORTE DE ALUMNOS MOROSOS';
+
+        doc.setFontSize(18);
+        doc.text(title, 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+
+        if (activeTab === 'income') {
+            const periodText = (startDate || endDate)
+                ? `Período: ${startDate ? formatDate(startDate) : 'Inicio'} al ${endDate ? formatDate(endDate) : 'A la fecha'}`
+                : 'Histórico Completo';
+            doc.text(periodText, 14, 30);
+            doc.text(`Total Ingresos: Q${totalIncome.toFixed(2)} | Transacciones: ${transactionCount}`, 14, 36);
+        } else {
+            doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES')}`, 14, 30);
+            // Summary text removed as requested
+        }
+
+        const tableHeaders = activeTab === 'income'
+            ? ['No.', 'Fecha', 'Estudiante', 'Curso', 'Método', 'Monto']
+            : ['No.', 'Estudiante', 'Curso', 'Cuota Mensual', 'Meses Pendientes', 'Deuda Total'];
+
+        const tableData = activeTab === 'income'
+            ? (filteredReport?.map((item, idx) => [
+                idx + 1,
+                formatDate(item.payment_date),
+                item.student_name,
+                item.course_name,
+                item.method,
+                `Q${Number(item.amount).toFixed(2)}`
+            ]) || [])
+            : (filteredPending?.map((item, idx) => [
+                idx + 1,
+                item.student_name,
+                item.course_name,
+                `Q${Number(item.monthly_fee).toFixed(2)}`,
+                item.months_overdue,
+                `Q${Number(item.pending_amount).toFixed(2)}`
+            ]) || []);
+
+        autoTable(doc, {
+            startY: 42,
+            head: [tableHeaders],
+            body: tableData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: activeTab === 'income' ? [5, 150, 105] : [225, 29, 72], // Emerald or Rose
+                fontSize: 8,
+                halign: 'center',
+                cellPadding: 1.5
+            },
+            bodyStyles: {
+                fontSize: 7.5,
+                halign: 'center',
+                cellPadding: 1
+            },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 10 },
+                1: { halign: 'left', cellWidth: 'auto' },
+                2: { halign: 'left', cellWidth: 'auto' },
+                3: { halign: 'left', cellWidth: 'auto' },
+                4: { halign: 'center', cellWidth: 20 },
+                [tableHeaders.length - 1]: { halign: 'right', fontStyle: 'bold', cellWidth: 32 }
+            },
+            styles: {
+                overflow: 'linebreak',
+                lineColor: [220, 220, 220],
+                lineWidth: 0.1,
+                cellPadding: 0.8
+            },
+            tableWidth: 'wrap',
+            margin: { left: 14 },
+            didParseCell: function (data) {
+                if (activeTab === 'pending' && data.section === 'body') {
+                    // Highlight debt in red (Last column, index 5)
+                    if (data.column.index === 5) {
+                        data.cell.styles.textColor = [190, 18, 60];
+                    }
+                    // Highlight months overdue (Index 4)
+                    if (data.column.index === 4 && Number(data.cell.raw) > 0) {
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.textColor = [190, 18, 60];
+                    }
+                }
+                if (activeTab === 'income' && data.section === 'body' && data.column.index === 5) {
+                    data.cell.styles.textColor = [5, 120, 87]; // Emerald-700
+                }
+            }
+        });
+
+        doc.save(`${activeTab === 'income' ? 'Reporte_Ingresos' : 'Reporte_Morosos'}_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     // Helper para formatear fechas de UTC a Local correctamente y evitar el corrimiento de día
@@ -68,11 +245,11 @@ const Reports = () => {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Análisis de ingresos y registros de transacciones.</p>
                 </div>
                 <button
-                    onClick={handlePrint}
-                    className="flex items-center space-x-2 px-6 py-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm font-semibold"
+                    onClick={generatePDF}
+                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold"
                 >
                     <Printer className="h-5 w-5" />
-                    <span>Imprimir Reporte</span>
+                    <span>Exportar PDF</span>
                 </button>
             </div>
 
@@ -203,7 +380,7 @@ const Reports = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    {activeTab === 'income' && (
+                    {activeTab === 'income' ? (
                         <div className="relative md:w-64">
                             <div className="absolute left-4 top-3.5 flex items-center pointer-events-none text-slate-400">
                                 <Filter className="h-5 w-5" />
@@ -222,6 +399,45 @@ const Reports = () => {
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
+                    ) : (
+                        <>
+                            <div className="relative md:w-64">
+                                <div className="absolute left-4 top-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <Filter className="h-5 w-5" />
+                                </div>
+                                <select
+                                    className="w-full pl-12 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue appearance-none font-medium cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    value={filterCoursePending}
+                                    onChange={(e) => setFilterCoursePending(e.target.value)}
+                                >
+                                    <option value="">Cualquier Curso</option>
+                                    {uniqueCoursesPending.map((c: any) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                            <div className="relative md:w-48">
+                                <div className="absolute left-4 top-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <AlertTriangle className="h-5 w-5" />
+                                </div>
+                                <select
+                                    className="w-full pl-12 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue appearance-none font-medium cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    value={minMonthsPending}
+                                    onChange={(e) => setMinMonthsPending(Number(e.target.value))}
+                                >
+                                    <option value="0">Cualquier mes</option>
+                                    <option value="1">+1 Mes</option>
+                                    <option value="2">+2 Meses</option>
+                                    <option value="3">+3 Meses</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
@@ -235,16 +451,43 @@ const Reports = () => {
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50/50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50">
                                     <tr>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fecha</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Estudiante</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Curso</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Método</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Monto</th>
+                                        <th className="px-6 py-5 text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest w-12">No.</th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortIncome('payment_date')}>
+                                            <div className="flex items-center gap-2">
+                                                Fecha
+                                                {getSortIndicatorIncome('payment_date')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortIncome('student_name')}>
+                                            <div className="flex items-center gap-2">
+                                                Estudiante
+                                                {getSortIndicatorIncome('student_name')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortIncome('course_name')}>
+                                            <div className="flex items-center gap-2">
+                                                Curso
+                                                {getSortIndicatorIncome('course_name')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortIncome('method')}>
+                                            <div className="flex items-center justify-center gap-2">
+                                                Método
+                                                {getSortIndicatorIncome('method')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortIncome('amount')}>
+                                            <div className="flex items-center justify-end gap-2">
+                                                Monto
+                                                {getSortIndicatorIncome('amount')}
+                                            </div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white/50 dark:bg-transparent">
                                     {filteredReport?.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group print:break-inside-avoid">
+                                            <td className="px-6 py-4 text-center text-slate-400 text-xs font-medium">{idx + 1}</td>
                                             <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium">
                                                 {formatDate(item.payment_date)}
                                             </td>
@@ -260,7 +503,7 @@ const Reports = () => {
                                     ))}
                                     {filteredReport?.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                                 No hay transacciones en este período.
                                             </td>
                                         </tr>
@@ -271,16 +514,43 @@ const Reports = () => {
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50/50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50">
                                     <tr>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Estudiante</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Curso</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Cuota Mensual</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Meses Pendientes</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Deuda Total</th>
+                                        <th className="px-6 py-5 text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest w-12">No.</th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortPending('student_name')}>
+                                            <div className="flex items-center gap-2">
+                                                Estudiante
+                                                {getSortIndicator('student_name')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortPending('course_name')}>
+                                            <div className="flex items-center gap-2">
+                                                Curso
+                                                {getSortIndicator('course_name')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortPending('monthly_fee')}>
+                                            <div className="flex items-center justify-center gap-2">
+                                                Cuota Mensual
+                                                {getSortIndicator('monthly_fee')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortPending('months_overdue')}>
+                                            <div className="flex items-center justify-center gap-2">
+                                                Meses Pendientes
+                                                {getSortIndicator('months_overdue')}
+                                            </div>
+                                        </th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group select-none" onClick={() => handleSortPending('pending_amount')}>
+                                            <div className="flex items-center justify-end gap-2">
+                                                Deuda Total
+                                                {getSortIndicator('pending_amount')}
+                                            </div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white/50 dark:bg-transparent">
                                     {filteredPending?.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group print:break-inside-avoid">
+                                            <td className="px-6 py-4 text-center text-slate-400 text-xs font-medium">{idx + 1}</td>
                                             <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{item.student_name}</td>
                                             <td className="px-6 py-4 text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-800/30 font-medium">{item.course_name}</td>
                                             <td className="px-6 py-4 text-center text-slate-500 dark:text-slate-400 font-medium">Q{Number(item.monthly_fee).toFixed(2)}</td>
@@ -294,7 +564,7 @@ const Reports = () => {
                                     ))}
                                     {filteredPending?.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                                 Todos los alumnos están al día.
                                             </td>
                                         </tr>

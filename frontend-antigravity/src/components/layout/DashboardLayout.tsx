@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, DollarSign, FileText, Calendar, BarChart3, Award, FileBadge, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, DollarSign, FileText, Calendar, BarChart3, Award, FileBadge, Sun, Moon, ClipboardList, ClipboardCheck } from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
 
@@ -49,7 +49,7 @@ const DashboardLayout = () => {
     };
 
     return (
-        <div className="flex h-screen bg-slate-50 dark:bg-brand-dark overflow-hidden font-sans transition-colors duration-300">
+        <div className="flex h-screen print:h-auto bg-slate-50 dark:bg-brand-dark overflow-hidden print:overflow-visible font-sans transition-colors duration-300">
             {/* Sidebar */}
             <div className="w-72 bg-slate-900 border-r border-slate-800 dark:border-white/5 flex flex-col shadow-xl relative z-20 print:hidden transition-colors duration-300">
                 {/* Gradient Overlay */}
@@ -80,6 +80,8 @@ const DashboardLayout = () => {
                         <SidebarItem to="/grades" icon={Award} label="Calificaciones" />
                         <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" />
                         <SidebarItem to="/report-cards" icon={FileBadge} label="Boletas" />
+                        <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" />
+                        <SidebarItem to="/student-assignments" icon={ClipboardCheck} label="Mis Tareas" />
 
                         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Finanzas</p>
                         <SidebarItem to="/payments" icon={DollarSign} label="Pagos" />
@@ -100,12 +102,12 @@ const DashboardLayout = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-brand-dark relative transition-colors duration-300">
+            <div className="flex-1 flex flex-col overflow-hidden print:overflow-visible bg-slate-50 dark:bg-brand-dark relative transition-colors duration-300">
                 {/* Decorative Top Glow */}
                 <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-brand-blue/5 dark:from-brand-purple/10 to-transparent pointer-events-none" />
 
                 {/* Top Header Row */}
-                <header className="px-8 py-5 flex items-center justify-end space-x-5 relative z-20 border-b border-slate-200 dark:border-white/5 bg-white/50 dark:bg-brand-dark/50 backdrop-blur-md">
+                <header className="px-8 py-5 flex items-center justify-end space-x-5 relative z-20 border-b border-slate-200 dark:border-white/5 bg-white/50 dark:bg-brand-dark/50 backdrop-blur-md print:hidden">
                     <button
                         onClick={toggleTheme}
                         className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm"
@@ -120,7 +122,7 @@ const DashboardLayout = () => {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-auto p-8 relative z-10 custom-scrollbar">
+                <main className="flex-1 overflow-auto print:overflow-visible p-8 relative z-10 custom-scrollbar">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>

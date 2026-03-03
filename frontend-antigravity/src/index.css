@@ -57,4 +57,16 @@
   .dark .glass-card {
     @apply backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl shadow-2xl transition-all hover:bg-slate-800/60;
   }
+
+  @media print {
+
+    .glass-card,
+    .glass {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+  }
 }

@@ -13,6 +13,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+import path from 'path';
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 import authRoutes from './routes/auth.routes';
 import academicRoutes from './routes/academic.routes';
@@ -24,6 +28,7 @@ import gradesRoutes from './routes/grades.routes';
 import subgradesRoutes from './routes/subgrades.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import usersRoutes from './routes/users.routes';
+import assignmentsRoutes from './routes/assignments.routes';
 
 app.use('/auth', authRoutes);
 app.use('/api', academicRoutes);
@@ -35,6 +40,7 @@ app.use('/api', gradesRoutes);
 app.use('/api', subgradesRoutes);
 app.use('/api', notificationsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/assignments', assignmentsRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

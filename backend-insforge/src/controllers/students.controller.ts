@@ -54,11 +54,15 @@ export const createStudent = async (req: Request, res: Response) => {
         emergency_contact_name,
         emergency_contact_phone,
         medical_notes,
-        previous_school
+        previous_school,
+        user_id // Check for user link
     } = req.body;
 
     const branchId = req.currentUser?.branch_id;
     const db = req.dbUserClient || client;
+
+    // Convert empty string to null for UUID
+    const finalUserId = user_id === '' ? null : user_id;
 
     console.log('createStudent:', { branchId, bodyName: full_name });
 
@@ -81,7 +85,8 @@ export const createStudent = async (req: Request, res: Response) => {
                 emergency_contact_name,
                 emergency_contact_phone,
                 medical_notes,
-                previous_school
+                previous_school,
+                user_id: finalUserId
             }])
             .select()
             .single();
@@ -98,6 +103,12 @@ export const createStudent = async (req: Request, res: Response) => {
 export const updateStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updates = req.body;
+
+    // Convert empty string to null for UUID columns
+    if (updates.user_id === '') {
+        updates.user_id = null;
+    }
+
     const branchId = req.currentUser?.branch_id;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 

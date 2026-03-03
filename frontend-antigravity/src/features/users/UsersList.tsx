@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, updateUser, createUser, resetUserPassword } from './userService';
+import { getUsers, updateUser, createUser, resetUserPassword, deleteUser } from './userService';
 import { getStudents } from '../academic/academicService';
-import { Loader2, Users, Search, Edit2, Shield, Mail, CheckCircle, XCircle, Plus, Link as LinkIcon, KeyRound } from 'lucide-react';
+import { Loader2, Users, Search, Edit2, Shield, Mail, CheckCircle, XCircle, Plus, Link as LinkIcon, KeyRound, Trash2, AlertTriangle } from 'lucide-react';
 
 const UsersList = () => {
     const queryClient = useQueryClient();
@@ -13,8 +13,11 @@ const UsersList = () => {
         role: 'student',
         email: '',
         phone: '',
-        active: true
+        active: true,
+        student_id: ''
     });
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<any>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [createForm, setCreateForm] = useState({
         full_name: '',
@@ -64,13 +67,29 @@ const UsersList = () => {
         mutationFn: ({ id, data }: { id: string; data: any }) => updateUser(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            queryClient.invalidateQueries({ queryKey: ['students-list'] });
             setIsEditModalOpen(false);
-            setEditForm({ full_name: '', role: 'student', email: '', phone: '', active: true });
+            setEditForm({ full_name: '', role: 'student', email: '', phone: '', active: true, student_id: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
             console.error('Error updating user:', err);
             setErrorMsg(err.response?.data?.message || 'Error al actualizar usuario.');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteUser,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            queryClient.invalidateQueries({ queryKey: ['students-list'] });
+            setIsDeleteModalOpen(false);
+            setUserToDelete(null);
+            setErrorMsg('');
+        },
+        onError: (err: any) => {
+            console.error('Error deleting user:', err);
+            setErrorMsg(err.response?.data?.message || 'Error al eliminar usuario.');
         }
     });
 
@@ -93,12 +112,23 @@ const UsersList = () => {
 
     const openEditModal = (user: any) => {
         setSelectedUser(user);
+
+        // Cargar el estudiante enlazado si lo hay buscando en la lista de students
+        let linkedStudentId = '';
+        if (students && user.id) {
+            const student = students.find((s: any) => s.user_id === user.id);
+            if (student) {
+                linkedStudentId = student.id;
+            }
+        }
+
         setEditForm({
             full_name: user.full_name || '',
             role: user.role || 'student',
             email: user.email || '',
             phone: user.phone || '',
-            active: user.active !== false
+            active: user.active !== false,
+            student_id: linkedStudentId
         });
         setIsEditModalOpen(true);
     };
@@ -110,7 +140,24 @@ const UsersList = () => {
             setErrorMsg('El nombre es obligatorio.');
             return;
         }
-        updateMutation.mutate({ id: selectedUser.id, data: editForm });
+
+        const payload = { ...editForm };
+        if (payload.role !== 'student') {
+            payload.student_id = '';
+        }
+
+        updateMutation.mutate({ id: selectedUser.id, data: payload });
+    };
+
+    const confirmDelete = (user: any) => {
+        setUserToDelete(user);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDelete = () => {
+        if (userToDelete) {
+            deleteMutation.mutate(userToDelete.id);
+        }
     };
 
     const handleCreate = (e: React.FormEvent) => {
@@ -282,6 +329,13 @@ const UsersList = () => {
                                                 title="Editar Usuario"
                                             >
                                                 <Edit2 className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => confirmDelete(user)}
+                                                className="inline-flex items-center p-2 bg-slate-100 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-red-500 hover:text-white dark:hover:bg-red-500 transition-all opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+                                                title="Eliminar Usuario"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </td>
@@ -512,6 +566,35 @@ const UsersList = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {editForm.role === 'student' && (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 flex items-center">
+                                            <LinkIcon className="h-4 w-4 mr-2" />
+                                            Estudiante Enlazado (Opcional)
+                                        </label>
+                                        <select
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                            value={editForm.student_id || ''}
+                                            onChange={(e) => {
+                                                const studentId = e.target.value;
+                                                setEditForm({
+                                                    ...editForm,
+                                                    student_id: studentId
+                                                });
+                                            }}
+                                        >
+                                            <option value="">-- No enlazar a nadie --</option>
+                                            {students
+                                                // Muestra estudiantes no enlazados, O el estudiante actualmente enlazado a este usuario
+                                                ?.filter((s: any) => !s.user_id || s.user_id === selectedUser?.id)
+                                                ?.map((st: any) => (
+                                                    <option key={st.id} value={st.id}>{st.full_name}</option>
+                                                ))
+                                            }
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex space-x-4 pt-6 mt-4 border-t border-slate-100 dark:border-slate-800">
@@ -615,6 +698,54 @@ const UsersList = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Delete Modal */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => !deleteMutation.isPending && setIsDeleteModalOpen(false)} />
+
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="bg-gradient-to-r from-red-500 to-rose-600 p-6 text-white">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Trash2 className="w-5 h-5" />
+                                Eliminar Usuario
+                            </h3>
+                        </div>
+
+                        <div className="p-6 text-center space-y-4">
+                            <div className="mx-auto w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                                <AlertTriangle className="w-6 h-6" />
+                            </div>
+                            <p className="text-slate-600 dark:text-slate-300">
+                                ¿Estás seguro que deseas eliminar permanentemente a <strong>{userToDelete?.full_name}</strong>?
+                            </p>
+                            <p className="text-sm text-red-500 font-medium">Esta acción no se puede deshacer.</p>
+                        </div>
+
+                        <div className="flex space-x-3 p-6 pt-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                disabled={deleteMutation.isPending}
+                                className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={deleteMutation.isPending}
+                                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
+                            >
+                                {deleteMutation.isPending ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <span>Eliminar</span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -15,6 +15,8 @@ import Grades from './features/academic/Grades';
 import UsersList from './features/users/UsersList';
 import ReportCard from './features/academic/ReportCard';
 import CourseGradebook from './features/academic/CourseGradebook';
+import AssignmentsModule from './features/academic/Assignments/AssignmentsModule';
+import StudentAssignments from './features/academic/Assignments/StudentAssignments';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats } from './features/finance/reportService';
 import { Users, BookOpen, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
@@ -151,6 +153,8 @@ function App() {
             <Route path="/grades" element={<Grades />} />
             <Route path="/course-gradebook" element={<CourseGradebook />} />
             <Route path="/report-cards" element={<ReportCard />} />
+            <Route path="/assignments" element={<AssignmentsModule />} />
+            <Route path="/student-assignments" element={<StudentAssignments />} />
             <Route path="/reports" element={<Reports />} />
           </Route>
 
