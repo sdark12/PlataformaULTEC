@@ -22,6 +22,7 @@ const StudentsList = () => {
         emergency_contact_phone: '',
         medical_notes: '',
         previous_school: '',
+        personal_code: '',
         user_id: ''
     });
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -116,6 +117,7 @@ const StudentsList = () => {
             emergency_contact_phone: '',
             medical_notes: '',
             previous_school: '',
+            personal_code: '',
             user_id: ''
         });
     };
@@ -459,8 +461,18 @@ const StudentsList = () => {
                                         type="text"
                                         className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
                                         placeholder="Institución anterior"
-                                        value={newStudent.previous_school}
+                                        value={newStudent.previous_school || ''}
                                         onChange={(e) => setNewStudent({ ...newStudent, previous_school: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Código de Estudiante</label>
+                                    <input
+                                        type="text"
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                                        placeholder="Ej: Código MINEDUC"
+                                        value={newStudent.personal_code || ''}
+                                        onChange={(e) => setNewStudent({ ...newStudent, personal_code: e.target.value })}
                                     />
                                 </div>
 
@@ -533,7 +545,7 @@ const StudentsList = () => {
                                         className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
                                         placeholder="Especifique alergias, condiciones médicas o cuidados especiales..."
                                         rows={2}
-                                        value={newStudent.medical_notes}
+                                        value={newStudent.medical_notes || ''}
                                         onChange={(e) => setNewStudent({ ...newStudent, medical_notes: e.target.value })}
                                     />
                                 </div>
@@ -705,15 +717,25 @@ const StudentsList = () => {
                             </div>
 
                             {/* Academic */}
-                            {selectedStudent.previous_school && (
+                            {(selectedStudent.previous_school || selectedStudent.personal_code) && (
                                 <div className="space-y-4 pt-4 border-t border-slate-100">
                                     <div className="flex items-center space-x-2 text-green-600 font-bold">
                                         <GraduationCap className="h-5 w-5" />
                                         <span>Historial Académico</span>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Escuela de Procedencia</p>
-                                        <p className="text-slate-700 font-medium">{selectedStudent.previous_school}</p>
+                                    <div className="flex items-center gap-16">
+                                        {selectedStudent.previous_school && (
+                                            <div>
+                                                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Escuela de Procedencia</p>
+                                                <p className="text-slate-700 font-medium">{selectedStudent.previous_school}</p>
+                                            </div>
+                                        )}
+                                        {selectedStudent.personal_code && (
+                                            <div>
+                                                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Código de Estudiante</p>
+                                                <p className="text-slate-700 font-medium">{selectedStudent.personal_code}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

@@ -55,6 +55,7 @@ export const createStudent = async (req: Request, res: Response) => {
         emergency_contact_phone,
         medical_notes,
         previous_school,
+        personal_code,
         user_id // Check for user link
     } = req.body;
 
@@ -86,6 +87,7 @@ export const createStudent = async (req: Request, res: Response) => {
                 emergency_contact_phone,
                 medical_notes,
                 previous_school,
+                personal_code,
                 user_id: finalUserId
             }])
             .select()

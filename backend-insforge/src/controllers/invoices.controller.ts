@@ -13,12 +13,12 @@ export const getInvoices = async (req: Request, res: Response) => {
                 issue_date,
                 total_amount,
                 status,
-                enrollments!inner (
-                    branch_id,
-                    students (full_name)
+                students!inner (
+                    full_name,
+                    branch_id
                 )
             `)
-            .eq('enrollments.branch_id', branchId)
+            .eq('students.branch_id', branchId)
             .order('issue_date', { ascending: false });
 
         if (error) throw error;
@@ -29,7 +29,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             issue_date: i.issue_date,
             total_amount: i.total_amount,
             status: i.status,
-            student_name: i.enrollments?.students?.full_name
+            student_name: i.students?.full_name
         }));
 
         res.json(flatData);
@@ -125,9 +125,10 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
             .from('invoices')
             .select(`
                 *,
-                enrollments!inner (
-                    branch_id,
-                    students (full_name)
+                students!inner (
+                    full_name,
+                    personal_code,
+                    branch_id
                 ),
                 branches (
                     name,
@@ -135,7 +136,6 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
                 )
             `)
             .eq('id', invoiceId)
-            // .eq('branch_id', branchId) // branch_id is on invoice directly? Yes based on insert.
             .single();
 
         if (invoiceError || !invoice) {
@@ -143,7 +143,7 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
         }
 
         // Security check
-        if (invoice.branch_id !== branchId && invoice.enrollments?.branch_id !== branchId) {
+        if (invoice.branch_id !== branchId && invoice.students?.branch_id !== branchId) {
             // return res.status(403).json({ message: 'Access denied' });
             // Relaxed for now
         }
@@ -163,12 +163,12 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
 
         // --- COLORS & LAYOUT ---
         const colors = {
-            dark: '#1F2937',      // Sidebar
-            orange: '#F97316',    // Accents / Table Header
-            redOrange: '#EA580C', // Bottom Highlight
-            lightGray: '#F3F4F6', // Table Alternate
-            textDark: '#111827',
-            textLight: '#6B7280',
+            dark: '#0f172a',      // Sidebar (Slate 900)
+            orange: '#3b82f6',    // Accents / Table Header (Blue 500)
+            redOrange: '#4f46e5', // Bottom Highlight (Indigo 600)
+            lightGray: '#f8fafc', // Table Alternate (Slate 50)
+            textDark: '#0f172a',
+            textLight: '#475569',
             white: '#FFFFFF'
         };
 
@@ -226,8 +226,8 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
         // Column 1: Client
         doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('FACTURAR A:', startX, detailY);
         doc.fillColor(colors.textLight).font('Helvetica')
-            .text(invoice.enrollments?.students?.full_name?.toUpperCase() || 'CLIENTE', startX, detailY + 15)
-            .text('Estudiante Activo', startX, detailY + 30);
+            .text(invoice.students?.full_name?.toUpperCase() || 'CLIENTE', startX, detailY + 15)
+            .text(invoice.students?.personal_code ? `Cód. MINEDUC / CUI: ${invoice.students.personal_code}` : 'Estudiante Activo', startX, detailY + 30);
 
         // Column 2: Details
         const col2X = startX + 180;

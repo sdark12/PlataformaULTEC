@@ -1,28 +1,9 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
-dotenv.config();
+import client from './src/config/insforge';
 
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: parseInt(process.env.DB_PORT || '5432'),
-    ssl: { rejectUnauthorized: false },
-});
-
-async function run() {
-    try {
-        const res = await pool.query(`
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'courses';
-        `);
-        console.table(res.rows);
-    } catch (e) {
-        console.error(e);
-    } finally {
-        await pool.end();
-    }
+async function checkCourses() {
+    const { data: courses } = await client.database.from('courses').select('id, name, start_date').in('id', ['9010f625-f4dd-4c26-ae21-141b0e7db01e', '2e74421e-5fe3-4a45-8915-5480b939b276']);
+    console.log(courses);
+    process.exit(0);
 }
-run();
+
+checkCourses();

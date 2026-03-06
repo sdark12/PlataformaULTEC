@@ -157,6 +157,7 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
             .select(`
                 enrollment_id,
                 amount,
+                discount,
                 enrollments!inner (branch_id)
             `)
             .eq('enrollments.branch_id', branchId)
@@ -170,8 +171,14 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
             if (!paymentsByEnrollment[p.enrollment_id]) {
                 paymentsByEnrollment[p.enrollment_id] = 0;
             }
-            paymentsByEnrollment[p.enrollment_id] += Number(p.amount);
+            // Agregamos amount + discount para que los descuentos reduzcan la mora
+            const paidValue = Number(p.amount || 0) + Number(p.discount || 0);
+            paymentsByEnrollment[p.enrollment_id] += paidValue;
         });
+
+        console.log("=== DEBUG PENDING REPORT ===");
+        console.log("Payments fetched for branch:", branchId, "Count:", payments?.length);
+        console.log("PaymentsByEnrollment mapping:", paymentsByEnrollment);
 
         // 3. Calculate pending debt
         const pendingData: any[] = [];
@@ -224,3 +231,55 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
     }
 };
 
+export const getStudentReports = async (req: Request, res: Response) => {
+    const branchId = req.currentUser?.branch_id;
+    const db = req.dbUserClient || client;
+
+    try {
+        let query = db.database
+            .from('students')
+            .select(`
+                *,
+                enrollments (
+                    id,
+                    is_active,
+                    courses ( name ),
+                    course_schedules ( grade, day_of_week, start_time, end_time )
+                )
+            `)
+            .order('full_name');
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        // Transform results for easier frontend consumption
+        const formattedData = data.map((student: any) => {
+            const activeEnrollments = (student.enrollments || []).filter((e: any) => e.is_active);
+            return {
+                id: student.id,
+                full_name: student.full_name,
+                identification_document: student.identification_document,
+                phone: student.phone,
+                previous_school: student.previous_school,
+                personal_code: student.personal_code,
+                enrollments: activeEnrollments.map((e: any) => ({
+                    course_name: e.courses?.name || 'N/A',
+                    grade: e.course_schedules?.grade || 'N/A',
+                    day_of_week: e.course_schedules?.day_of_week || 'N/A',
+                    start_time: e.course_schedules?.start_time || '',
+                    end_time: e.course_schedules?.end_time || ''
+                }))
+            };
+        });
+
+        res.json(formattedData);
+    } catch (error) {
+        console.error('Error fetching student reports:', error);
+        res.status(500).json({ message: 'Error retrieving student reports' });
+    }
+};

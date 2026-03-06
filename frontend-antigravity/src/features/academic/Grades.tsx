@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCourses } from './academicService';
+import { getCourses, getCourseSchedules } from './academicService';
 import { getGrades, saveGrades } from './gradeService';
 import { Loader2, Save, Users, Award, TrendingUp, TrendingDown, AlignJustify, ListChecks } from 'lucide-react';
 import SubGrades from './SubGrades';
@@ -18,15 +18,22 @@ const EVALUATION_UNITS = [
 const Grades = () => {
     const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [selectedSchedule, setSelectedSchedule] = useState<string>('');
     const [selectedUnit, setSelectedUnit] = useState<string>(EVALUATION_UNITS[0]);
     const [activeTab, setActiveTab] = useState<'general' | 'detailed'>('general');
     const [gradesData, setGradesData] = useState<any[]>([]);
 
     const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
 
+    const { data: schedules } = useQuery({
+        queryKey: ['course_schedules', selectedCourse],
+        queryFn: () => getCourseSchedules(selectedCourse),
+        enabled: !!selectedCourse,
+    });
+
     const { data: fetchedGrades, isLoading, isFetching } = useQuery({
-        queryKey: ['grades', selectedCourse, selectedUnit],
-        queryFn: () => getGrades(selectedCourse, selectedUnit),
+        queryKey: ['grades', selectedCourse, selectedUnit, selectedSchedule],
+        queryFn: () => getGrades(selectedCourse, selectedUnit, selectedSchedule),
         enabled: !!selectedCourse && !!selectedUnit,
     });
 
@@ -96,7 +103,10 @@ const Grades = () => {
                         <select
                             className="w-full pl-4 pr-10 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue transition-all appearance-none outline-none font-medium backdrop-blur-sm"
                             value={selectedCourse}
-                            onChange={(e) => setSelectedCourse(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedCourse(e.target.value);
+                                setSelectedSchedule('');
+                            }}
                         >
                             <option value="">-- Elige un curso --</option>
                             {courses?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -104,6 +114,25 @@ const Grades = () => {
                         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500 dark:text-slate-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
+                    </div>
+                </div>
+                <div className="flex-1 w-full relative">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Seleccionar Horario</label>
+                    <select
+                        className="w-full pl-4 pr-10 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue transition-all appearance-none outline-none font-medium backdrop-blur-sm disabled:opacity-50"
+                        value={selectedSchedule}
+                        onChange={(e) => setSelectedSchedule(e.target.value)}
+                        disabled={!selectedCourse}
+                    >
+                        <option value="">Todos los Horarios</option>
+                        {schedules?.map((s: any) => (
+                            <option key={s.id} value={s.id}>
+                                {s.grade} - {s.day_of_week} {s.start_time ? `(${s.start_time.substring(0, 5)})` : ''}
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-4 flex items-center mt-7 pointer-events-none text-slate-500 dark:text-slate-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                 </div>
                 <div className="w-full md:w-64">

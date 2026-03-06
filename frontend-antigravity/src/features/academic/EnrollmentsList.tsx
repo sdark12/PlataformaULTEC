@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getEnrollments, enrollStudent, getStudents, getCourses, updateEnrollment, deleteEnrollment } from '../../features/academic/academicService';
-import { Plus, Loader2, RefreshCw, Trash2, Search, Filter } from 'lucide-react';
+import { getEnrollments, enrollStudent, getStudents, getCourses, updateEnrollment, deleteEnrollment, getCourseSchedules } from '../../features/academic/academicService';
+import { Plus, Loader2, RefreshCw, Trash2, Search, Filter, Calendar, Pencil } from 'lucide-react';
 
 const EnrollmentsList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newEnrollment, setNewEnrollment] = useState({ student_id: '', course_id: '' });
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [newEnrollment, setNewEnrollment] = useState({ student_id: '', course_id: '', schedule_id: '' });
 
     // Filtros
     const [searchTerm, setSearchTerm] = useState('');
@@ -33,14 +34,19 @@ const EnrollmentsList = () => {
         enabled: isModalOpen
     });
 
+    const { data: courseSchedules, isLoading: isLoadingSchedules } = useQuery({
+        queryKey: ['course_schedules', newEnrollment.course_id],
+        queryFn: () => getCourseSchedules(newEnrollment.course_id),
+        enabled: !!newEnrollment.course_id && isModalOpen
+    });
+
     const createMutation = useMutation({
         mutationFn: enrollStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['enrollments'] });
             queryClient.invalidateQueries({ queryKey: ['grades'] });
             queryClient.invalidateQueries({ queryKey: ['attendance'] });
-            setIsModalOpen(false);
-            setNewEnrollment({ student_id: '', course_id: '' });
+            closeModal();
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al inscribir");
@@ -48,11 +54,12 @@ const EnrollmentsList = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) => updateEnrollment(id, { is_active }),
+        mutationFn: ({ id, data }: { id: string; data: any }) => updateEnrollment(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['enrollments'] });
             queryClient.invalidateQueries({ queryKey: ['grades'] });
             queryClient.invalidateQueries({ queryKey: ['attendance'] });
+            if (editingId) closeModal();
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al actualizar estado");
@@ -72,7 +79,23 @@ const EnrollmentsList = () => {
     });
 
     const handleToggleStatus = (enrollment: any) => {
-        updateMutation.mutate({ id: enrollment.id, is_active: !enrollment.is_active });
+        updateMutation.mutate({ id: enrollment.id, data: { is_active: !enrollment.is_active } });
+    };
+
+    const handleEdit = (enrollment: any) => {
+        setEditingId(enrollment.id);
+        setNewEnrollment({
+            student_id: enrollment.student_id,
+            course_id: enrollment.course_id,
+            schedule_id: enrollment.schedule_id || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEditingId(null);
+        setNewEnrollment({ student_id: '', course_id: '', schedule_id: '' });
     };
 
     const handleDelete = (id: string) => {
@@ -85,10 +108,18 @@ const EnrollmentsList = () => {
         e.preventDefault();
         if (!newEnrollment.student_id || !newEnrollment.course_id) return;
 
-        createMutation.mutate({
-            student_id: newEnrollment.student_id,
-            course_id: newEnrollment.course_id
-        });
+        if (editingId) {
+            updateMutation.mutate({
+                id: editingId,
+                data: { schedule_id: newEnrollment.schedule_id || '' }
+            });
+        } else {
+            createMutation.mutate({
+                student_id: newEnrollment.student_id,
+                course_id: newEnrollment.course_id,
+                schedule_id: newEnrollment.schedule_id || undefined
+            } as any);
+        }
     };
 
     const filteredEnrollments = enrollments?.filter((e: any) => {
@@ -116,7 +147,11 @@ const EnrollmentsList = () => {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión de alumnos asignados a cursos.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        setEditingId(null);
+                        setNewEnrollment({ student_id: '', course_id: '', schedule_id: '' });
+                        setIsModalOpen(true);
+                    }}
                     className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
                 >
                     <Plus className="h-5 w-5" />
@@ -185,6 +220,7 @@ const EnrollmentsList = () => {
                         <tr>
                             <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Estudiante</th>
                             <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Curso</th>
+                            <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Horario</th>
                             <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Fecha de Inscripción</th>
                             <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">Estado</th>
                             <th className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400 text-right">Acciones</th>
@@ -195,6 +231,16 @@ const EnrollmentsList = () => {
                             <tr key={enrollment.id} className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition group">
                                 <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{enrollment.student_name}</td>
                                 <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-800/30">{enrollment.course_name}</td>
+                                <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                    {enrollment.schedule_details ? (
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="h-3 w-3 text-slate-400" />
+                                            {enrollment.schedule_details}
+                                        </div>
+                                    ) : (
+                                        <span className="text-slate-400 italic">No asignado</span>
+                                    )}
+                                </td>
                                 <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
                                     {new Date(enrollment.enrollment_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </td>
@@ -212,7 +258,14 @@ const EnrollmentsList = () => {
                                         {updateMutation.isPending && <RefreshCw className="h-3 w-3 animate-spin ml-1" />}
                                     </button>
                                 </td>
-                                <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end space-x-2">
+                                    <button
+                                        onClick={() => handleEdit(enrollment)}
+                                        className="p-2 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+                                        title="Editar Inscripción"
+                                    >
+                                        <Pencil className="h-5 w-5" />
+                                    </button>
                                     <button
                                         onClick={() => handleDelete(enrollment.id)}
                                         className="p-2 text-slate-400 hover:text-brand-danger hover:bg-brand-danger/10 rounded-lg transition-colors"
@@ -237,18 +290,19 @@ const EnrollmentsList = () => {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={closeModal} />
                     <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
                         <div className="bg-gradient-to-r from-brand-blue to-brand-teal p-6 text-white border-b border-white/10">
-                            <h3 className="text-2xl font-bold">Inscribir Estudiante</h3>
-                            <p className="text-blue-100 text-sm mt-1">Asigna un alumno a un curso.</p>
+                            <h3 className="text-2xl font-bold">{editingId ? 'Editar Inscripción' : 'Inscribir Estudiante'}</h3>
+                            <p className="text-blue-100 text-sm mt-1">{editingId ? 'Actualiza el horario de la inscripción.' : 'Asigna un alumno a un curso.'}</p>
                         </div>
                         <form onSubmit={handleSubmit} className="p-8 space-y-6">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 ml-1">Estudiante</label>
                                 <select
                                     required
-                                    className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700"
+                                    disabled={!!editingId}
+                                    className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700 disabled:opacity-75 disabled:bg-slate-100 disabled:cursor-not-allowed"
                                     value={newEnrollment.student_id}
                                     onChange={(e) => setNewEnrollment({ ...newEnrollment, student_id: e.target.value })}
                                 >
@@ -262,9 +316,10 @@ const EnrollmentsList = () => {
                                 <label className="block text-sm font-semibold text-slate-700 ml-1">Curso</label>
                                 <select
                                     required
-                                    className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700"
+                                    disabled={!!editingId}
+                                    className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700 disabled:opacity-75 disabled:bg-slate-100 disabled:cursor-not-allowed"
                                     value={newEnrollment.course_id}
-                                    onChange={(e) => setNewEnrollment({ ...newEnrollment, course_id: e.target.value })}
+                                    onChange={(e) => setNewEnrollment({ ...newEnrollment, course_id: e.target.value, schedule_id: '' })}
                                 >
                                     <option value="">Seleccione curso</option>
                                     {courses?.map((c: any) => (
@@ -272,20 +327,41 @@ const EnrollmentsList = () => {
                                     ))}
                                 </select>
                             </div>
+
+                            {newEnrollment.course_id && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 ml-1">Horario / Grado</label>
+                                    <select
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700 disabled:opacity-50"
+                                        value={newEnrollment.schedule_id}
+                                        onChange={(e) => setNewEnrollment({ ...newEnrollment, schedule_id: e.target.value })}
+                                        disabled={isLoadingSchedules}
+                                    >
+                                        <option value="">Sin horario específico</option>
+                                        {courseSchedules?.map((s: any) => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.grade} - {s.day_of_week} ({s.start_time.substring(0, 5)} a {s.end_time.substring(0, 5)})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isLoadingSchedules && <p className="text-xs text-brand-blue ml-2 mt-1">Cargando horarios...</p>}
+                                </div>
+                            )}
+
                             <div className="flex space-x-4 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setIsModalOpen(false)}
+                                    onClick={closeModal}
                                     className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={createMutation.isPending}
+                                    disabled={createMutation.isPending || updateMutation.isPending}
                                     className="flex-1 px-6 py-3 bg-brand-blue text-white font-bold rounded-xl hover:bg-blue-600 shadow-[0_0_15px_rgba(13,89,242,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
                                 >
-                                    {createMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <span>Inscribir</span>}
+                                    {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="h-5 w-5 animate-spin" /> : <span>{editingId ? 'Guardar' : 'Inscribir'}</span>}
                                 </button>
                             </div>
                         </form>

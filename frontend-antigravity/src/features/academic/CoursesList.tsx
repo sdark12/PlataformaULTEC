@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCourses, createCourse, updateCourse, deleteCourse } from '../../features/academic/academicService';
-import { Plus, Loader2, BookOpen, Edit2, Trash2 } from 'lucide-react';
+import { getCourses, createCourse, updateCourse } from '../../features/academic/academicService';
+import { Plus, Loader2, BookOpen, Edit2, Trash2, CalendarClock } from 'lucide-react';
+import { CourseSchedulesModal } from './CourseSchedulesModal';
 
 const CoursesList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
     const [selectedCourse, setSelectedCourse] = useState<any>(null);
+    const [scheduleCourse, setScheduleCourse] = useState<any>(null);
     const [errorMsg, setErrorMsg] = useState('');
 
     const { data: courses, isLoading, isError } = useQuery({
@@ -43,19 +45,28 @@ const CoursesList = () => {
         }
     });
 
-    const deleteMutation = useMutation({
-        mutationFn: deleteCourse,
+
+
+    const archiveMutation = useMutation({
+        mutationFn: (course: any) => updateCourse(course.id, {
+            name: course.name,
+            description: course.description,
+            monthly_fee: course.monthly_fee,
+            start_date: course.start_date,
+            end_date: course.end_date,
+            is_active: false
+        }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
         },
         onError: (err: any) => {
-            alert(err.response?.data?.message || 'Error al eliminar el curso.');
+            alert(err.response?.data?.message || 'Error al archivar el curso.');
         }
     });
 
-    const handleDelete = (id: string) => {
-        if (window.confirm('¿Está seguro de eliminar este curso? Esta acción no se puede deshacer.')) {
-            deleteMutation.mutate(id);
+    const handleDelete = (course: any) => {
+        if (window.confirm(`¿Está seguro de archivar "${course.name}"? Dejará de estar disponible, pero se mantendrá su historial de estudiantes y pagos.`)) {
+            archiveMutation.mutate(course);
         }
     };
 
@@ -151,14 +162,22 @@ const CoursesList = () => {
                             </div>
                             <div className="flex space-x-1">
                                 <button
+                                    onClick={() => setScheduleCourse(course)}
+                                    className="p-2 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                                    title="Modificar horarios/grupos"
+                                >
+                                    <CalendarClock className="h-4 w-4" />
+                                </button>
+                                <button
                                     onClick={() => handleEdit(course)}
                                     className="p-2 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                                 >
                                     <Edit2 className="h-4 w-4" />
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(course.id)}
-                                    className="p-2 text-slate-400 hover:text-brand-danger hover:bg-brand-danger/10 rounded-lg transition-colors"
+                                    onClick={() => handleDelete(course)}
+                                    className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 rounded-lg transition-colors"
+                                    title="Archivar curso"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -280,6 +299,14 @@ const CoursesList = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Schedules Modal */}
+            {scheduleCourse && (
+                <CourseSchedulesModal
+                    course={scheduleCourse}
+                    onClose={() => setScheduleCourse(null)}
+                />
             )}
         </div>
     );

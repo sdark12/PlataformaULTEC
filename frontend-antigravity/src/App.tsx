@@ -11,6 +11,7 @@ import PaymentsList from './features/finance/PaymentsList';
 import InvoicesList from './features/finance/InvoicesList';
 import Attendance from './features/academic/Attendance';
 import Reports from './features/finance/Reports';
+import StudentReports from './features/academic/StudentReports';
 import Grades from './features/academic/Grades';
 import UsersList from './features/users/UsersList';
 import ReportCard from './features/academic/ReportCard';
@@ -156,6 +157,7 @@ function App() {
             <Route path="/assignments" element={<AssignmentsModule />} />
             <Route path="/student-assignments" element={<StudentAssignments />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/student-reports" element={<StudentReports />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -9,6 +9,7 @@ export interface Assignment {
     due_date: string;
     weight_points: number;
     max_score: number;
+    schedule_id?: string;
     created_by?: string;
     created_at?: string;
 }
@@ -68,8 +69,10 @@ export const assignmentsService = {
         return response.data;
     },
 
-    getCourseAssignments: async (courseId: number | string) => {
-        const response = await api.get(`/api/assignments/course/${courseId}`);
+    getCourseAssignments: async (courseId: number | string, scheduleId?: string) => {
+        const params: any = {};
+        if (scheduleId) params.schedule_id = scheduleId;
+        const response = await api.get(`/api/assignments/course/${courseId}`, { params });
         return response.data as Assignment[];
     },
 
@@ -83,8 +86,10 @@ export const assignmentsService = {
         return response.data;
     },
 
-    getCourseAssignmentReport: async (courseId: string | number) => {
-        const response = await api.get(`/api/assignments/course/${courseId}/report`);
+    getCourseAssignmentReport: async (courseId: string | number, scheduleId?: string) => {
+        const params: any = {};
+        if (scheduleId) params.schedule_id = scheduleId;
+        const response = await api.get(`/api/assignments/course/${courseId}/report`, { params });
         return response.data as CourseReportData;
     },
 

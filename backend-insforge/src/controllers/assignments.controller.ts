@@ -7,13 +7,13 @@ export const assignmentsController = {
     /** Create a new assignment for a course */
     async createAssignment(req: Request, res: Response) {
         try {
-            const { course_id, title, description, assignment_type, due_date, weight_points, max_score } = req.body;
+            const { course_id, title, description, assignment_type, due_date, weight_points, max_score, schedule_id } = req.body;
             const created_by = req.currentUser?.id;
             const db = adminClient; // Use service role to bypass RLS since we verify manually
 
             const { data, error } = await db.database
                 .from('assignments')
-                .insert([{ course_id, title, description, assignment_type, due_date, weight_points, max_score, created_by }])
+                .insert([{ course_id, title, description, assignment_type, due_date, weight_points, max_score, schedule_id, created_by }])
                 .select()
                 .single();
 
@@ -29,13 +29,19 @@ export const assignmentsController = {
     async getCourseAssignments(req: Request, res: Response) {
         try {
             const { courseId } = req.params;
+            const { schedule_id } = req.query;
             const db = adminClient;
 
-            const { data, error } = await db.database
+            let query = db.database
                 .from('assignments')
                 .select('*')
-                .eq('course_id', courseId)
-                .order('due_date', { ascending: true });
+                .eq('course_id', courseId);
+
+            if (schedule_id) {
+                query = query.or(`schedule_id.eq.${schedule_id},schedule_id.is.null`);
+            }
+
+            const { data, error } = await query.order('due_date', { ascending: true });
 
             if (error) throw error;
             res.json(data);
@@ -122,24 +128,36 @@ export const assignmentsController = {
     async getCourseAssignmentReport(req: Request, res: Response) {
         try {
             const { courseId } = req.params;
+            const { schedule_id } = req.query;
             const db = adminClient;
 
             // 1. Get active enrollments for the course (students)
-            const { data: enrollments, error: enrollError } = await db.database
+            let enrollmentsQuery = db.database
                 .from('enrollments')
-                .select('student_id, students(full_name)')
+                .select('student_id, schedule_id, students(full_name)')
                 .eq('course_id', courseId)
                 .eq('is_active', true);
+
+            if (schedule_id) {
+                enrollmentsQuery = enrollmentsQuery.eq('schedule_id', schedule_id);
+            }
+
+            const { data: enrollments, error: enrollError } = await enrollmentsQuery;
 
             if (enrollError) throw enrollError;
             if (!enrollments || enrollments.length === 0) return res.json({ assignments: [], students: [] });
 
             // 2. Get all assignments for this course
-            const { data: assignments, error: assignError } = await db.database
+            let assignmentsQuery = db.database
                 .from('assignments')
-                .select('id, title, max_score, weight_points')
-                .eq('course_id', courseId)
-                .order('due_date', { ascending: true });
+                .select('id, title, max_score, weight_points, schedule_id')
+                .eq('course_id', courseId);
+
+            if (schedule_id) {
+                assignmentsQuery = assignmentsQuery.or(`schedule_id.eq.${schedule_id},schedule_id.is.null`);
+            }
+
+            const { data: assignments, error: assignError } = await assignmentsQuery.order('due_date', { ascending: true });
 
             if (assignError) throw assignError;
 
@@ -238,7 +256,7 @@ export const assignmentsController = {
             // Fetch active enrollments for student
             const { data: enrollments, error: enrollError } = await db.database
                 .from('enrollments')
-                .select('id, course_id, courses(name)')
+                .select('id, course_id, schedule_id, courses(name)')
                 .eq('student_id', studentId)
                 .eq('is_active', true);
 
@@ -264,25 +282,30 @@ export const assignmentsController = {
 
             if (subError) throw subError;
 
-            // Merge everything
-            const merged = assignments.map((a: any) => {
-                const sub = submissions?.find((s: any) => s.assignment_id === a.id);
-                const enr = enrollments.find((e: any) => e.course_id === a.course_id);
-                return {
-                    assignment_id: a.id,
-                    title: a.title,
-                    description: a.description,
-                    assignment_type: a.assignment_type,
-                    due_date: a.due_date,
-                    weight_points: a.weight_points,
-                    max_score: a.max_score,
-                    course_name: Array.isArray(enr?.courses) ? enr?.courses[0]?.name : (enr?.courses as any)?.name || '',
-                    submission_id: sub?.id,
-                    status: sub?.status || 'PENDING',
-                    submission_date: sub?.submission_date,
-                    score: sub?.score
-                };
-            });
+            // Merge everything and filter by schedule_id if assignment has one
+            const merged = assignments
+                .filter((a: any) => {
+                    const enr = enrollments.find((e: any) => e.course_id === a.course_id);
+                    return !a.schedule_id || a.schedule_id === enr?.schedule_id;
+                })
+                .map((a: any) => {
+                    const sub = submissions?.find((s: any) => s.assignment_id === a.id);
+                    const enr = enrollments.find((e: any) => e.course_id === a.course_id);
+                    return {
+                        assignment_id: a.id,
+                        title: a.title,
+                        description: a.description,
+                        assignment_type: a.assignment_type,
+                        due_date: a.due_date,
+                        weight_points: a.weight_points,
+                        max_score: a.max_score,
+                        course_name: Array.isArray(enr?.courses) ? enr?.courses[0]?.name : (enr?.courses as any)?.name || '',
+                        submission_id: sub?.id,
+                        status: sub?.status || 'PENDING',
+                        submission_date: sub?.submission_date,
+                        score: sub?.score
+                    };
+                });
 
             res.json(merged);
         } catch (error: any) {

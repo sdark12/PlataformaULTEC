@@ -69,7 +69,8 @@ const DashboardLayout = () => {
                     <nav className="space-y-1">
                         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-4">Principal</p>
                         <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" />
-                        <SidebarItem to="/reports" icon={BarChart3} label="Reportes" />
+                        <SidebarItem to="/reports" icon={BarChart3} label="Reportes Financieros" />
+                        <SidebarItem to="/student-reports" icon={BarChart3} label="Reporte de Alumnos" />
 
                         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Gestión</p>
                         <SidebarItem to="/users" icon={Users} label="Usuarios" />

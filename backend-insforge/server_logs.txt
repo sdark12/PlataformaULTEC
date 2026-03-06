@@ -1,0 +1,2707 @@
+
+> backend-insforge@1.0.0 dev
+> nodemon --exec ts-node src/server.ts
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Server running on port 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+Server running on port 3000
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 { code: 'PGRST301', details: null, hint: null, message: 'JWT expired' }
+[0mGET /api/students [33m401[0m 3207.114 ms - 27[0m
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 { code: 'PGRST301', details: null, hint: null, message: 'JWT expired' }
+[0mGET /api/notifications [33m401[0m 3270.117 ms - 27[0m
+[0mPOST /auth/login [32m200[0m 972.466 ms - 437[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [32m200[0m 3863.848 ms - 2[0m
+[0mGET /api/reports/dashboard [36m304[0m 3913.964 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/students [32m200[0m 1147.878 ms - 8431[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mPUT /api/students/680a1ffb-61ba-42a2-91e3-30ccbc45b9ce [32m200[0m 1856.793 ms - 556[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/students [32m200[0m 932.659 ms - 8436[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 2618.656 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+createStudent: {
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0',
+  bodyName: 'Alfonzo Canizales Corado'
+}
+[0mPOST /api/students [32m201[0m 1743.443 ms - 543[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/students [32m200[0m 387.737 ms - 8980[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/reports/students [32m200[0m 2649.487 ms - 4720[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6125.259 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 4635.577 ms - -[0m
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 {
+  message: 'TypeError: fetch failed',
+  details: 'TypeError: fetch failed\n' +
+    '    at node:internal/deps/undici/undici:16416:13\n' +
+    '    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at async C:\\Users\\saul_\\OneDrive\\ANTIGRAVITY\\PlataformaULTECfullstack\\backend-insforge\\node_modules\\@insforge\\sdk\\src\\modules\\database-postgrest.ts:47:22\n' +
+    '    at async requireAuth (C:\\Users\\saul_\\OneDrive\\ANTIGRAVITY\\PlataformaULTECfullstack\\backend-insforge\\src\\middleware\\auth.middleware.ts:50:56)',
+  hint: '',
+  code: ''
+}
+[0mGET /api/notifications [33m401[0m 611.427 ms - 27[0m
+[0mPOST /auth/login [32m200[0m 2322.562 ms - 437[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/reports/dashboard [32m200[0m 4640.662 ms - 84[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6636.559 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices [36m304[0m 795.263 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6964.770 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6812.766 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 4543.255 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6287.367 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6988.153 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 3942.218 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6420.677 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 7466.804 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 6990.533 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 4785.373 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 5645.292 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 5641.808 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 4656.484 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 3034.834 ms - -[0m
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 { code: 'PGRST301', details: null, hint: null, message: 'JWT expired' }
+[0mGET /api/notifications [33m401[0m 566.447 ms - 27[0m
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 { code: 'PGRST301', details: null, hint: null, message: 'JWT expired' }
+[0mGET /api/reports/dashboard [33m401[0m 565.526 ms - 27[0m
+[0mPOST /auth/login [32m200[0m 761.752 ms - 437[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/reports/dashboard [36m304[0m 959.826 ms - -[0m
+[0mGET /api/notifications [36m304[0m 979.779 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices [36m304[0m 854.012 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [36m304[0m 243.810 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1186.250 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/enrollments [36m304[0m 503.701 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1399.971 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1209.478 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices/c9953cd5-6440-44c8-a45f-e2a4702bbce7/pdf [32m200[0m 1034.642 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1395.284 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1362.874 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1329.908 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+Server running on port 3000
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1429.766 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+Server running on port 3000
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1264.604 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1327.676 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+Server running on port 3000
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1303.886 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1234.387 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1247.650 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1324.423 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1195.120 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1355.377 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1449.512 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1204.082 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Server running on port 3000
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1281.805 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+Server running on port 3000
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 { code: 'PGRST301', details: null, hint: null, message: 'JWT expired' }
+[0mGET /api/notifications [33m401[0m 510.899 ms - 27[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+Server running on port 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Server running on port 3000
+[0mPOST /auth/login [32m200[0m 1159.792 ms - 437[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/reports/dashboard [36m304[0m 948.515 ms - -[0m
+[0mGET /api/notifications [36m304[0m 995.780 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [36m304[0m 393.341 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/enrollments [36m304[0m 237.498 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1239.155 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Error inserting invoice items: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type integer: "a52f89c0-dfe4-48d5-9c53-9b616298599b"'
+}
+[0mPOST /api/payments [32m201[0m 1572.888 ms - 521[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Failed to broadcast notifications: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'permission denied for sequence notifications_id_seq'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [32m200[0m 399.645 ms - 1165[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices/a52f89c0-dfe4-48d5-9c53-9b616298599b/pdf [32m200[0m 502.369 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+Server running on port 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+Server running on port 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Server running on port 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Server running on port 3000
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1637.325 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1145.362 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices [36m304[0m 1626.243 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [36m304[0m 790.597 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1121.242 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Failed to broadcast notifications: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'permission denied for sequence notifications_id_seq'
+}
+[0mDELETE /api/payments/a5e27398-b64e-40e4-ab28-46c9610eaee7 [32m200[0m 489.555 ms - 42[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [32m200[0m 251.261 ms - 1537[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Failed to broadcast notifications: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'permission denied for sequence notifications_id_seq'
+}
+[0mDELETE /api/payments/fa6dd7c3-a66c-4632-98da-5d57b47c57b8 [32m200[0m 416.211 ms - 42[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [32m200[0m 252.259 ms - 1165[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/enrollments [36m304[0m 173.019 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1296.989 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Error inserting invoice items: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'permission denied for sequence invoice_items_id_seq'
+}
+[0mPOST /api/payments [32m201[0m 1513.707 ms - 544[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [32m200[0m 248.217 ms - 1828[0m
+Failed to broadcast notifications: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'permission denied for sequence notifications_id_seq'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices/de718f66-4ec6-4414-9b47-f91dbf7431ff/pdf [32m200[0m 471.963 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1299.961 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1154.147 ms - -[0m
+Auth Middleware: Invalid token or profile not found for user 890b3a57-5f91-4bfa-9db6-5888f88660e4 { code: 'PGRST301', details: null, hint: null, message: 'JWT expired' }
+[0mGET /api/notifications [33m401[0m 465.538 ms - 27[0m
+[0mPOST /auth/login [32m200[0m 943.653 ms - 437[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/reports/dashboard [36m304[0m 950.540 ms - -[0m
+[0mGET /api/notifications [36m304[0m 1024.700 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/payments [36m304[0m 393.296 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices [32m200[0m 524.605 ms - 2149[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices/de718f66-4ec6-4414-9b47-f91dbf7431ff/pdf [32m200[0m 410.326 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/invoices/76747aa3-0eb7-4131-a2ae-67740a94e5c0/pdf [32m200[0m 995.683 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1295.704 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1267.547 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1192.888 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1376.310 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1307.783 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/controllers/payments.controller.ts(169,83): error TS2448: Block-scoped variable 'actTotal' used before its declaration.
+
+    at createTSError (C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:859:12)
+    at reportTSError (C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:863:19)
+    at getOutput (C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:1077:36)
+    at Object.compile (C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:1433:41)
+    at Module.m._compile (C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1893:10
+    at Object.require.extensions.<computed> [as .ts] (C:\Users\saul_\OneDrive\ANTIGRAVITY\PlataformaULTECfullstack\backend-insforge\node_modules\ts-node\src\index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  diagnosticCodes: [ 2448 ]
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+Server running on port 3000
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1771.258 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1341.464 ms - -[0m
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+Auth Middleware Success: {
+  userId: '890b3a57-5f91-4bfa-9db6-5888f88660e4',
+  role: 'admin',
+  branchId: '739adc0f-7dd8-4509-9eed-0e1d3c2b2ba0'
+}
+[0mGET /api/notifications [36m304[0m 1383.575 ms - -[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+Server running on port 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m

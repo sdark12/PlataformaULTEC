@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCourses } from '../academicService';
-import { assignmentsService, type Assignment, type CourseReportData } from '../../../services/assignmentsService';
+import { getCourses, getCourseSchedules } from '../academicService';
+import { assignmentsService, type Assignment } from '../../../services/assignmentsService';
 import { Plus, Loader2, ClipboardList, Calendar, CheckCircle, Clock, Paperclip, Printer, FileBarChart } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 const AssignmentsModule = () => {
     const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState<number | string | null>(null);
+    const [selectedSchedule, setSelectedSchedule] = useState<string>('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [reviewAssignment, setReviewAssignment] = useState<Assignment | null>(null);
     const [activeTab, setActiveTab] = useState<'active' | 'history' | 'report'>('active');
@@ -32,10 +33,17 @@ const AssignmentsModule = () => {
         queryFn: getCourses,
     });
 
+    // Fetch schedules for the selected course
+    const { data: schedules, isLoading: isLoadingSchedules } = useQuery({
+        queryKey: ['courseSchedules', selectedCourse],
+        queryFn: () => getCourseSchedules(selectedCourse as string),
+        enabled: !!selectedCourse
+    });
+
     // Fetch assignments when a course is selected
     const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
-        queryKey: ['assignments', selectedCourse],
-        queryFn: () => assignmentsService.getCourseAssignments(selectedCourse!),
+        queryKey: ['assignments', selectedCourse, selectedSchedule],
+        queryFn: () => assignmentsService.getCourseAssignments(selectedCourse!, selectedSchedule),
         enabled: !!selectedCourse,
     });
 
@@ -48,15 +56,15 @@ const AssignmentsModule = () => {
 
     // Fetch reports for gradebook printing
     const { data: reportData, isLoading: isLoadingReport } = useQuery({
-        queryKey: ['courseReport', selectedCourse],
-        queryFn: () => assignmentsService.getCourseAssignmentReport(selectedCourse!),
+        queryKey: ['courseReport', selectedCourse, selectedSchedule],
+        queryFn: () => assignmentsService.getCourseAssignmentReport(selectedCourse!, selectedSchedule),
         enabled: !!selectedCourse && activeTab === 'report',
     });
 
     const createMutation = useMutation({
         mutationFn: assignmentsService.createAssignment,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['assignments', selectedCourse] });
+            queryClient.invalidateQueries({ queryKey: ['assignments', selectedCourse, selectedSchedule] });
             setIsModalOpen(false);
             setNewAssignment({
                 title: '',
@@ -100,7 +108,8 @@ const AssignmentsModule = () => {
 
         createMutation.mutate({
             ...newAssignment,
-            course_id: selectedCourse as string
+            course_id: selectedCourse as string,
+            schedule_id: selectedSchedule || undefined
         });
     };
 
@@ -226,12 +235,25 @@ const AssignmentsModule = () => {
                         value={selectedCourse || ''}
                         onChange={(e) => {
                             setSelectedCourse(e.target.value);
+                            setSelectedSchedule('');
                             setReviewAssignment(null);
                         }}
                     >
                         <option value="" disabled>-- Selecciona un curso --</option>
                         {courses?.map((c: any) => (
                             <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="flex-1 md:w-48 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-blue/10 outline-none text-slate-700 dark:text-slate-200 disabled:opacity-50"
+                        value={selectedSchedule}
+                        onChange={(e) => setSelectedSchedule(e.target.value)}
+                        disabled={!selectedCourse}
+                    >
+                        <option value="">Todos los Horarios</option>
+                        {schedules?.map((s: any) => (
+                            <option key={s.id} value={s.id}>{s.name || `Horario ${s.day_of_week}`}</option>
                         ))}
                     </select>
 
@@ -261,6 +283,9 @@ const AssignmentsModule = () => {
                 </h1>
                 <p className="text-slate-600 mt-2 text-lg">
                     Curso: {courses?.find((c: any) => c.id.toString() === selectedCourse?.toString())?.name || 'Desconocido'}
+                    {selectedSchedule && (
+                        <span>{' - '}{(schedules?.find((s) => s.id === selectedSchedule) as any)?.name || 'Horario Específico'}</span>
+                    )}
                 </p>
                 <p className="text-slate-500 mt-1">Generado el: {new Date().toLocaleDateString('es-ES')}</p>
             </div>
@@ -290,7 +315,7 @@ const AssignmentsModule = () => {
             )}
 
             {/* Loading States */}
-            {(isLoadingCourses || (selectedCourse && isLoadingAssignments) || (activeTab === 'report' && isLoadingReport)) ? (
+            {(isLoadingCourses || (selectedCourse && isLoadingSchedules) || (selectedCourse && isLoadingAssignments) || (activeTab === 'report' && isLoadingReport)) ? (
                 <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
                     <Loader2 className="animate-spin h-12 w-12 text-brand-blue/50" />
                     <p className="text-slate-400 font-medium animate-pulse">Cargando datos...</p>
@@ -344,7 +369,7 @@ const AssignmentsModule = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white/50 dark:bg-transparent print:divide-slate-300">
-                                {reportData?.students.map((student, idx) => (
+                                {reportData?.students.map((student) => (
                                     <tr key={student.student_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group print:break-inside-avoid print:border-b print:border-slate-200/50">
                                         <td className="px-6 py-4 font-bold text-slate-900 dark:text-white sticky left-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 shadow-[1px_0_0_rgba(226,232,240,1)] dark:shadow-[1px_0_0_rgba(51,65,85,1)] z-10 print:static print:shadow-none print:bg-transparent print:px-2 print:py-1.5 print:text-[11px] print:font-semibold">
                                             <div className="flex items-center space-x-3 print:space-x-1">

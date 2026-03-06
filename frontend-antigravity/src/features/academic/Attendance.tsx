@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCourses } from './academicService';
+import { getCourses, getCourseSchedules } from './academicService';
 import { getAttendance, markAttendance } from './attendanceService';
 import { Loader2, Save, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
 
@@ -14,14 +14,21 @@ const STATUS_COLORS: Record<string, string> = {
 const Attendance = () => {
     const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [selectedSchedule, setSelectedSchedule] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
     const [attendanceData, setAttendanceData] = useState<any[]>([]);
 
     const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
 
+    const { data: schedules } = useQuery({
+        queryKey: ['course_schedules', selectedCourse],
+        queryFn: () => getCourseSchedules(selectedCourse),
+        enabled: !!selectedCourse,
+    });
+
     const { data: fetchedAttendance, isLoading, isFetching } = useQuery({
-        queryKey: ['attendance', selectedCourse, selectedDate],
-        queryFn: () => getAttendance(selectedCourse, selectedDate),
+        queryKey: ['attendance', selectedCourse, selectedDate, selectedSchedule],
+        queryFn: () => getAttendance(selectedCourse, selectedDate, selectedSchedule),
         enabled: !!selectedCourse && !!selectedDate,
     });
 
@@ -76,7 +83,10 @@ const Attendance = () => {
                         <select
                             className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none outline-none font-medium"
                             value={selectedCourse}
-                            onChange={(e) => setSelectedCourse(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedCourse(e.target.value);
+                                setSelectedSchedule('');
+                            }}
                         >
                             <option value="">-- Elige un curso --</option>
                             {courses?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -86,7 +96,30 @@ const Attendance = () => {
                         </div>
                     </div>
                 </div>
-                <div className="w-full md:w-64">
+
+                <div className="flex-1 w-full">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Seleccionar Horario</label>
+                    <div className="relative">
+                        <select
+                            className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none outline-none font-medium disabled:opacity-50"
+                            value={selectedSchedule}
+                            onChange={(e) => setSelectedSchedule(e.target.value)}
+                            disabled={!selectedCourse}
+                        >
+                            <option value="">Todos los Horarios</option>
+                            {schedules?.map((s: any) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.grade} - {s.day_of_week} {s.start_time ? `(${s.start_time.substring(0, 5)})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="w-full md:w-56">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Fecha de Clase</label>
                     <input
                         type="date"
@@ -223,7 +256,7 @@ const Attendance = () => {
                     )}
                 </>
             )}
-        </div>
+        </div >
     );
 };
 

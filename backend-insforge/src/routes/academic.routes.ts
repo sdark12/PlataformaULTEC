@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.middleware';
-import { getCourses, createCourse, updateCourse, deleteCourse } from '../controllers/courses.controller';
+import { getCourses, createCourse, updateCourse, deleteCourse, getCourseSchedules, createCourseSchedule, deleteCourseSchedule } from '../controllers/courses.controller';
 import { getStudents, createStudent, updateStudent, deleteStudent } from '../controllers/students.controller';
 import { enrollStudent, getEnrollments, updateEnrollment, deleteEnrollment } from '../controllers/enrollments.controller';
 
@@ -12,6 +12,10 @@ router.get('/courses', getCourses);
 router.post('/courses', createCourse);
 router.put('/courses/:id', updateCourse);
 router.delete('/courses/:id', deleteCourse);
+
+router.get('/courses/:id/schedules', getCourseSchedules);
+router.post('/courses/:id/schedules', createCourseSchedule);
+router.delete('/courses/schedules/:scheduleId', deleteCourseSchedule);
 
 router.get('/students', getStudents);
 router.post('/students', createStudent);

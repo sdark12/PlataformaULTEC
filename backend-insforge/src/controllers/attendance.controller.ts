@@ -3,7 +3,7 @@ import client from '../config/insforge';
 
 // Get Attendance (merged with enrolled students)
 export const getAttendance = async (req: Request, res: Response) => {
-    const { course_id, date } = req.query;
+    const { course_id, date, schedule_id } = req.query;
     const branchId = req.currentUser?.branch_id;
 
     if (!course_id || !date) {
@@ -12,10 +12,11 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch all active students enrolled in this course
-        const { data: enrollments, error: enrollError } = await client.database
+        let enrollmentsQuery = client.database
             .from('enrollments')
             .select(`
                 student_id,
+                schedule_id,
                 students!inner (
                     id,
                     full_name,
@@ -25,6 +26,12 @@ export const getAttendance = async (req: Request, res: Response) => {
             .eq('course_id', course_id)
             .eq('is_active', true)
             .eq('students.branch_id', branchId);
+
+        if (schedule_id) {
+            enrollmentsQuery = enrollmentsQuery.eq('schedule_id', schedule_id);
+        }
+
+        const { data: enrollments, error: enrollError } = await enrollmentsQuery;
 
         if (enrollError) throw enrollError;
 

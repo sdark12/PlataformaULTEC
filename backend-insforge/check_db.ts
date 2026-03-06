@@ -1,27 +1,26 @@
-import client from './src/config/insforge';
+import { Client } from 'pg';
+import dotenv from 'dotenv';
+dotenv.config();
 
-async function checkConstraints() {
-    console.log("Fetching an existing payment...");
-    const { data: payments } = await client.database.from('payments').select('*').limit(1);
+async function check() {
+    const client = new Client({
+        user: process.env.DB_USER,
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+        password: process.env.DB_PASSWORD,
+        port: Number(process.env.DB_PORT),
+        ssl: { rejectUnauthorized: false }
+    });
 
-    if (payments && payments.length > 0) {
-        const p = payments[0];
-        console.log("Trying to insert duplicate for enrollment_id", p.enrollment_id, "month", p.tuition_month);
-        const { data: newP, error: insertErr } = await client.database.from('payments').insert([{
-            enrollment_id: p.enrollment_id,
-            amount: p.amount,
-            method: p.method,
-            tuition_month: p.tuition_month,
-            payment_type: 'TUITION'
-        }]).select();
-
-        console.log("Insert result error:", insertErr ? insertErr.message : 'Success');
-        if (!insertErr && newP) {
-            await client.database.from('payments').delete().eq('id', newP[0].id);
-            console.log("Success - deleted temporary row.");
-        }
-    } else {
-        console.log("No payments to duplicate.");
+    try {
+        await client.connect();
+        const res = await client.query('SELECT * FROM invoice_items ORDER BY id DESC LIMIT 5;');
+        console.log("Recent Invoice Items:", res.rows);
+    } catch (err) {
+        console.error(err);
+    } finally {
+        await client.end();
     }
 }
-checkConstraints();
+
+check();

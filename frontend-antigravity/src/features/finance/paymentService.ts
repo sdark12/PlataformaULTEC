@@ -17,7 +17,7 @@ export const getPayments = async () => {
     return response.data;
 };
 
-export const createPayment = async (data: { enrollment_id: string; amount: number; method: string; reference_number: string; description?: string; tuition_month?: string }) => {
+export const createPayment = async (data: { student_id: string; courses: { enrollment_id: string, amount: number, discount: number }[]; method: string; reference_number: string; description?: string; tuition_month?: string; payment_type?: string }) => {
     const response = await api.post('/api/payments', data);
     return response.data;
 };

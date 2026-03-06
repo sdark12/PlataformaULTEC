@@ -6,7 +6,7 @@ import { broadcastNotification } from '../services/notification.service';
 export const getPayments = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
-        // Resource embedding for joins
+        // Resource embedding for joins. Now payment is linked to student_id
         const { data, error } = await client.database
             .from('payments')
             .select(`
@@ -19,21 +19,20 @@ export const getPayments = async (req: Request, res: Response) => {
                 tuition_month,
                 payment_type,
                 discount,
-                enrollments!inner (
-                    branch_id,
-                    students (full_name),
-                    courses (name)
+                students!inner (
+                    full_name,
+                    branch_id
                 )
             `)
-            .eq('enrollments.branch_id', branchId)
+            .eq('students.branch_id', branchId)
             .order('payment_date', { ascending: false });
 
         if (error) throw error;
 
         const flatData = data.map((p: any) => ({
             id: p.id,
-            student_name: p.enrollments?.students?.full_name,
-            course_name: p.enrollments?.courses?.name,
+            student_name: p.students?.full_name,
+            course_name: p.description, // We will use description to store a summary like "Pago Varios Cursos"
             amount: p.amount,
             payment_date: p.payment_date,
             method: p.method,
@@ -53,96 +52,111 @@ export const getPayments = async (req: Request, res: Response) => {
 
 // Register Payment
 export const createPayment = async (req: Request, res: Response) => {
-    const { enrollment_id, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0 } = req.body;
+    const { student_id, enrollment_id, enrollment_ids, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0, courses } = req.body;
     const userId = req.currentUser?.id;
     const branchId = req.currentUser?.branch_id;
 
     try {
-        // 0. Validation for duplicate tuition
-        if (payment_type === 'TUITION' && tuition_month) {
-            const { data: existingOption } = await client.database
+        console.log("PAYMENT POST REQUEST BODY:", req.body);
+
+        if (!student_id) {
+            return res.status(400).json({ message: 'Se requiere el student_id para unificar recibos.' });
+        }
+
+        // Determinar la lista de cursos a procesar (nueva estructura vs antigua)
+        let targetCourses: any[] = [];
+
+        if (courses && courses.length > 0) {
+            targetCourses = courses;
+        } else if (enrollment_ids && enrollment_ids.length > 0) {
+            // Retrocompatibilidad
+            targetCourses = enrollment_ids.map((id: string) => ({ enrollment_id: id, amount: amount / enrollment_ids.length, discount: discount / enrollment_ids.length }));
+        } else if (enrollment_id) {
+            targetCourses = [{ enrollment_id, amount, discount }];
+        }
+
+        const totalAmount = targetCourses.reduce((sum, c) => sum + Number(c.amount), 0);
+        let firstPaymentRecord = null;
+
+        // 1 & 2. Insertar Pago y Actualizar Estado Financiero por CADA curso
+        for (const course of targetCourses) {
+            const { data: payment, error: paymentError } = await client.database
                 .from('payments')
-                .select('id')
-                .eq('enrollment_id', enrollment_id)
-                .eq('tuition_month', tuition_month)
-                .eq('payment_type', 'TUITION')
-                .maybeSingle();
-
-            if (existingOption) {
-                return res.status(400).json({ message: `Este estudiante ya tiene registrado el pago de la colegiatura para el mes seleccionado (${tuition_month}).` });
-            }
-        }
-
-        // 1. Insert Payment
-        const { data: payment, error: paymentError } = await client.database
-            .from('payments')
-            .insert([{
-                enrollment_id,
-                amount,
-                method,
-                reference_number,
-                description,
-                tuition_month: payment_type === 'TUITION' ? tuition_month : null,
-                payment_type,
-                discount,
-                created_by: userId
-            }])
-            .select()
-            .single();
-
-        if (paymentError) throw paymentError;
-
-        // 2. Update Financial Status ONLY IF IT IS TUITION
-        if (payment_type === 'TUITION') {
-            // Find oldest pending status
-            const { data: pendingList, error: pendingError } = await client.database
-                .from('financial_status')
-                .select('id, amount_due, amount_paid')
-                .eq('enrollment_id', enrollment_id)
-                .eq('status', 'PENDING')
-                .order('month', { ascending: true })
-                .limit(1);
-
-            if (!pendingError && pendingList && pendingList.length > 0) {
-                const fs = pendingList[0];
-                const newPaid = Number(fs.amount_paid) + Number(amount);
-                let newStatus = 'PENDING';
-                if (newPaid >= Number(fs.amount_due)) {
-                    newStatus = 'PAID';
-                }
-
-                const { error: updateError } = await client.database
-                    .from('financial_status')
-                    .update({ amount_paid: newPaid, status: newStatus })
-                    .eq('id', fs.id);
-
-                if (updateError) {
-                    console.error('Failed to update financial status', updateError);
-                    // Optional: Should we rollback payment? 
-                    // For now, logging error. Payment is recorded, just status not updated.
-                }
-            }
-        }
-
-        // 3. Automatically Create Invoice
-        let invoiceId = null;
-        let targetBranchId = branchId;
-        try {
-            // Get Enrollment Info for Branch
-            const { data: enrollmentInfo } = await client.database
-                .from('enrollments')
-                .select('branch_id')
-                .eq('id', enrollment_id)
+                .insert([{
+                    student_id,
+                    enrollment_id: course.enrollment_id,
+                    amount: course.amount,
+                    method,
+                    reference_number,
+                    description: description || `Pago Consolidado`,
+                    tuition_month: payment_type === 'TUITION' ? tuition_month : null,
+                    payment_type,
+                    discount: course.discount || 0,
+                    created_by: userId
+                }])
+                .select()
                 .single();
 
-            targetBranchId = enrollmentInfo?.branch_id || branchId;
+            if (paymentError) throw paymentError;
+            if (!firstPaymentRecord) firstPaymentRecord = payment;
 
+            // Update Financial Status
+            if (payment_type === 'TUITION') {
+                const { data: pendingList, error: pendingError } = await client.database
+                    .from('financial_status')
+                    .select('id, amount_due, amount_paid')
+                    .eq('enrollment_id', course.enrollment_id)
+                    .eq('status', 'PENDING')
+                    .order('month', { ascending: true })
+                    .limit(1);
+
+                if (!pendingError && pendingList && pendingList.length > 0) {
+                    const fs = pendingList[0];
+                    const newPaid = Number(fs.amount_due);
+                    const newStatus = 'PAID';
+
+                    await client.database
+                        .from('financial_status')
+                        .update({ amount_paid: newPaid, status: newStatus })
+                        .eq('id', fs.id);
+                }
+            }
+        }
+
+        // Si no se pasaron cursos pero sí un monto global (pago general)
+        if (targetCourses.length === 0) {
+            const { data: payment, error: paymentError } = await client.database
+                .from('payments')
+                .insert([{
+                    student_id,
+                    enrollment_id: null,
+                    amount: totalAmount || amount,
+                    method,
+                    reference_number,
+                    description: description || `Pago General`,
+                    tuition_month: payment_type === 'TUITION' ? tuition_month : null,
+                    payment_type,
+                    discount: discount || 0,
+                    created_by: userId
+                }])
+                .select()
+                .single();
+
+            if (paymentError) throw paymentError;
+            firstPaymentRecord = payment;
+        }
+
+
+        // 3. Automatically Create ONE Unified Invoice
+        let invoiceId = null;
+        let invoiceNumberStr = null;
+        try {
             // Generate Invoice Number
             let invoiceNumber = `REC-${Date.now()}`;
             const { data: seqData } = await client.database
                 .from('invoice_sequences')
                 .select('series, current_number')
-                .eq('branch_id', targetBranchId)
+                .eq('branch_id', branchId)
                 .maybeSingle();
 
             if (seqData) {
@@ -150,18 +164,21 @@ export const createPayment = async (req: Request, res: Response) => {
                 await client.database
                     .from('invoice_sequences')
                     .update({ current_number: nextNum })
-                    .eq('branch_id', targetBranchId);
+                    .eq('branch_id', branchId);
                 invoiceNumber = `${seqData.series}-${String(userId).slice(0, 4)}-${nextNum.toString().padStart(6, '0')}`;
             }
 
-            // Create Invoice
+            const actTotal = totalAmount || amount;
+            console.log('Creating invoice for student_id:', student_id, 'Total:', actTotal);
+
+            // Create Invoice attached to student
             const { data: invoice, error: invoiceError } = await client.database
                 .from('invoices')
                 .insert([{
-                    branch_id: targetBranchId,
-                    enrollment_id,
+                    branch_id: branchId,
+                    student_id,
                     invoice_number: invoiceNumber,
-                    total_amount: amount,
+                    total_amount: actTotal,
                     created_by: userId
                 }])
                 .select()
@@ -169,37 +186,63 @@ export const createPayment = async (req: Request, res: Response) => {
 
             if (!invoiceError && invoice) {
                 invoiceId = invoice.id;
-                // Create Invoice Item
-                const description = payment_type === 'TUITION'
-                    ? `Colegiatura de ${tuition_month}`
-                    : payment_type === 'ENROLLMENT' ? 'Inscripción'
-                        : payment_type === 'UNIFORM' ? 'Uniforme'
-                            : payment_type === 'MATERIALS' ? 'Materiales'
-                                : 'Otro concepto';
+                invoiceNumberStr = invoice.invoice_number;
 
-                await client.database
-                    .from('invoice_items')
-                    .insert([{
+                const itemsToInsert = [];
+
+                if (targetCourses.length > 0) {
+                    for (const course of targetCourses) {
+                        const courseDesc = course.payment_description || (payment_type === 'TUITION' ? (tuition_month ? `Colegiatura de ${tuition_month}` : `Pago de Curso`) : payment_type);
+                        itemsToInsert.push({
+                            invoice_id: invoiceId,
+                            description: courseDesc,
+                            quantity: 1,
+                            unit_price: course.amount,
+                            total_price: course.amount
+                        });
+                    }
+                } else {
+                    const itemDescription = payment_type === 'TUITION'
+                        ? (tuition_month ? `Colegiatura de ${tuition_month}` : `Pago de Cursos`)
+                        : payment_type === 'ENROLLMENT' ? 'Inscripción'
+                            : payment_type === 'UNIFORM' ? 'Uniforme'
+                                : payment_type === 'MATERIALS' ? 'Materiales'
+                                    : description || 'Pago Consolidado';
+
+                    itemsToInsert.push({
                         invoice_id: invoiceId,
-                        description: description,
+                        description: itemDescription,
                         quantity: 1,
-                        unit_price: amount,
-                        total_price: amount
-                    }]);
+                        unit_price: actTotal,
+                        total_price: actTotal
+                    });
+                }
+
+                if (itemsToInsert.length > 0) {
+                    const { error: invoiceItemError } = await client.database
+                        .from('invoice_items')
+                        .insert(itemsToInsert);
+
+                    if (invoiceItemError) {
+                        console.error('Error inserting invoice items:', invoiceItemError);
+                    } else {
+                        console.log('Successfully inserted invoice items:', itemsToInsert.length);
+                    }
+                }
+            } else {
+                console.error('Failed to create invoice record:', invoiceError);
             }
         } catch (invoiceErr) {
             console.error('Failed to auto-create invoice', invoiceErr);
-            // We don't fail the payment if invoice fails
         }
 
-        res.status(201).json({ ...payment, invoice_id: invoiceId });
+        res.status(201).json({ ...firstPaymentRecord, invoice_id: invoiceId, invoice_number: invoiceNumberStr });
 
-        // Broadcast notification targetting branch admins
         await broadcastNotification(
             client,
-            targetBranchId,
+            branchId || 0,
             'Nuevo Pago',
-            `Se ha registrado un nuevo pago por Q.${amount}`,
+            `Se ha registrado un nuevo pago unificado por Q.${totalAmount || amount}`,
             'PAYMENT'
         );
     } catch (error) {

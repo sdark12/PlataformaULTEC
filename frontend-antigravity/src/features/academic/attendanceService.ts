@@ -9,8 +9,10 @@ export interface AttendanceRecord {
     remarks?: string;
 }
 
-export const getAttendance = async (courseId: string, date: string) => {
-    const response = await api.get<AttendanceRecord[]>('/api/attendance', { params: { course_id: courseId, date } });
+export const getAttendance = async (courseId: string, date: string, scheduleId?: string) => {
+    const params: any = { course_id: courseId, date };
+    if (scheduleId) params.schedule_id = scheduleId;
+    const response = await api.get<AttendanceRecord[]>('/api/attendance', { params });
     return response.data;
 };
 

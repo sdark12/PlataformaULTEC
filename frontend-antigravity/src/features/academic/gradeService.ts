@@ -8,8 +8,10 @@ export interface GradeRecord {
     remarks?: string;
 }
 
-export const getGrades = async (courseId: string, unitName: string) => {
-    const response = await api.get<GradeRecord[]>('/api/grades', { params: { course_id: courseId, unit_name: unitName } });
+export const getGrades = async (courseId: string, unitName: string, scheduleId?: string) => {
+    const params: any = { course_id: courseId, unit_name: unitName };
+    if (scheduleId) params.schedule_id = scheduleId;
+    const response = await api.get<GradeRecord[]>('/api/grades', { params });
     return response.data;
 };
 
@@ -23,7 +25,9 @@ export const getStudentReportCard = async (studentId: string) => {
     return response.data;
 };
 
-export const getCourseGradebook = async (courseId: string) => {
-    const response = await api.get(`/api/grades/course/${courseId}`);
+export const getCourseGradebook = async (courseId: string, scheduleId?: string) => {
+    const params: any = {};
+    if (scheduleId) params.schedule_id = scheduleId;
+    const response = await api.get(`/api/grades/course/${courseId}`, { params });
     return response.data;
 };

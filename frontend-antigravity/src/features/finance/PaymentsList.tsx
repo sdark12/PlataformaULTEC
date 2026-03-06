@@ -5,12 +5,20 @@ import { getEnrollments } from '../../features/academic/academicService';
 import { downloadInvoicePdf } from '../../features/finance/invoiceService';
 import { Plus, Loader2, DollarSign, Edit2, Trash2, Search, CheckCircle, Printer, X } from 'lucide-react';
 
+interface SelectedCourse {
+    enrollment_id: string;
+    course_name: string;
+    amount: string;
+    discount: string;
+    payment_description?: string;
+}
+
 const PaymentsList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [newPayment, setNewPayment] = useState({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
+    const [newPayment, setNewPayment] = useState({ student_id: '', courses: [] as SelectedCourse[], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
     const [selectedPayment, setSelectedPayment] = useState<any>(null);
     const [lastInvoice, setLastInvoice] = useState<{ id: number; invoice_number: string } | null>(null);
 
@@ -30,11 +38,13 @@ const PaymentsList = () => {
         onSuccess: (data: any) => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['pendingPaymentsReport'] });
+            queryClient.invalidateQueries({ queryKey: ['financialReport'] });
             if (data.invoice_id) {
                 setLastInvoice({ id: data.invoice_id, invoice_number: data.invoice_number || 'REC-NEW' });
             } else {
                 setIsModalOpen(false);
-                setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
+                setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
             }
             setSearchTerm('');
         },
@@ -47,10 +57,12 @@ const PaymentsList = () => {
         mutationFn: (data: any) => updatePayment(selectedPayment.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
+            queryClient.invalidateQueries({ queryKey: ['pendingPaymentsReport'] });
+            queryClient.invalidateQueries({ queryKey: ['financialReport'] });
             setIsModalOpen(false);
             setSelectedPayment(null);
             setSearchTerm('');
-            setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
+            setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al actualizar pago");
@@ -61,6 +73,8 @@ const PaymentsList = () => {
         mutationFn: deletePayment,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
+            queryClient.invalidateQueries({ queryKey: ['pendingPaymentsReport'] });
+            queryClient.invalidateQueries({ queryKey: ['financialReport'] });
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al eliminar pago");
@@ -75,15 +89,31 @@ const PaymentsList = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!selectedPayment && (!newPayment.student_id || newPayment.courses.length === 0)) {
+            alert('Debe seleccionar un estudiante y al menos un curso a pagar.');
+            return;
+        }
+
+        // Validate all courses have an amount
+        if (newPayment.courses.some(c => c.amount === '' || Number(c.amount) < 0)) {
+            alert('Por favor ingrese un monto válido para todos los cursos seleccionados.');
+            return;
+        }
+
         const data = {
-            enrollment_id: newPayment.enrollment_id,
-            amount: Number(newPayment.amount),
+            student_id: newPayment.student_id,
+            courses: newPayment.courses.map(c => ({
+                enrollment_id: c.enrollment_id,
+                amount: Number(c.amount),
+                discount: Number(c.discount || '0'),
+                payment_description: c.payment_description
+            })),
             method: newPayment.method,
             reference_number: newPayment.reference_number,
             description: newPayment.description,
-            tuition_month: newPayment.payment_type === 'TUITION' ? newPayment.tuition_month : undefined,
-            payment_type: newPayment.payment_type,
-            discount: Number(newPayment.discount)
+            tuition_month: newPayment.payment_type === 'TUITION' ? newPayment.tuition_months.filter(m => m !== '').join(', ') : undefined,
+            payment_type: newPayment.payment_type
         };
 
         if (selectedPayment) {
@@ -96,14 +126,18 @@ const PaymentsList = () => {
     const handleEdit = (payment: any) => {
         setSelectedPayment(payment);
         setNewPayment({
-            enrollment_id: payment.enrollment_id || '',
-            amount: payment.amount.toString(),
+            student_id: payment.student_id || '',
+            courses: payment.enrollment_id ? [{
+                enrollment_id: payment.enrollment_id,
+                course_name: payment.course_name,
+                amount: payment.amount.toString(),
+                discount: payment.discount ? payment.discount.toString() : '0'
+            }] : [],
             method: payment.method,
             reference_number: payment.reference_number || '',
             description: payment.description || '',
-            tuition_month: payment.tuition_month || '',
-            payment_type: payment.payment_type || 'TUITION',
-            discount: payment.discount ? payment.discount.toString() : '0'
+            tuition_months: payment.tuition_month ? payment.tuition_month.split(', ') : [''],
+            payment_type: payment.payment_type || 'TUITION'
         });
         setIsModalOpen(true);
     };
@@ -112,14 +146,48 @@ const PaymentsList = () => {
         setSelectedPayment(null);
         setLastInvoice(null);
         setSearchTerm('');
-        setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
+        setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
         setIsModalOpen(true);
     };
 
-    const filteredEnrollments = enrollments?.filter((e: any) =>
-        e.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.course_name.toLowerCase().includes(searchTerm.toLowerCase())
+    const uniqueStudents = Array.from(new Map(enrollments?.map((e: any) => [e.student_id, e])).values());
+
+    const filteredStudents = uniqueStudents.filter((e: any) =>
+        e.student_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const studentEnrollments = enrollments?.filter((e: any) => e.student_id === newPayment.student_id) || [];
+
+    const handleCourseToggle = (enrollment: any) => {
+        setNewPayment(prev => {
+            const exists = prev.courses.some(c => c.enrollment_id === enrollment.id);
+            if (exists) {
+                return { ...prev, courses: prev.courses.filter(c => c.enrollment_id !== enrollment.id) };
+            } else {
+                return {
+                    ...prev, courses: [...prev.courses, {
+                        enrollment_id: enrollment.id,
+                        course_name: enrollment.course_name,
+                        amount: '',
+                        discount: '0'
+                    }]
+                };
+            }
+        });
+    };
+
+    const handleCourseAmountChange = (enrollment_id: string, field: 'amount' | 'discount', value: string) => {
+        setNewPayment(prev => ({
+            ...prev,
+            courses: prev.courses.map(c =>
+                c.enrollment_id === enrollment_id ? { ...c, [field]: value } : c
+            )
+        }));
+    };
+
+    const calculateTotal = () => {
+        return newPayment.courses.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+    };
 
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
 
@@ -173,7 +241,9 @@ const PaymentsList = () => {
                                             </span>
                                             {payment.payment_type === 'TUITION' && payment.tuition_month && (
                                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-bold border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-full bg-white/50 dark:bg-slate-800/50">
-                                                    {new Date(payment.tuition_month + '-01T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                                    {payment.tuition_month.split(', ').map((m: string) => m.match(/^\d{4}-\d{2}$/)
+                                                        ? new Date(m + '-01T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+                                                        : m).join(', ')}
                                                 </span>
                                             )}
                                         </div>
@@ -250,7 +320,7 @@ const PaymentsList = () => {
                                         onClick={() => {
                                             setIsModalOpen(false);
                                             setLastInvoice(null);
-                                            setNewPayment({ enrollment_id: '', amount: '', method: 'CASH', reference_number: '', description: '', tuition_month: '', payment_type: 'TUITION', discount: '0' });
+                                            setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
                                         }}
                                         className="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors text-lg"
                                     >
@@ -274,18 +344,18 @@ const PaymentsList = () => {
                                 <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
                                     {!selectedPayment && (
                                         <div className="relative">
-                                            <label className="block text-sm font-semibold text-slate-700 ml-1">Inscripción (Buscar Estudiante / Curso)</label>
+                                            <label className="block text-sm font-semibold text-slate-700 ml-1">Estudiante</label>
                                             <div className="relative mt-2">
                                                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors" />
                                                 <input
                                                     type="text"
                                                     className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all placeholder:text-slate-400"
-                                                    placeholder="Escriba para buscar..."
+                                                    placeholder="Buscar estudiante..."
                                                     value={searchTerm}
                                                     onChange={(e) => {
                                                         setSearchTerm(e.target.value);
                                                         setIsDropdownOpen(true);
-                                                        setNewPayment({ ...newPayment, enrollment_id: '' });
+                                                        setNewPayment({ ...newPayment, student_id: '', courses: [] });
                                                     }}
                                                     onFocus={() => setIsDropdownOpen(true)}
                                                     onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
@@ -294,19 +364,18 @@ const PaymentsList = () => {
 
                                             {isDropdownOpen && (
                                                 <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto overflow-hidden animate-in fade-in slide-in-from-top-1">
-                                                    {filteredEnrollments && filteredEnrollments.length > 0 ? (
-                                                        filteredEnrollments.map((e: any) => (
+                                                    {filteredStudents && filteredStudents.length > 0 ? (
+                                                        filteredStudents.map((e: any) => (
                                                             <div
-                                                                key={e.id}
+                                                                key={e.student_id}
                                                                 className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"
                                                                 onClick={() => {
-                                                                    setNewPayment({ ...newPayment, enrollment_id: e.id });
-                                                                    setSearchTerm(`${e.student_name} - ${e.course_name}`);
+                                                                    setNewPayment({ ...newPayment, student_id: e.student_id, courses: [] });
+                                                                    setSearchTerm(e.student_name);
                                                                     setIsDropdownOpen(false);
                                                                 }}
                                                             >
                                                                 <div className="font-bold text-slate-900">{e.student_name}</div>
-                                                                <div className="text-sm font-medium text-slate-500">{e.course_name}</div>
                                                             </div>
                                                         ))
                                                     ) : (
@@ -316,7 +385,60 @@ const PaymentsList = () => {
                                             )}
                                         </div>
                                     )}
-                                    <div className="grid grid-cols-2 gap-6">
+
+                                    {!selectedPayment && newPayment.student_id && studentEnrollments.length > 0 && (
+                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <label className="block text-sm font-semibold text-slate-700 mb-3">Selecciona los cursos y define montos:</label>
+                                            <div className="space-y-3">
+                                                {studentEnrollments.map((enrollment: any) => {
+                                                    const selectedCourse = newPayment.courses.find(c => c.enrollment_id === enrollment.id);
+                                                    const isSelected = !!selectedCourse;
+
+                                                    return (
+                                                        <div key={enrollment.id} className={`flex flex-col space-y-3 p-3 rounded-lg border transition-colors ${isSelected ? 'bg-white border-brand-blue/30 shadow-sm' : 'border-transparent hover:border-slate-200 hover:bg-white/50'}`}>
+                                                            <label className="flex items-center space-x-3 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-4 h-4 text-brand-blue rounded border-slate-300 focus:ring-brand-blue"
+                                                                    checked={isSelected}
+                                                                    onChange={() => handleCourseToggle(enrollment)}
+                                                                />
+                                                                <span className="text-sm font-bold text-slate-700">{enrollment.course_name}</span>
+                                                            </label>
+
+                                                            {isSelected && (
+                                                                <div className="grid grid-cols-2 gap-4 pl-7">
+                                                                    <div>
+                                                                        <label className="block text-xs font-semibold text-slate-500 mb-1">Paga (Q)</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            required
+                                                                            placeholder="Monto a pagar"
+                                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none text-sm transition-all text-brand-success font-bold"
+                                                                            value={selectedCourse.amount}
+                                                                            onChange={(e) => handleCourseAmountChange(enrollment.id, 'amount', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-xs font-semibold text-slate-500 mb-1">Descuento (Q)</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none text-sm transition-all"
+                                                                            value={selectedCourse.discount}
+                                                                            onChange={(e) => handleCourseAmountChange(enrollment.id, 'discount', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 gap-6">
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 ml-1">Tipo de Cobro</label>
                                             <select
@@ -332,28 +454,16 @@ const PaymentsList = () => {
                                                 <option value="OTHER">Otro concepto</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-slate-700 ml-1">Descuento aplicado (Q)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all"
-                                                value={newPayment.discount}
-                                                onChange={(e) => setNewPayment({ ...newPayment, discount: e.target.value })}
-                                            />
-                                        </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-semibold text-slate-700 ml-1">Monto Neto a Pagar (Q)</label>
+                                        <label className="block text-sm font-semibold text-slate-700 ml-1">Total a Pagar (Q)</label>
                                         <div className="relative mt-2">
-                                            <DollarSign className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-success transition-colors" />
+                                            <DollarSign className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
                                             <input
-                                                type="number"
-                                                required
-                                                min="0"
-                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-success/20 focus:border-brand-success outline-none transition-all font-bold text-brand-success text-lg"
-                                                value={newPayment.amount}
-                                                onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                                                type="text"
+                                                readOnly
+                                                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-brand-success text-xl focus:outline-none"
+                                                value={calculateTotal()}
                                             />
                                         </div>
                                     </div>
@@ -372,14 +482,47 @@ const PaymentsList = () => {
                                     </div>
                                     {newPayment.payment_type === 'TUITION' && (
                                         <div>
-                                            <label className="block text-sm font-semibold text-slate-700 ml-1">Mes de Colegiatura</label>
-                                            <input
-                                                type="month"
-                                                required
-                                                className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700"
-                                                value={newPayment.tuition_month}
-                                                onChange={(e) => setNewPayment({ ...newPayment, tuition_month: e.target.value })}
-                                            />
+                                            <label className="block text-sm font-semibold text-slate-700 ml-1">Mes(es) de Colegiatura</label>
+                                            <div className="mt-2 space-y-2">
+                                                {newPayment.tuition_months.map((month, index) => (
+                                                    <div key={index} className="flex items-center space-x-2 animate-in fade-in slide-in-from-top-1">
+                                                        <input
+                                                            type="month"
+                                                            required
+                                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-blue/10 focus:border-brand-blue outline-none transition-all text-slate-700"
+                                                            value={month}
+                                                            onChange={(e) => {
+                                                                const newMonths = [...newPayment.tuition_months];
+                                                                newMonths[index] = e.target.value;
+                                                                setNewPayment({ ...newPayment, tuition_months: newMonths });
+                                                            }}
+                                                        />
+                                                        {newPayment.tuition_months.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newMonths = newPayment.tuition_months.filter((_, i) => i !== index);
+                                                                    setNewPayment({ ...newPayment, tuition_months: newMonths });
+                                                                }}
+                                                                className="p-3 text-brand-danger hover:bg-brand-danger/10 rounded-xl transition-colors shrink-0"
+                                                                title="Quitar mes"
+                                                            >
+                                                                <Trash2 className="h-5 w-5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNewPayment({ ...newPayment, tuition_months: [...newPayment.tuition_months, ''] });
+                                                    }}
+                                                    className="flex items-center space-x-1 text-sm text-brand-blue font-bold px-2 py-1 hover:bg-brand-blue/10 rounded-lg transition-colors ml-1"
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                    <span>Agregar mes adicional</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

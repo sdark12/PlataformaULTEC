@@ -25,3 +25,8 @@ export const getPendingPaymentsReport = async () => {
     const response = await api.get<any[]>('/api/reports/pending-payments');
     return response.data;
 };
+
+export const getStudentReports = async () => {
+    const response = await api.get<any[]>('/api/reports/students');
+    return response.data;
+};

@@ -3,7 +3,7 @@ import client from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
 
 export const enrollStudent = async (req: Request, res: Response) => {
-    const { student_id, course_id } = req.body;
+    const { student_id, course_id, schedule_id } = req.body;
     const branchId = req.currentUser?.branch_id;
 
     try {
@@ -40,7 +40,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
         // 3. Create Enrollment
         const { data: enrollment, error: enrollError } = await db
             .from('enrollments')
-            .insert([{ branch_id: branchId, student_id, course_id }])
+            .insert([{ branch_id: branchId, student_id, course_id, schedule_id }])
             .select()
             .single();
 
@@ -93,10 +93,14 @@ export const getEnrollments = async (req: Request, res: Response) => {
             .from('enrollments')
             .select(`
                 id,
+                student_id,
+                course_id,
                 enrollment_date,
                 is_active,
+                schedule_id,
                 students (full_name),
-                courses (name)
+                courses (name),
+                course_schedules (grade, day_of_week, start_time, end_time)
             `);
 
         if (branchId) {
@@ -110,10 +114,14 @@ export const getEnrollments = async (req: Request, res: Response) => {
         // Flatten structure for frontend if needed, or update frontend to read nested props
         const flatData = data.map((item: any) => ({
             id: item.id,
+            student_id: item.student_id,
+            course_id: item.course_id,
             enrollment_date: item.enrollment_date,
             is_active: item.is_active,
+            schedule_id: item.schedule_id,
             student_name: item.students?.full_name,
-            course_name: item.courses?.name
+            course_name: item.courses?.name,
+            schedule_details: item.course_schedules ? `${item.course_schedules.grade} - ${item.course_schedules.day_of_week} ${item.course_schedules.start_time}` : null
         }));
 
         res.json(flatData);
@@ -125,13 +133,17 @@ export const getEnrollments = async (req: Request, res: Response) => {
 
 export const updateEnrollment = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { is_active } = req.body;
+    const { is_active, schedule_id } = req.body;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+
+    const updates: any = {};
+    if (is_active !== undefined) updates.is_active = is_active;
+    if (schedule_id !== undefined) updates.schedule_id = schedule_id === '' ? null : schedule_id;
 
     try {
         const { data, error } = await db
             .from('enrollments')
-            .update({ is_active })
+            .update(updates)
             .eq('id', id)
             .select()
             .single();
@@ -159,10 +171,25 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
         // 2. Delete Payments
         await db.from('payments').delete().eq('enrollment_id', id);
 
-        // 3. Delete Attendance (if any)
-        // await db.from('attendance').delete().eq('enrollment_id', id);
+        // 3. Delete Attendance
+        await db.from('attendances').delete().eq('enrollment_id', id);
 
-        // 4. Finally delete the enrollment
+        // 4. Delete Grades
+        await db.from('grades').delete().eq('enrollment_id', id);
+
+        // 5. Delete Assignment Submissions
+        await db.from('assignment_submissions').delete().eq('enrollment_id', id);
+
+        // 6. Delete Invoice Items and Invoices
+        const { data: invoices } = await db.from('invoices').select('id').eq('enrollment_id', id);
+        if (invoices && invoices.length > 0) {
+            for (const inv of invoices) {
+                await db.from('invoice_items').delete().eq('invoice_id', inv.id);
+            }
+            await db.from('invoices').delete().eq('enrollment_id', id);
+        }
+
+        // 7. Finally delete the enrollment
         const { error } = await db
             .from('enrollments')
             .delete()
@@ -183,7 +210,7 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
 
         res.json({ message: 'Enrollment deleted successfully' });
     } catch (error) {
-        console.error(error);
+        console.error("Error deleting enrollment:", error);
         res.status(500).json({ message: 'Error deleting enrollment', details: (error as any).message });
     }
 };

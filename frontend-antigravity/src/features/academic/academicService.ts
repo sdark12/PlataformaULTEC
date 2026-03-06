@@ -7,6 +7,16 @@ export interface Course {
     monthly_fee: number;
     start_date?: string;
     end_date?: string;
+    is_active?: boolean;
+}
+
+export interface CourseSchedule {
+    id: string;
+    course_id: string;
+    grade: string;
+    day_of_week: string;
+    start_time: string;
+    end_time: string;
 }
 
 export interface Student {
@@ -26,6 +36,7 @@ export interface Student {
     emergency_contact_phone?: string;
     medical_notes?: string;
     previous_school?: string;
+    personal_code?: string;
 }
 
 export interface Enrollment {
@@ -77,7 +88,7 @@ export const enrollStudent = async (data: { student_id: string; course_id: strin
     return response.data;
 };
 
-export const updateEnrollment = async (id: string, data: { is_active: boolean }) => {
+export const updateEnrollment = async (id: string, data: { is_active?: boolean; schedule_id?: string | null }) => {
     const response = await api.put(`/api/enrollments/${id}`, data);
     return response.data;
 };
@@ -94,5 +105,20 @@ export const deleteStudent = async (id: string) => {
 
 export const deleteEnrollment = async (id: string) => {
     const response = await api.delete(`/api/enrollments/${id}`);
+    return response.data;
+};
+
+export const getCourseSchedules = async (courseId: string) => {
+    const response = await api.get<CourseSchedule[]>(`/api/courses/${courseId}/schedules`);
+    return response.data;
+};
+
+export const createCourseSchedule = async (courseId: string, data: Omit<CourseSchedule, 'id' | 'course_id'>) => {
+    const response = await api.post<CourseSchedule>(`/api/courses/${courseId}/schedules`, data);
+    return response.data;
+};
+
+export const deleteCourseSchedule = async (scheduleId: string) => {
+    const response = await api.delete(`/api/courses/schedules/${scheduleId}`);
     return response.data;
 };

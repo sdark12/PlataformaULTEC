@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getCourses } from './academicService';
+import { getCourses, getCourseSchedules } from './academicService';
 import { getCourseGradebook } from './gradeService';
 import { Loader2, BookOpen, Printer, Award } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -8,12 +8,19 @@ import autoTable from 'jspdf-autotable';
 
 const CourseGradebook = () => {
     const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [selectedSchedule, setSelectedSchedule] = useState<string>('');
 
     const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
 
+    const { data: schedules } = useQuery({
+        queryKey: ['course_schedules', selectedCourse],
+        queryFn: () => getCourseSchedules(selectedCourse),
+        enabled: !!selectedCourse,
+    });
+
     const { data: gradebook, isLoading, isFetching } = useQuery({
-        queryKey: ['course_gradebook', selectedCourse],
-        queryFn: () => getCourseGradebook(selectedCourse),
+        queryKey: ['course_gradebook', selectedCourse, selectedSchedule],
+        queryFn: () => getCourseGradebook(selectedCourse, selectedSchedule),
         enabled: !!selectedCourse,
     });
 
@@ -28,7 +35,15 @@ const CourseGradebook = () => {
 
         doc.setFontSize(11);
         doc.text(`Curso: ${gradebook.course_name}`, 14, 30);
-        doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES')}`, 14, 36);
+
+        let headerText = `Generado el: ${new Date().toLocaleDateString('es-ES')}`;
+        if (selectedSchedule && schedules) {
+            const sched = schedules.find((s: any) => s.id === parseInt(selectedSchedule));
+            if (sched) {
+                headerText += ` | Horario: ${sched.grade} - ${sched.day_of_week}`;
+            }
+        }
+        doc.text(headerText, 14, 36);
 
         // Map Table Columns
         const tableHeaders = [
@@ -155,7 +170,10 @@ const CourseGradebook = () => {
                             <select
                                 className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none outline-none font-medium"
                                 value={selectedCourse}
-                                onChange={(e) => setSelectedCourse(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedCourse(e.target.value);
+                                    setSelectedSchedule('');
+                                }}
                             >
                                 <option value="">-- Elige un curso --</option>
                                 {courses?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -165,6 +183,27 @@ const CourseGradebook = () => {
                             </div>
                         </div>
                     </div>
+
+                    <div className="flex-1 w-full relative">
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Seleccionar Horario</label>
+                        <select
+                            className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none outline-none font-medium disabled:opacity-50"
+                            value={selectedSchedule}
+                            onChange={(e) => setSelectedSchedule(e.target.value)}
+                            disabled={!selectedCourse}
+                        >
+                            <option value="">Todos los Horarios</option>
+                            {schedules?.map((s: any) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.grade} - {s.day_of_week} {s.start_time ? `(${s.start_time.substring(0, 5)})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center mt-7 pointer-events-none text-slate-500">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+
                     {selectedCourse && gradebook && !isFetching && !isLoading && (
                         <button
                             onClick={generatePDF}

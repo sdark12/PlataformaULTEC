@@ -19,6 +19,7 @@ const Reports = () => {
     ]);
     const [filterCoursePending, setFilterCoursePending] = useState('');
     const [minMonthsPending, setMinMonthsPending] = useState<number>(0);
+    const [groupByStudent, setGroupByStudent] = useState(false);
 
     const { data: report, isLoading } = useQuery({
         queryKey: ['financialReport', startDate, endDate],
@@ -85,7 +86,7 @@ const Reports = () => {
     const transactionCount = filteredReport?.length || 0;
     const averageTicket = transactionCount > 0 ? totalIncome / transactionCount : 0;
 
-    const filteredPending = pendingReport?.filter((item) => {
+    const baseFilteredPending = pendingReport?.filter((item) => {
         const studentName = item.student_name || '';
         const courseName = item.course_name || '';
         const matchesSearch = studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,6 +111,21 @@ const Reports = () => {
         return 0;
     });
 
+    const finalPendingList: any[] = groupByStudent
+        ? Object.values(baseFilteredPending?.reduce((acc: any, curr: any) => {
+            if (!acc[curr.student_name]) {
+                acc[curr.student_name] = { ...curr, courses_count: 1 };
+            } else {
+                acc[curr.student_name].pending_amount += curr.pending_amount;
+                acc[curr.student_name].monthly_fee += curr.monthly_fee;
+                acc[curr.student_name].months_overdue = Math.max(acc[curr.student_name].months_overdue, curr.months_overdue);
+                acc[curr.student_name].courses_count++;
+                acc[curr.student_name].course_name = `Varios Cursos (${acc[curr.student_name].courses_count})`;
+            }
+            return acc;
+        }, {}) || []) as any[]
+        : (baseFilteredPending || []);
+
     const handleSortPending = (field: string) => {
         setSortConfigPending(prev => {
             const existingIndex = prev.findIndex(c => c.field === field);
@@ -131,7 +147,7 @@ const Reports = () => {
         );
     };
 
-    const totalPendingDebt = filteredPending?.reduce((sum, item) => sum + Number(item.pending_amount), 0) || 0;
+    const totalPendingDebt = finalPendingList?.reduce((sum, item) => sum + Number(item.pending_amount), 0) || 0;
 
     const generatePDF = () => {
         const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
@@ -167,7 +183,7 @@ const Reports = () => {
                 item.method,
                 `Q${Number(item.amount).toFixed(2)}`
             ]) || [])
-            : (filteredPending?.map((item, idx) => [
+            : (finalPendingList?.map((item, idx) => [
                 idx + 1,
                 item.student_name,
                 item.course_name,
@@ -337,7 +353,7 @@ const Reports = () => {
                         </div>
                         <div>
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Alumnos Morosos</p>
-                            <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{filteredPending?.length || 0}</h3>
+                            <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{finalPendingList?.length || 0}</h3>
                         </div>
                     </div>
                 </div>
@@ -436,6 +452,20 @@ const Reports = () => {
                                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
+                            </div>
+                            <div className="flex items-center ml-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-4 py-3 h-[46px]">
+                                <label className="flex items-center cursor-pointer relative group">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={groupByStudent}
+                                        onChange={(e) => setGroupByStudent(e.target.checked)}
+                                    />
+                                    <div className={`w-10 h-5 bg-slate-200 dark:bg-slate-700 rounded-full transition-colors flex items-center px-0.5 ${groupByStudent ? 'bg-brand-blue dark:bg-brand-blue' : ''}`}>
+                                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${groupByStudent ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                    </div>
+                                    <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Agrupar por alumno</span>
+                                </label>
                             </div>
                         </>
                     )}
@@ -548,7 +578,7 @@ const Reports = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white/50 dark:bg-transparent">
-                                    {filteredPending?.map((item, idx) => (
+                                    {finalPendingList?.map((item, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group print:break-inside-avoid">
                                             <td className="px-6 py-4 text-center text-slate-400 text-xs font-medium">{idx + 1}</td>
                                             <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{item.student_name}</td>
@@ -562,7 +592,7 @@ const Reports = () => {
                                             <td className="px-6 py-4 font-black text-brand-danger text-right bg-brand-danger/5 dark:bg-brand-danger/10 group-hover:bg-brand-danger/10 transition-colors">Q{Number(item.pending_amount).toFixed(2)}</td>
                                         </tr>
                                     ))}
-                                    {filteredPending?.length === 0 && (
+                                    {finalPendingList?.length === 0 && (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                                 Todos los alumnos están al día.
