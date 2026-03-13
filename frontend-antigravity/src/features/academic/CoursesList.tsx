@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, createCourse, updateCourse } from '../../features/academic/academicService';
-import { Plus, Loader2, BookOpen, Edit2, Trash2, CalendarClock } from 'lucide-react';
+import { getBranches } from '../../features/branches/branchesService';
+import { getCurrentUser } from '../../features/auth/authService';
+import { Plus, Loader2, BookOpen, Edit2, Trash2, CalendarClock, Building2 } from 'lucide-react';
 import { CourseSchedulesModal } from './CourseSchedulesModal';
 
 const CoursesList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
+    const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
     const [selectedCourse, setSelectedCourse] = useState<any>(null);
     const [scheduleCourse, setScheduleCourse] = useState<any>(null);
     const [errorMsg, setErrorMsg] = useState('');
 
+    const user = getCurrentUser();
+
     const { data: courses, isLoading, isError } = useQuery({
         queryKey: ['courses'],
         queryFn: getCourses,
+    });
+
+    const { data: branches } = useQuery({
+        queryKey: ['branches-list'],
+        queryFn: getBranches,
+        enabled: !user?.branch_id
     });
 
     const createMutation = useMutation({
@@ -22,7 +32,7 @@ const CoursesList = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             setIsModalOpen(false);
-            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
+            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -37,7 +47,7 @@ const CoursesList = () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             setIsModalOpen(false);
             setSelectedCourse(null);
-            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
+            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -92,7 +102,8 @@ const CoursesList = () => {
             description: course.description || '',
             monthly_fee: course.monthly_fee,
             start_date: course.start_date ? course.start_date.split('T')[0] : '',
-            end_date: course.end_date ? course.end_date.split('T')[0] : ''
+            end_date: course.end_date ? course.end_date.split('T')[0] : '',
+            branch_id: course.branch_id || ''
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -100,7 +111,7 @@ const CoursesList = () => {
 
     const handleNewCourse = () => {
         setSelectedCourse(null);
-        setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '' });
+        setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
         setErrorMsg('');
         setIsModalOpen(true);
     };
@@ -158,6 +169,12 @@ const CoursesList = () => {
                                 <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Q{course.monthly_fee}</span>
                                 {course.start_date && (
                                     <p className="text-[10px] text-brand-blue font-bold tracking-widest mt-1">Inició: {course.start_date.split('T')[0]}</p>
+                                )}
+                                {!user?.branch_id && course.branches && (
+                                    <p className="flex items-center text-[10px] text-amber-500 font-bold tracking-widest mt-1">
+                                        <Building2 className="h-3 w-3 mr-1" />
+                                        {course.branches.name}
+                                    </p>
                                 )}
                             </div>
                             <div className="flex space-x-1">
@@ -229,6 +246,27 @@ const CoursesList = () => {
                                         onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
                                     />
                                 </div>
+
+                                {!user?.branch_id && (
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700 ml-1 flex items-center">
+                                            <Building2 className="h-4 w-4 mr-1 text-slate-400" />
+                                            Sede *
+                                        </label>
+                                        <select
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                            value={newCourse.branch_id}
+                                            onChange={(e) => setNewCourse({ ...newCourse, branch_id: e.target.value })}
+                                            required={!user?.branch_id}
+                                        >
+                                            <option value="">Seleccione una sede...</option>
+                                            {branches?.map((branch: any) => (
+                                                <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Descripción</label>
                                     <textarea

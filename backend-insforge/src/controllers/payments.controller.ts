@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
+import { sendPaymentConfirmationEmail } from '../services/email.service';
 
 // Get Payments
 export const getPayments = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
         // Resource embedding for joins. Now payment is linked to student_id
-        const { data, error } = await client.database
+        let query = client.database
             .from('payments')
             .select(`
                 id,
@@ -24,8 +25,13 @@ export const getPayments = async (req: Request, res: Response) => {
                     branch_id
                 )
             `)
-            .eq('students.branch_id', branchId)
             .order('payment_date', { ascending: false });
+
+        if (branchId) {
+            query = query.eq('students.branch_id', branchId);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -52,9 +58,9 @@ export const getPayments = async (req: Request, res: Response) => {
 
 // Register Payment
 export const createPayment = async (req: Request, res: Response) => {
-    const { student_id, enrollment_id, enrollment_ids, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0, courses } = req.body;
+    const { student_id, enrollment_id, enrollment_ids, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0, courses, branch_id } = req.body;
     const userId = req.currentUser?.id;
-    const branchId = req.currentUser?.branch_id;
+    const finalBranchId = branch_id || req.currentUser?.branch_id;
 
     try {
         console.log("PAYMENT POST REQUEST BODY:", req.body);
@@ -156,7 +162,7 @@ export const createPayment = async (req: Request, res: Response) => {
             const { data: seqData } = await client.database
                 .from('invoice_sequences')
                 .select('series, current_number')
-                .eq('branch_id', branchId)
+                .eq('branch_id', finalBranchId)
                 .maybeSingle();
 
             if (seqData) {
@@ -164,7 +170,7 @@ export const createPayment = async (req: Request, res: Response) => {
                 await client.database
                     .from('invoice_sequences')
                     .update({ current_number: nextNum })
-                    .eq('branch_id', branchId);
+                    .eq('branch_id', finalBranchId);
                 invoiceNumber = `${seqData.series}-${String(userId).slice(0, 4)}-${nextNum.toString().padStart(6, '0')}`;
             }
 
@@ -175,7 +181,7 @@ export const createPayment = async (req: Request, res: Response) => {
             const { data: invoice, error: invoiceError } = await client.database
                 .from('invoices')
                 .insert([{
-                    branch_id: branchId,
+                    branch_id: finalBranchId,
                     student_id,
                     invoice_number: invoiceNumber,
                     total_amount: actTotal,
@@ -238,9 +244,45 @@ export const createPayment = async (req: Request, res: Response) => {
 
         res.status(201).json({ ...firstPaymentRecord, invoice_id: invoiceId, invoice_number: invoiceNumberStr });
 
+        // Retrieve Student Email to auto-send the receipt
+        try {
+            const { data: studentInfo } = await client.database
+                .from('students')
+                .select('full_name, guardian_email, user_id')
+                .eq('id', student_id)
+                .single();
+
+            if (studentInfo) {
+                let targetEmail = studentInfo.guardian_email;
+                if (studentInfo.user_id) {
+                    const { data: profileInfo } = await client.database
+                        .from('profiles')
+                        .select('email')
+                        .eq('id', studentInfo.user_id)
+                        .maybeSingle();
+
+                    if (profileInfo?.email) {
+                        targetEmail = profileInfo.email;
+                    }
+                }
+
+                if (targetEmail) {
+                    sendPaymentConfirmationEmail(
+                        targetEmail,
+                        studentInfo.full_name,
+                        totalAmount || amount,
+                        invoiceNumberStr || 'REC-PENDING',
+                        description || 'Pago Consolidado'
+                    );
+                }
+            }
+        } catch (emailErr) {
+            console.error('Failed to dispatch payment receipt email:', emailErr);
+        }
+
         await broadcastNotification(
             client,
-            branchId || 0,
+            finalBranchId || 0,
             'Nuevo Pago',
             `Se ha registrado un nuevo pago unificado por Q.${totalAmount || amount}`,
             'PAYMENT'
@@ -255,8 +297,16 @@ export const updatePayment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { amount, method, reference_number, description, tuition_month, payment_type, discount } = req.body;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const branchId = req.currentUser?.branch_id;
 
     try {
+        if (branchId) {
+            const { data: payCheck } = await db.from('payments').select('students!inner(branch_id)').eq('id', id).maybeSingle();
+            if (!payCheck || payCheck.students?.branch_id !== branchId) {
+                return res.status(403).json({ message: 'Forbidden: Payment does not belong to your branch.' });
+            }
+        }
+
         const { data, error } = await db
             .from('payments')
             .update({
@@ -284,8 +334,16 @@ export const updatePayment = async (req: Request, res: Response) => {
 export const deletePayment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const branchId = req.currentUser?.branch_id;
 
     try {
+        if (branchId) {
+            const { data: payCheck } = await db.from('payments').select('students!inner(branch_id)').eq('id', id).maybeSingle();
+            if (!payCheck || payCheck.students?.branch_id !== branchId) {
+                return res.status(403).json({ message: 'Forbidden: Payment does not belong to your branch.' });
+            }
+        }
+
         const { error } = await db
             .from('payments')
             .delete()
@@ -293,7 +351,6 @@ export const deletePayment = async (req: Request, res: Response) => {
 
         if (error) throw error;
 
-        const branchId = req.currentUser?.branch_id;
         if (branchId) {
             await broadcastNotification(
                 client,

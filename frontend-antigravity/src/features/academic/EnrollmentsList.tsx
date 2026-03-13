@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getEnrollments, enrollStudent, getStudents, getCourses, updateEnrollment, deleteEnrollment, getCourseSchedules } from '../../features/academic/academicService';
-import { Plus, Loader2, RefreshCw, Trash2, Search, Filter, Calendar, Pencil } from 'lucide-react';
+import { getBranches } from '../../features/branches/branchesService';
+import { getCurrentUser } from '../../features/auth/authService';
+import { Plus, Loader2, RefreshCw, Trash2, Search, Filter, Calendar, Pencil, Building2 } from 'lucide-react';
 
 const EnrollmentsList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [newEnrollment, setNewEnrollment] = useState({ student_id: '', course_id: '', schedule_id: '' });
+    const [newEnrollment, setNewEnrollment] = useState({ student_id: '', course_id: '', schedule_id: '', branch_id: '' });
 
     // Filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
     const [filterCourse, setFilterCourse] = useState('');
+
+    const user = getCurrentUser();
 
     const { data: enrollments, isLoading } = useQuery({
         queryKey: ['enrollments'],
@@ -23,9 +27,8 @@ const EnrollmentsList = () => {
     const uniqueCourses = Array.from(new Set(enrollments?.map((e: any) => e.course_name).filter(Boolean))).sort();
 
     const { data: students } = useQuery({
-        queryKey: ['students'],
-        queryFn: getStudents,
-        enabled: isModalOpen
+        queryKey: ['students-list-enr'],
+        queryFn: () => getStudents(),
     });
 
     const { data: courses } = useQuery({
@@ -38,6 +41,12 @@ const EnrollmentsList = () => {
         queryKey: ['course_schedules', newEnrollment.course_id],
         queryFn: () => getCourseSchedules(newEnrollment.course_id),
         enabled: !!newEnrollment.course_id && isModalOpen
+    });
+
+    const { data: branches } = useQuery({
+        queryKey: ['branches-list'],
+        queryFn: getBranches,
+        enabled: !user?.branch_id && isModalOpen
     });
 
     const createMutation = useMutation({
@@ -87,7 +96,8 @@ const EnrollmentsList = () => {
         setNewEnrollment({
             student_id: enrollment.student_id,
             course_id: enrollment.course_id,
-            schedule_id: enrollment.schedule_id || ''
+            schedule_id: enrollment.schedule_id || '',
+            branch_id: enrollment.branch_id || ''
         });
         setIsModalOpen(true);
     };
@@ -95,7 +105,7 @@ const EnrollmentsList = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingId(null);
-        setNewEnrollment({ student_id: '', course_id: '', schedule_id: '' });
+        setNewEnrollment({ student_id: '', course_id: '', schedule_id: '', branch_id: '' });
     };
 
     const handleDelete = (id: string) => {
@@ -117,7 +127,8 @@ const EnrollmentsList = () => {
             createMutation.mutate({
                 student_id: newEnrollment.student_id,
                 course_id: newEnrollment.course_id,
-                schedule_id: newEnrollment.schedule_id || undefined
+                schedule_id: newEnrollment.schedule_id || undefined,
+                branch_id: newEnrollment.branch_id || undefined
             } as any);
         }
     };
@@ -149,7 +160,7 @@ const EnrollmentsList = () => {
                 <button
                     onClick={() => {
                         setEditingId(null);
-                        setNewEnrollment({ student_id: '', course_id: '', schedule_id: '' });
+                        setNewEnrollment({ student_id: '', course_id: '', schedule_id: '', branch_id: '' });
                         setIsModalOpen(true);
                     }}
                     className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
@@ -230,7 +241,15 @@ const EnrollmentsList = () => {
                         {filteredEnrollments?.map((enrollment: any) => (
                             <tr key={enrollment.id} className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition group">
                                 <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{enrollment.student_name}</td>
-                                <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-800/30">{enrollment.course_name}</td>
+                                <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-800/30">
+                                    {enrollment.course_name}
+                                    {!user?.branch_id && enrollment.branches && (
+                                        <div className="flex items-center text-[10px] text-amber-500 font-bold mt-1">
+                                            <Building2 className="h-3 w-3 mr-1" />
+                                            {enrollment.branches.name}
+                                        </div>
+                                    )}
+                                </td>
                                 <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                                     {enrollment.schedule_details ? (
                                         <div className="flex items-center gap-1">
@@ -327,6 +346,26 @@ const EnrollmentsList = () => {
                                     ))}
                                 </select>
                             </div>
+
+                            {!user?.branch_id && !editingId && (
+                                <div>
+                                    <label className="text-sm font-semibold text-slate-700 ml-1 flex items-center">
+                                        <Building2 className="h-4 w-4 mr-1 text-slate-400" />
+                                        Sede (Opcional)
+                                    </label>
+                                    <select
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                        value={newEnrollment.branch_id}
+                                        onChange={(e) => setNewEnrollment({ ...newEnrollment, branch_id: e.target.value })}
+                                        required={!user?.branch_id}
+                                    >
+                                        <option value="">Seleccione una sede...</option>
+                                        {branches?.map((branch: any) => (
+                                            <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             {newEnrollment.course_id && (
                                 <div>

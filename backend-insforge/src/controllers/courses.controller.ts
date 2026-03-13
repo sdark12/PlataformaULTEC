@@ -39,16 +39,16 @@ export const getCourses = async (req: Request, res: Response) => {
 };
 
 export const createCourse = async (req: Request, res: Response) => {
-    const { name, description, monthly_fee, start_date, end_date } = req.body;
-    const branchId = req.currentUser?.branch_id;
+    const { name, description, monthly_fee, start_date, end_date, branch_id } = req.body;
+    const finalBranchId = branch_id || req.currentUser?.branch_id;
     const db = req.dbUserClient || client;
 
-    console.log('createCourse:', { branchId, bodyName: name });
+    console.log('createCourse:', { branchId: finalBranchId, bodyName: name });
 
     try {
         const { data, error } = await db.database
             .from('courses')
-            .insert([{ branch_id: branchId, name, description, monthly_fee, start_date, end_date }])
+            .insert([{ branch_id: finalBranchId, name, description, monthly_fee, start_date, end_date }])
             .select()
             .single();
 
@@ -66,13 +66,19 @@ export const updateCourse = async (req: Request, res: Response) => {
     const { name, description, monthly_fee, is_active, start_date, end_date } = req.body;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
+    const branchId = req.currentUser?.branch_id;
+
     try {
-        const { data, error } = await db
+        let query = db
             .from('courses')
             .update({ name, description, monthly_fee, is_active, start_date, end_date })
-            .eq('id', id)
-            .select()
-            .single();
+            .eq('id', id);
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query.select().single();
 
         if (error) throw error;
 
@@ -87,15 +93,22 @@ export const deleteCourse = async (req: Request, res: Response) => {
     const { id } = req.params;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
+    const branchId = req.currentUser?.branch_id;
+
     try {
-        const { error } = await db
+        let query = db
             .from('courses')
             .delete()
             .eq('id', id);
 
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { error } = await query;
+
         if (error) throw error;
 
-        const branchId = req.currentUser?.branch_id;
         if (branchId) {
             await broadcastNotification(
                 client,

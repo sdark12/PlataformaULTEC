@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getFinancialReport, getPendingPaymentsReport } from './reportService';
-import { Loader2, Search, Filter, Printer, TrendingUp, CreditCard, Receipt, AlignJustify, AlertTriangle, Users } from 'lucide-react';
+import { Loader2, Search, Filter, Printer, TrendingUp, CreditCard, Receipt, AlignJustify, AlertTriangle, Users, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const Reports = () => {
     const [activeTab, setActiveTab] = useState<'income' | 'pending'>('income');
@@ -245,8 +246,47 @@ const Reports = () => {
         doc.save(`${activeTab === 'income' ? 'Reporte_Ingresos' : 'Reporte_Morosos'}_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
+    const exportToExcel = () => {
+        let worksheet;
+        let workbook;
+        let fileName;
+
+        if (activeTab === 'income') {
+            if (!filteredReport || filteredReport.length === 0) return;
+            const dataToExport = filteredReport.map((item, idx) => ({
+                'No.': idx + 1,
+                'Fecha': formatDate(item.payment_date),
+                'Estudiante': item.student_name,
+                'Curso': item.course_name,
+                'Método': item.method,
+                'Monto (Q)': Number(item.amount)
+            }));
+            worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Ingresos");
+            fileName = `Reporte_Ingresos_${new Date().toISOString().split('T')[0]}.xlsx`;
+        } else {
+            if (!finalPendingList || finalPendingList.length === 0) return;
+            const dataToExport = finalPendingList.map((item, idx) => ({
+                'No.': idx + 1,
+                'Estudiante': item.student_name,
+                'Curso': item.course_name,
+                'Cuota Mensual (Q)': Number(item.monthly_fee),
+                'Meses Pendientes': item.months_overdue,
+                'Deuda Total (Q)': Number(item.pending_amount)
+            }));
+            worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Morosos");
+            fileName = `Reporte_Morosos_${new Date().toISOString().split('T')[0]}.xlsx`;
+        }
+
+        XLSX.writeFile(workbook, fileName);
+    };
+
     // Helper para formatear fechas de UTC a Local correctamente y evitar el corrimiento de día
     const formatDate = (dateString: string) => {
+        if (!dateString) return '';
         const parts = dateString.split('T')[0].split('-');
         // Crear la fecha forzando la hora local al mediodía para evitar cambios de fecha por zona horaria
         const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
@@ -260,13 +300,22 @@ const Reports = () => {
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Reportes Financieros</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Análisis de ingresos y registros de transacciones.</p>
                 </div>
-                <button
-                    onClick={generatePDF}
-                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold"
-                >
-                    <Printer className="h-5 w-5" />
-                    <span>Exportar PDF</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={exportToExcel}
+                        className="flex items-center space-x-2 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)] active:scale-95 font-semibold border border-white/10"
+                    >
+                        <Download className="h-5 w-5" />
+                        <span>Exportar Excel</span>
+                    </button>
+                    <button
+                        onClick={generatePDF}
+                        className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
+                    >
+                        <Printer className="h-5 w-5" />
+                        <span>Exportar PDF</span>
+                    </button>
+                </div>
             </div>
 
             {/* Print Header (Only visible when printing) */}

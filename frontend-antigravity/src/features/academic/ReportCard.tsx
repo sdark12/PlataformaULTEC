@@ -3,16 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { getStudents } from './academicService';
 import { getStudentReportCard } from './gradeService';
 import { Loader2, Printer, Search, GraduationCap } from 'lucide-react';
+import { getCurrentUser } from '../auth/authService';
 
 const ReportCard = () => {
+    const user = getCurrentUser();
+    const isStudent = user?.role === 'student';
+
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(isStudent ? user?.id : null);
     const [disabledCourses, setDisabledCourses] = useState<Record<string, boolean>>({});
 
     // Fetch students list for searching
     const { data: students, isLoading: loadingStudents } = useQuery({
-        queryKey: ['students'],
-        queryFn: getStudents
+        queryKey: ['report-students'],
+        queryFn: () => getStudents(),
+        enabled: !isStudent // Don't fetch all students if it's just a student viewing their own card
     });
 
     // Fetch report card data for selected student
@@ -22,7 +27,7 @@ const ReportCard = () => {
         enabled: !!selectedStudentId,
     });
 
-    const filteredStudents = students?.filter(s =>
+    const filteredStudents = students?.filter((s: any) =>
         s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.identification_document && s.identification_document.includes(searchTerm))
     );
@@ -38,59 +43,67 @@ const ReportCard = () => {
             <div className="print:hidden">
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Boletas de Calificaciones</h2>
-                        <p className="text-slate-500 mt-1">Genera y visualiza reportes consolidados del rendimiento estudiantil.</p>
+                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+                            {isStudent ? 'Mi Boleta de Calificaciones' : 'Boletas de Calificaciones'}
+                        </h2>
+                        <p className="text-slate-500 mt-1">
+                            {isStudent
+                                ? 'Revisa tu rendimiento académico y calificaciones del bimestre actual.'
+                                : 'Genera y visualiza reportes consolidados del rendimiento estudiantil.'}
+                        </p>
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 mb-8 max-w-2xl">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Buscar Estudiante</label>
-                    <div className="relative mb-4">
-                        <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                        <input
-                            type="text"
-                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none font-medium"
-                            placeholder="Ej. Nombre del alumno o DPI..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                {!isStudent && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 mb-8 max-w-2xl">
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Buscar Estudiante</label>
+                        <div className="relative mb-4">
+                            <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                            <input
+                                type="text"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none font-medium"
+                                placeholder="Ej. Nombre del alumno o DPI..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
 
-                    {searchTerm && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl max-h-48 overflow-y-auto w-full">
-                            {loadingStudents && <div className="p-4 text-center text-slate-500"><Loader2 className="animate-spin h-5 w-5 inline" /> Buscando...</div>}
-                            {filteredStudents?.map((student) => (
+                        {searchTerm && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl max-h-48 overflow-y-auto w-full">
+                                {loadingStudents && <div className="p-4 text-center text-slate-500"><Loader2 className="animate-spin h-5 w-5 inline" /> Buscando...</div>}
+                                {filteredStudents?.map((student: any) => (
+                                    <button
+                                        key={student.id}
+                                        className="w-full text-left px-4 py-3 hover:bg-blue-50 focus:bg-blue-50 border-b border-slate-100 last:border-0 transition-colors"
+                                        onClick={() => {
+                                            setSelectedStudentId(student.id);
+                                            setSearchTerm(''); // Collapse
+                                            setDisabledCourses({}); // Reset filters
+                                        }}
+                                    >
+                                        <div className="font-bold text-slate-800">{student.full_name}</div>
+                                        <div className="text-xs text-slate-500">{student.identification_document || 'Sin ID'}</div>
+                                    </button>
+                                ))}
+                                {filteredStudents?.length === 0 && (
+                                    <div className="p-4 text-center text-slate-500 text-sm">No se encontraron alumnos con ese nombre.</div>
+                                )}
+                            </div>
+                        )}
+
+                        {selectedStudentId && reportData && !isFetching && !loadingReport && (
+                            <div className="mt-6 flex justify-end">
                                 <button
-                                    key={student.id}
-                                    className="w-full text-left px-4 py-3 hover:bg-blue-50 focus:bg-blue-50 border-b border-slate-100 last:border-0 transition-colors"
-                                    onClick={() => {
-                                        setSelectedStudentId(student.id);
-                                        setSearchTerm(''); // Collapse
-                                        setDisabledCourses({}); // Reset filters
-                                    }}
+                                    onClick={handlePrint}
+                                    className="flex items-center space-x-2 px-6 py-2.5 bg-slate-800 text-white font-bold rounded-xl shadow-sm hover:bg-slate-900 transition-all active:scale-95"
                                 >
-                                    <div className="font-bold text-slate-800">{student.full_name}</div>
-                                    <div className="text-xs text-slate-500">{student.identification_document || 'Sin ID'}</div>
+                                    <Printer className="w-5 h-5" />
+                                    <span>Imprimir Boleta</span>
                                 </button>
-                            ))}
-                            {filteredStudents?.length === 0 && (
-                                <div className="p-4 text-center text-slate-500 text-sm">No se encontraron alumnos con ese nombre.</div>
-                            )}
-                        </div>
-                    )}
-
-                    {selectedStudentId && reportData && !isFetching && !loadingReport && (
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={handlePrint}
-                                className="flex items-center space-x-2 px-6 py-2.5 bg-slate-800 text-white font-bold rounded-xl shadow-sm hover:bg-slate-900 transition-all active:scale-95"
-                            >
-                                <Printer className="w-5 h-5" />
-                                <span>Imprimir Boleta</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Document / Report Card to Print */}

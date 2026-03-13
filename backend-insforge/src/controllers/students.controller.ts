@@ -9,11 +9,39 @@ export const getStudents = async (req: Request, res: Response) => {
     try {
         let query = db.database
             .from('students')
-            .select('*')
+            .select('*', { count: 'exact' })
             .order('full_name');
 
         if (branchId) {
             query = query.eq('branch_id', branchId);
+        }
+
+        const { page, limit, search } = req.query;
+
+        if (search) {
+            // Unir varios campos en una búsqueda general o limitar a full_name
+            query = query.or(`full_name.ilike.%${search}%,personal_code.ilike.%${search}%`);
+        }
+
+        if (page && limit) {
+            const pageNum = parseInt(page as string, 10);
+            const limitNum = parseInt(limit as string, 10);
+            const offset = (pageNum - 1) * limitNum;
+            
+            query = query.range(offset, offset + limitNum - 1);
+            
+            const { data, error, count } = await query;
+            if (error) throw error;
+            
+            return res.json({
+                data,
+                meta: {
+                    total: count || 0,
+                    page: pageNum,
+                    limit: limitNum,
+                    totalPages: Math.ceil((count || 0) / limitNum)
+                }
+            });
         }
 
         const { data, error } = await query;
@@ -56,22 +84,23 @@ export const createStudent = async (req: Request, res: Response) => {
         medical_notes,
         previous_school,
         personal_code,
-        user_id // Check for user link
+        user_id, // Check for user link
+        branch_id // Front-end passed branch_id
     } = req.body;
 
-    const branchId = req.currentUser?.branch_id;
+    const finalBranchId = branch_id || req.currentUser?.branch_id;
     const db = req.dbUserClient || client;
 
     // Convert empty string to null for UUID
     const finalUserId = user_id === '' ? null : user_id;
 
-    console.log('createStudent:', { branchId, bodyName: full_name });
+    console.log('createStudent:', { branchId: finalBranchId, bodyName: full_name });
 
     try {
         const { data, error } = await db.database
             .from('students')
             .insert([{
-                branch_id: branchId,
+                branch_id: finalBranchId,
                 full_name,
                 birth_date,
                 gender,
@@ -115,13 +144,16 @@ export const updateStudent = async (req: Request, res: Response) => {
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
     try {
-        const { data, error } = await db
+        let query = db
             .from('students')
             .update(updates)
-            .eq('id', id)
-            .eq('branch_id', branchId) // Ensure user can only update students in their branch
-            .select()
-            .single();
+            .eq('id', id);
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId); // Ensure user can only update students in their branch
+        }
+
+        const { data, error } = await query.select().single();
 
         if (error) throw error;
 
@@ -138,11 +170,16 @@ export const deleteStudent = async (req: Request, res: Response) => {
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
     try {
-        const { error } = await db
+        let query = db
             .from('students')
             .delete()
-            .eq('id', id)
-            .eq('branch_id', branchId);
+            .eq('id', id);
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { error } = await query;
 
         if (error) throw error;
 

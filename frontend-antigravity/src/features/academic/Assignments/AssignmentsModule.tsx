@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from '../academicService';
 import { assignmentsService, type Assignment } from '../../../services/assignmentsService';
-import { Plus, Loader2, ClipboardList, Calendar, CheckCircle, Clock, Paperclip, Printer, FileBarChart } from 'lucide-react';
+import { Plus, Loader2, ClipboardList, Calendar, CheckCircle, CheckCircle2, Clock, Paperclip, Printer, FileBarChart, AlertCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -657,12 +657,32 @@ const AssignmentsModule = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {sub.attachment_url && (
-                                                        <a href={`http://localhost:3000${sub.attachment_url}`} target="_blank" rel="noopener noreferrer" className="flex items-center mt-3 text-sm text-brand-blue hover:text-blue-600 transition-colors bg-brand-blue/10 w-max px-3 py-1.5 rounded-lg font-medium">
-                                                            <Paperclip className="h-4 w-4 mr-1" />
-                                                            Abrir Evidencia
-                                                        </a>
-                                                    )}
+                                                    
+                                                    {/* File Proof Section */}
+                                                    <div className="mt-4">
+                                                        {sub.attachment_url ? (
+                                                            <div className="flex flex-col space-y-2">
+                                                                <div className="flex items-center text-xs text-brand-success font-bold uppercase tracking-tighter">
+                                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                                    El alumno subió un archivo
+                                                                </div>
+                                                                <a 
+                                                                    href={`http://localhost:3000${sub.attachment_url}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer" 
+                                                                    className="flex items-center text-sm text-white bg-brand-blue hover:bg-blue-600 transition-all w-max px-4 py-2 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95"
+                                                                >
+                                                                    <Paperclip className="h-4 w-4 mr-2" />
+                                                                    Visualizar Tarea / Comprobante
+                                                                </a>
+                                                            </div>
+                                                        ) : sub.status !== 'PENDING' ? (
+                                                            <div className="flex items-center text-xs text-amber-600 font-bold uppercase tracking-tighter bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 w-max">
+                                                                <AlertCircle className="w-3 h-3 mr-1" />
+                                                                Entregado manual (Sin archivo adjunto)
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
                                                 </div>
 
                                                 {/* Grading Form */}

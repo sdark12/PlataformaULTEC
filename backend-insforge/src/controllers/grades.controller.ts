@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 export const getGrades = async (req: Request, res: Response) => {
     const { course_id, unit_name, schedule_id } = req.query;
@@ -107,20 +107,32 @@ export const saveGrades = async (req: Request, res: Response) => {
 };
 
 export const getStudentReportCard = async (req: Request, res: Response) => {
-    const { student_id } = req.params;
+    let { student_id } = req.params;
 
     try {
-        // Get Student info
-        const { data: student, error: studentError } = await client.database
+        // If student_id is a profile_id (happens when student logs in), map it to student_id
+        // Try finding by ID first, if not found or if we want to be safe, check user_id
+        // Use adminClient to bypass any potential Row Level Security when searching by user_id
+        let studentQuery = adminClient.database
             .from('students')
-            .select('full_name, id')
-            .eq('id', student_id)
-            .single();
+            .select('full_name, id, user_id');
 
-        if (studentError) throw studentError;
+        // Check if student_id matches ID or USER_ID
+        // This handles cases where the frontend sends the profile.id
+        const { data: studentRecord, error: findError } = await studentQuery
+            .or(`id.eq.${student_id},user_id.eq.${student_id}`)
+            .maybeSingle();
 
-        // Get all grades across courses
-        const { data: gradesData, error: gradesError } = await client.database
+        if (findError) throw findError;
+        
+        if (!studentRecord) {
+            return res.status(404).json({ message: 'Estudiante no encontrado' });
+        }
+
+        const actualStudentId = studentRecord.id;
+
+        // Get all grades across courses - use adminClient to bypass RLS
+        const { data: gradesData, error: gradesError } = await adminClient.database
             .from('grades')
             .select(`
                  score,
@@ -128,7 +140,7 @@ export const getStudentReportCard = async (req: Request, res: Response) => {
                  remarks,
                  courses (id, name)
              `)
-            .eq('student_id', student_id);
+            .eq('student_id', actualStudentId);
 
         if (gradesError) throw gradesError;
 
@@ -136,8 +148,10 @@ export const getStudentReportCard = async (req: Request, res: Response) => {
         const coursesMap = new Map();
 
         gradesData?.forEach((g: any) => {
-            const courseId = g.courses.id;
-            const courseName = g.courses.name;
+            const courseId = g.courses?.id;
+            const courseName = g.courses?.name;
+
+            if (!courseId) return;
 
             if (!coursesMap.has(courseId)) {
                 coursesMap.set(courseId, {
@@ -172,7 +186,7 @@ export const getStudentReportCard = async (req: Request, res: Response) => {
         const generalAverage = totalUnits > 0 ? (totalScoreSum / totalUnits).toFixed(2) : 0;
 
         res.json({
-            student: student,
+            student: studentRecord,
             general_average: generalAverage,
             courses: reportCard
         });

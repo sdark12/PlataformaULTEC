@@ -153,11 +153,52 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
             .select('*')
             .eq('invoice_id', invoiceId);
 
+        // Fetch past payments for sidebar history
+        const { data: studentPayments } = await client.database
+            .from('payments')
+            .select('created_at, tuition_month, payment_type')
+            .eq('student_id', invoice.student_id);
+
+        let inscriptionDate = '-';
+        const monthlyPayments: Record<number, string> = {};
+
+        if (studentPayments) {
+            // Find first enrollment payment
+            const enrollmentPayments = studentPayments.filter(p => p.payment_type === 'ENROLLMENT').sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            if (enrollmentPayments.length > 0) {
+                inscriptionDate = new Date(enrollmentPayments[0].created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            }
+
+            // Map tuitions to months
+            studentPayments.filter(p => p.payment_type === 'TUITION' && p.tuition_month).forEach((p) => {
+                const match = p.tuition_month.match(/^\d{4}-(\d{2})$/);
+                if (match) {
+                    const monthNum = parseInt(match[1], 10);
+                    if (!monthlyPayments[monthNum] || new Date(p.created_at) > new Date(monthlyPayments[monthNum].split('/').reverse().join('-'))) {
+                        monthlyPayments[monthNum] = new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                    }
+                }
+            });
+        }
+
+        let classSchedule = 'Sin horario asignado';
+        const { data: schedCheck } = await client.database
+            .from('enrollments')
+            .select(`schedules!inner(day_of_week, start_time, end_time)`)
+            .eq('student_id', invoice.student_id)
+            .limit(1)
+            .maybeSingle();
+            
+        if (schedCheck && schedCheck.schedules) {
+            const s: any = schedCheck.schedules;
+            classSchedule = `${s.day_of_week} ${s.start_time?.substring(0,5)} - ${s.end_time?.substring(0,5)}`;
+        }
+
         // Generate PDF
-        const doc = new PDFDocument({ margin: 0, size: 'A4' });
+        const doc = new PDFDocument({ margin: 0, size: 'A4', layout: 'landscape' });
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoice_number}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=${invoice.invoice_number}.pdf`);
 
         doc.pipe(res);
 
@@ -169,124 +210,291 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
             lightGray: '#f8fafc', // Table Alternate (Slate 50)
             textDark: '#0f172a',
             textLight: '#475569',
-            white: '#FFFFFF'
+            white: '#FFFFFF',
+            black: '#000000',
+            border: '#cbd5e1',
+            red: '#dc2626'
         };
 
-        const sidebarWidth = 180;
-        const pageWidth = doc.page.width;
-        const pageHeight = doc.page.height;
+        const pageWidth = doc.page.width;   // ~841.89
+        const pageHeight = doc.page.height; // ~595.28
+
+        // Define Split
+        const cutX = pageWidth * 0.72; // ~606
+        const sidebarWidth = 160;
+
+        // ==========================================
+        // LEFT SECTION (MAIN RECIBO)
+        // ==========================================
 
         // --- DRAW SIDEBAR ---
         doc.rect(0, 0, sidebarWidth, pageHeight).fill(colors.dark);
 
-        // --- DRAW TOP ORANGE ACCENT (Sidebar) ---
+        // --- DRAW TOP BLOB (Sidebar) ---
         doc.rect(0, 30, sidebarWidth, 20).fill(colors.orange);
 
-        // --- DRAW BOTTOM RED-ORANGE ACCENT (Sidebar) ---
+        // --- DRAW BOTTOM BLOB (Sidebar) ---
         doc.polygon(
-            [0, pageHeight - 150],
-            [sidebarWidth, pageHeight - 220],
+            [0, pageHeight - 120],
+            [sidebarWidth, pageHeight - 180],
             [sidebarWidth, pageHeight],
             [0, pageHeight]
         ).fill(colors.redOrange);
-        doc.rect(0, pageHeight - 150, sidebarWidth, 150).fill(colors.redOrange); // Fill below polygon to be safe
+        doc.rect(0, pageHeight - 120, sidebarWidth, 120).fill(colors.redOrange);
 
         // --- SIDEBAR CONTENT ---
-        // Logo / Name (In sidebar)
         doc.fillColor(colors.white).fontSize(20).font('Helvetica-Bold')
-            .text('ULTRA', 30, 80)
-            .text('TECNOLOGÍA', 30, 100);
+            .text('ULTRA', 25, 60)
+            .text('TECNOLOGÍA', 25, 80);
 
-        doc.fontSize(9).font('Helvetica')
-            .text('PANEL ADMINISTRATIVO', 30, 125, { characterSpacing: 1, text: 'PANEL ADMINISTRATIVO' } as any);
+        doc.fontSize(8).font('Helvetica')
+            .text('CENTRO ACADÉMICO', 25, 105, { characterSpacing: 1, text: 'CENTRO ACADÉMICO' } as any);
 
         doc.moveDown(4);
-        doc.fontSize(11).font('Helvetica-Bold').text('CONTACTO', 30, doc.y);
+        doc.fontSize(10).font('Helvetica-Bold').text('CONTACTO', 25, doc.y);
         doc.moveDown(1);
-        doc.fontSize(9).font('Helvetica')
-            .text('Dir: ' + (invoice.branches?.address || 'Ciudad de Guatemala'), 30, doc.y, { width: 120 })
+        doc.fontSize(8).font('Helvetica')
+            .text('Dir: ' + (invoice.branches?.address || 'Ciudad de Guatemala'), 25, doc.y, { width: 120 })
             .moveDown(1)
             .text('Tel: +502 1234-5678')
             .moveDown(0.5)
             .text('info@ultratecnologia.com');
 
+        doc.moveDown(3);
+        doc.fillColor(colors.red).fontSize(8).font('Helvetica-Bold')
+            .text('HORARIO DE ATENCIÓN', 25, doc.y)
+            .text('8:00 AM A 12:00 MD')
+            .text('2:00 PM A 6:00 PM')
+            .moveDown(1)
+            .text('DOMINGOS:')
+            .text('8:00 AM A 12:00 MD');
+
+        // --- PAYMENT HISTORY (SIDEBAR) ---
+        // (Moved to the Codo section on the right)
+
         // --- MAIN AREA CONTENT ---
-        const startX = sidebarWidth + 40;
+        const startX = sidebarWidth + 30;
+        const mainWidth = cutX - startX - 30;
 
-        // --- TOP RIGHT ORANGE BLOCK (Logo/Title Area) ---
-        doc.rect(pageWidth - 200, 30, 200, 60).fill(colors.orange);
-        doc.fillColor(colors.white).fontSize(24).font('Helvetica-Bold')
-            .text('INVOICE', pageWidth - 180, 45, { align: 'right', width: 160 });
-        doc.fontSize(10).font('Helvetica')
-            .text('RECIBO DE PAGO', pageWidth - 180, 70, { align: 'right', width: 160 });
+        // Title Block
+        doc.rect(cutX - 190, 30, 160, 50).fill(colors.dark);
+        doc.fillColor(colors.white).fontSize(20).font('Helvetica-Bold')
+            .text('RECIBO', cutX - 175, 40, { align: 'right', width: 130 });
+        doc.fontSize(9).font('Helvetica')
+            .text('OFICIAL', cutX - 175, 62, { align: 'right', width: 130 });
 
-        // --- INVOICE DETAILS ---
-        const detailY = 150;
+        // Institutional info (Left top)
+        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold')
+            .text('ACADEMIA AUTORIZADA', startX, 40);
+        doc.fontSize(8).font('Helvetica')
+            .text('RESOLUCIÓN 154-2006, 00840-DIGEACE', startX, 55)
+            .text('CÓDIGOS: 00929-2010 / 00930-2010', startX, 68);
 
-        // Column 1: Client
-        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('FACTURAR A:', startX, detailY);
-        doc.fillColor(colors.textLight).font('Helvetica')
-            .text(invoice.students?.full_name?.toUpperCase() || 'CLIENTE', startX, detailY + 15)
-            .text(invoice.students?.personal_code ? `Cód. MINEDUC / CUI: ${invoice.students.personal_code}` : 'Estudiante Activo', startX, detailY + 30);
+        // Client Details Box
+        const detailY = 120;
 
-        // Column 2: Details
-        const col2X = startX + 180;
-        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('NO. FACTURA:', col2X, detailY);
-        doc.fillColor(colors.textLight).font('Helvetica').text(invoice.invoice_number, col2X, detailY + 15);
+        doc.rect(startX, detailY, mainWidth, 90).lineWidth(1).stroke(colors.border);
 
-        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold').text('FECHA:', col2X, detailY + 40);
-        doc.fillColor(colors.textLight).font('Helvetica').text(new Date(invoice.issue_date || invoice.created_at).toLocaleDateString(), col2X, detailY + 55);
+        // Client Row 1
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold').text('CÓDIGO ALUMNO:', startX + 15, detailY + 15);
+        doc.fillColor(colors.textDark).font('Helvetica').text(invoice.students?.personal_code || 'N/A', startX + 110, detailY + 15);
+
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold').text('NO. FACTURA:', startX + 220, detailY + 15);
+        doc.fillColor(colors.textDark).font('Helvetica').text(invoice.invoice_number, startX + 280, detailY + 15);
+
+        // Client Row 2
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold').text('NOMBRES:', startX + 15, detailY + 35);
+        doc.fillColor(colors.textDark).font('Helvetica').text(invoice.students?.full_name?.toUpperCase() || 'CLIENTE', startX + 110, detailY + 35);
+
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold').text('FECHA:', startX + 220, detailY + 35);
+        doc.fillColor(colors.textDark).font('Helvetica').text(new Date(invoice.issue_date || invoice.created_at).toLocaleDateString(), startX + 280, detailY + 35);
+
+        // Client Row 3
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold').text('ESTADO:', startX + 15, detailY + 55);
+        doc.fillColor(colors.textDark).font('Helvetica').text('ESTUDIANTE ACTIVO', startX + 110, detailY + 55);
+
+        // Client Row 4
+        doc.fillColor(colors.red).fontSize(8).font('Helvetica-Bold').text('HORARIO DE CLASES:', startX + 15, detailY + 75);
+        doc.fillColor(colors.red).font('Helvetica').text(classSchedule, startX + 120, detailY + 75);
+
 
         // --- TABLE SECTION ---
-        const tableTop = 280;
+        const tableTop = 220;
         const colDesc = startX;
-        const colQty = startX + 180;
-        const colUnit = startX + 230;
-        const colTotal = startX + 300;
+        const colQty = startX + 220;
+        const colUnit = startX + 270;
+        const colTotal = startX + 340;
 
         // Table Header
-        doc.rect(startX, tableTop, pageWidth - startX - 40, 25).fill(colors.orange);
-        doc.fillColor(colors.white).fontSize(10).font('Helvetica-Bold')
-            .text('DESCRIPCIÓN', colDesc + 10, tableTop + 8)
-            .text('CANT', colQty, tableTop + 8)
-            .text('PRECIO', colUnit, tableTop + 8)
-            .text('TOTAL', colTotal, tableTop + 8);
+        doc.rect(startX, tableTop, mainWidth, 22).fill(colors.orange);
+        doc.fillColor(colors.white).fontSize(9).font('Helvetica-Bold')
+            .text('DESCRIPCIÓN DEL CONCEPTO', colDesc + 10, tableTop + 6)
+            .text('CANT', colQty, tableTop + 6)
+            .text('PRECIO', colUnit, tableTop + 6)
+            .text('TOTAL', colTotal, tableTop + 6);
 
         // Table Rows
-        let rowY = tableTop + 25;
-        doc.font('Helvetica').fontSize(9);
+        let rowY = tableTop + 22;
+        doc.font('Helvetica').fontSize(8);
 
         if (items) {
             items.forEach((item: any, i: number) => {
-                // Alternate row background
                 if (i % 2 === 0) {
-                    doc.rect(startX, rowY, pageWidth - startX - 40, 30).fill(colors.lightGray);
+                    doc.rect(startX, rowY, mainWidth, 25).fill(colors.lightGray);
                 }
 
                 doc.fillColor(colors.textDark)
-                    .text(item.description, colDesc + 10, rowY + 10, { width: 160 })
-                    .text(item.quantity.toString(), colQty, rowY + 10)
-                    .text(`Q${Number(item.unit_price).toFixed(2)}`, colUnit, rowY + 10)
-                    .text(`Q${Number(item.total_price).toFixed(2)}`, colTotal, rowY + 10);
+                    .text(item.description, colDesc + 10, rowY + 8, { width: 200 })
+                    .text(item.quantity.toString(), colQty, rowY + 8)
+                    .text(`Q${Number(item.unit_price).toFixed(2)}`, colUnit, rowY + 8)
+                    .text(`Q${Number(item.total_price).toFixed(2)}`, colTotal, rowY + 8);
 
-                rowY += 30;
+                rowY += 25;
+            });
+        }
+        
+        // --- PAYMENT HISTORY (MAIN AREA) ---
+        let mainHistY = rowY + 15;
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold')
+            .text(`HISTORIAL DE PAGOS DEL ESTUDIANTE (Inscripción: ${inscriptionDate})`, startX + 10, mainHistY);
+        
+        mainHistY += 15;
+        for (let i = 1; i <= 12; i++) {
+            const dateStr = monthlyPayments[i] || '---';
+            const col = Math.floor((i - 1) / 4);
+            const row = (i - 1) % 4;
+            const cX = startX + 15 + (col * 110);
+            const cY = mainHistY + (row * 15);
+            doc.fillColor(colors.textLight).fontSize(7).font('Helvetica-Bold').text(`pago${i}:`, cX, cY);
+            doc.fillColor(colors.textDark).fontSize(7).font('Helvetica').text(dateStr, cX + 30, cY);
+        }
+        
+        rowY = mainHistY + (4 * 15) + 10;
+
+        // Draw Table Border outline
+        const finalBoxHeight = Math.max(140, rowY - (tableTop + 22));
+        doc.rect(startX, tableTop + 22, mainWidth, finalBoxHeight).stroke(colors.border);
+
+        // --- TOTALS AREA ---
+        const totalBoxY = tableTop + 22 + finalBoxHeight;
+        doc.rect(cutX - 160, totalBoxY, 130, 25).fill(colors.redOrange);
+        doc.fillColor(colors.white).font('Helvetica-Bold').fontSize(10)
+            .text('TOTAL:', cutX - 150, totalBoxY + 8)
+            .text(`Q${Number(invoice.total_amount).toFixed(2)}`, cutX - 80, totalBoxY + 8);
+            
+        // Print Time
+        const stampDateMain = new Date().toLocaleString();
+        doc.fillColor(colors.red).fontSize(7).font('Helvetica')
+            .text(`hora de Impresión:  ${stampDateMain}`, startX + 10, totalBoxY + 30);
+
+        // Foto del Estudiante box
+        doc.rect(cutX - 110, totalBoxY + 45, 80, 85).lineWidth(2).stroke(colors.red);
+        doc.fillColor(colors.red).fontSize(7).font('Helvetica')
+            .text('foto del', cutX - 110, totalBoxY + 75, { width: 80, align: 'center' })
+            .text('estudiante', cutX - 110, totalBoxY + 85, { width: 80, align: 'center' });
+        
+        doc.lineWidth(1); // reset lineWidth for subsequent strokes
+
+        // Signatures (Main)
+        const signY = pageHeight - 65;
+        doc.moveTo(startX, signY).lineTo(startX + 180, signY).lineWidth(1).stroke(colors.border);
+        doc.fillColor(colors.textDark).font('Helvetica-Bold').fontSize(9)
+            .text('Firma de Secretaría', startX + 20, signY + 5, { width: 140, align: 'center' });
+
+        doc.fillColor(colors.red).font('Helvetica-Bold').fontSize(7)
+            .text('NOTA: todas las colegiaturas se cobran por adelantado.\nLea condiciones y términos de la academia, desde el numeral 1 hasta 1.10', startX + 200, signY + 15, { width: 220 });
+
+
+        // ==========================================
+        // CUT LINE SEPARATOR
+        // ==========================================
+        doc.moveTo(cutX, 15).lineTo(cutX, pageHeight - 15)
+            .lineWidth(1)
+            .dash(5, { space: 5 })
+            .stroke(colors.textLight);
+
+
+        // ==========================================
+        // RIGHT SECTION (CODO)
+        // ==========================================
+        const codoX = cutX + 20;
+        doc.undash(); // remove dash config
+
+        doc.fillColor(colors.dark).fontSize(10).font('Helvetica-Bold').text('CODO DE RECIBO', codoX, 35);
+
+        doc.moveDown(2);
+        doc.fillColor(colors.textDark).fontSize(10).font('Helvetica-Bold')
+            .text(invoice.students?.full_name?.toUpperCase() || 'CLIENTE', codoX, 60, { width: 180 });
+
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold')
+            .text(`CÓDIGO:`, codoX, 85);
+        doc.fillColor(colors.textDark).fontSize(8).font('Helvetica')
+            .text(invoice.students?.personal_code || 'N/A', codoX + 50, 85);
+
+        doc.fillColor(colors.textLight).fontSize(8).font('Helvetica-Bold')
+            .text(`RECIBO NO:`, codoX, 100);
+        doc.fillColor(colors.textDark).fontSize(8).font('Helvetica')
+            .text(invoice.invoice_number, codoX + 55, 100);
+
+        doc.moveDown(2);
+        doc.fillColor(colors.orange).fontSize(9).font('Helvetica-Bold')
+            .text('TIENE CANCELADO LOS SIGUIENTES CONCEPTOS:', codoX, 130, { width: 180 });
+
+        // Codo List
+        let clistY = 160;
+        doc.font('Helvetica').fontSize(7);
+        if (items) {
+            items.forEach((item: any) => {
+                doc.fillColor(colors.textDark)
+                    .text(`• ${item.description}`, codoX, clistY, { width: 120 })
+                    .text(`Q${Number(item.total_price).toFixed(2)}`, codoX + 130, clistY, { align: 'right', width: 60 });
+                clistY += 20;
             });
         }
 
-        // --- TOTALS AREA ---
-        rowY += 20;
-        doc.rect(colTotal - 40, rowY, 120, 30).fill(colors.redOrange);
-        doc.fillColor(colors.white).font('Helvetica-Bold').fontSize(10)
-            .text('TOTAL:', colTotal - 30, rowY + 10)
-            .text(`Q${Number(invoice.total_amount).toFixed(2)}`, colTotal + 15, rowY + 10);
+        // Codo Totals
+        const codoTotalY = Math.max(clistY + 10, 220);
+        doc.rect(codoX, codoTotalY, 190, 20).fill(colors.lightGray).stroke(colors.border);
+        doc.fillColor(colors.textDark).fontSize(9).font('Helvetica-Bold')
+            .text('TOTAL:', codoX + 10, codoTotalY + 6)
+            .text(`Q${Number(invoice.total_amount).toFixed(2)}`, codoX + 110, codoTotalY + 6, { align: 'right', width: 70 });
 
-        // Footer / Notes
-        doc.fillColor(colors.textLight).font('Helvetica').fontSize(8)
-            .text('Gracias por su pago.', startX, doc.page.height - 80)
-            .text('Este documento es un comprobante de pago electrónico sin validez fiscal a menos que se indique lo contrario.', startX, doc.page.height - 70, { width: 300 });
+        // Information
+        let infoY = codoTotalY + 30;
+        doc.fillColor(colors.textLight).fontSize(7).font('Helvetica-Bold')
+            .text(`Fecha de pago: `, codoX, infoY);
+        doc.fillColor(colors.textDark).fontSize(7).font('Helvetica')
+            .text(new Date(invoice.issue_date || invoice.created_at).toLocaleDateString(), codoX + 60, infoY);
+            
+        const stampDate = new Date().toLocaleString();
+        infoY += 15;
+        doc.fillColor(colors.textLight).text(`Hora Impresión:`, codoX, infoY);
+        doc.fillColor(colors.textDark).text(stampDate, codoX + 65, infoY);
+
+        // --- PAYMENT HISTORY (CODO) ---
+        let codoHistY = infoY + 25;
+        doc.fillColor(colors.textDark).fontSize(8).font('Helvetica-Bold')
+            .text(`HISTORIAL DE PAGOS`, codoX, codoHistY);
+        doc.fillColor(colors.textLight).fontSize(7).font('Helvetica')
+            .text(`Inscripción: ${inscriptionDate}`, codoX + 100, codoHistY);
+        
+        codoHistY += 15;
+        // Two columns for history space saving
+        for (let i = 1; i <= 12; i++) {
+            const dateStr = monthlyPayments[i] || '---';
+            const colOff = i > 6 ? 95 : 0;
+            const rowOff = ((i - 1) % 6) * 14;
+            doc.fillColor(colors.textLight).fontSize(7).font('Helvetica-Bold').text(`pago${i}:`, codoX + colOff, codoHistY + rowOff);
+            doc.fillColor(colors.textDark).fontSize(7).font('Helvetica').text(dateStr, codoX + colOff + 30, codoHistY + rowOff);
+        }
+
+        // Signature
+        const codoSignY = pageHeight - 45;
+        doc.moveTo(codoX + 10, codoSignY).lineTo(codoX + 180, codoSignY).lineWidth(1).stroke(colors.border);
+        doc.fillColor(colors.textDark).font('Helvetica-Bold').fontSize(8)
+            .text('Firma Encargado / Caja', codoX + 10, codoSignY + 5, { width: 170, align: 'center' });
 
         doc.end();
-
     } catch (error) {
         console.error(error);
         if (!res.headersSent) res.status(500).json({ message: 'Error generating PDF' });

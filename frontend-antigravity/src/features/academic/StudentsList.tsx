@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStudents, createStudent, updateStudent, deleteStudent } from '../../features/academic/academicService';
-import { Loader2, Users, Search, Filter, Calendar, UserPlus, X, Phone, MapPin, Heart, Shield, GraduationCap, Pencil, Trash2 } from 'lucide-react';
+import { getBranches } from '../../features/branches/branchesService';
+import { getCurrentUser } from '../../features/auth/authService';
+import { Loader2, Users, Search, Filter, Calendar, UserPlus, X, Phone, MapPin, Heart, Shield, GraduationCap, Pencil, Trash2, Building2, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const StudentsList = () => {
     const queryClient = useQueryClient();
@@ -23,7 +26,8 @@ const StudentsList = () => {
         medical_notes: '',
         previous_school: '',
         personal_code: '',
-        user_id: ''
+        user_id: '',
+        branch_id: ''
     });
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -34,10 +38,26 @@ const StudentsList = () => {
     const [filterGender, setFilterGender] = useState<'' | 'M' | 'F'>('');
     const [filterMedicalNotes, setFilterMedicalNotes] = useState(false);
     const [filterInstitution, setFilterInstitution] = useState('');
+    
+    // Paginación
+    const [page, setPage] = useState(1);
+    const limit = 50;
 
-    const { data: students, isLoading, isError } = useQuery({
-        queryKey: ['students'],
-        queryFn: getStudents,
+    const user = getCurrentUser();
+
+    // Ahora getStudents recibe (page, limit, search)
+    const { data: studentsResponse, isLoading, isError } = useQuery({
+        queryKey: ['students', page, limit, searchTerm],
+        queryFn: () => getStudents(page, limit, searchTerm),
+    });
+
+    const students = studentsResponse?.data || studentsResponse;
+    const meta = studentsResponse?.meta || null;
+
+    const { data: branches } = useQuery({
+        queryKey: ['branches-list'],
+        queryFn: getBranches,
+        enabled: !user?.branch_id // Solo cargar sedes si es superadmin
     });
 
     const { data: users } = useQuery({
@@ -118,7 +138,8 @@ const StudentsList = () => {
             medical_notes: '',
             previous_school: '',
             personal_code: '',
-            user_id: ''
+            user_id: '',
+            branch_id: ''
         });
     };
 
@@ -152,6 +173,29 @@ const StudentsList = () => {
         return matchesSearch && matchesGender && matchesMedicalNotes && matchesInstitution;
     });
 
+    const exportToExcel = () => {
+        if (!filteredStudents || filteredStudents.length === 0) return;
+
+        const dataToExport = filteredStudents.map((s: any) => ({
+            'ID Sistema': s.id,
+            'Nombre Completo': s.full_name,
+            'Fecha de Nacimiento': s.birth_date ? new Date(s.birth_date).toLocaleDateString() : '',
+            'Género': s.gender === 'M' ? 'Masculino' : s.gender === 'F' ? 'Femenino' : '',
+            'DPI/CUI': s.identification_document || '',
+            'Teléfono': s.phone || '',
+            'Encargado': s.guardian_name || '',
+            'Tel. Encargado': s.guardian_phone || '',
+            'Sede': s.branches?.name || 'Global',
+            'Escuela Procedencia': s.previous_school || '',
+            'Notas Médicas': s.medical_notes || ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Estudiantes");
+        XLSX.writeFile(workbook, "Reporte_Estudiantes.xlsx");
+    };
+
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
             <Loader2 className="animate-spin h-12 w-12 text-blue-500/50" />
@@ -166,18 +210,28 @@ const StudentsList = () => {
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Registro de Estudiantes</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Base de datos centralizada de alumnos inscritos.</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setErrorMsg('');
-                        setIsEditing(false);
-                        resetForm();
-                        setIsModalOpen(true);
-                    }}
-                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
-                >
-                    <UserPlus className="h-5 w-5" />
-                    <span>Registrar Estudiante</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={exportToExcel}
+                        title="Exportar a Excel"
+                        className="flex items-center space-x-2 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all shadow-sm active:scale-95 font-semibold"
+                    >
+                        <Download className="h-5 w-5" />
+                        <span className="hidden sm:inline">Exportar</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setErrorMsg('');
+                            setIsEditing(false);
+                            resetForm();
+                            setIsModalOpen(true);
+                        }}
+                        className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
+                    >
+                        <UserPlus className="h-5 w-5" />
+                        <span>Registrar Estudiante</span>
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
@@ -340,6 +394,30 @@ const StudentsList = () => {
                 </div>
             </div>
 
+            {meta && meta.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700/50 pt-6 animate-in fade-in">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Mostrando registros del <span className="font-bold text-slate-900 dark:text-white">{(meta.page - 1) * meta.limit + 1}</span> al <span className="font-bold text-slate-900 dark:text-white">{Math.min(meta.page * meta.limit, meta.total)}</span> de <span className="font-bold text-brand-blue">{meta.total}</span> en total
+                    </p>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer flex items-center shadow-sm"
+                        >
+                            Anterior
+                        </button>
+                        <button
+                            onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                            disabled={page === meta.totalPages}
+                            className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer flex items-center shadow-sm"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -375,6 +453,27 @@ const StudentsList = () => {
                                         onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
                                     />
                                 </div>
+
+                                {!user?.branch_id && (
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700 ml-1 flex items-center">
+                                            <Building2 className="h-4 w-4 mr-1 text-slate-400" />
+                                            Sede *
+                                        </label>
+                                        <select
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                            value={newStudent.branch_id}
+                                            onChange={(e) => setNewStudent({ ...newStudent, branch_id: e.target.value })}
+                                            required={!user?.branch_id}
+                                        >
+                                            <option value="">Seleccione una sede...</option>
+                                            {branches?.map((branch: any) => (
+                                                <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Fecha de Nacimiento</label>
                                     <input
@@ -599,6 +698,15 @@ const StudentsList = () => {
                                             <>
                                                 <span>•</span>
                                                 <span>{selectedStudent.gender === 'M' ? 'Masculino' : 'Femenino'}</span>
+                                            </>
+                                        )}
+                                        {!user?.branch_id && selectedStudent.branches && (
+                                            <>
+                                                <span>•</span>
+                                                <span className="flex items-center text-amber-500">
+                                                    <Building2 className="h-3 w-3 mr-1" />
+                                                    {selectedStudent.branches.name}
+                                                </span>
                                             </>
                                         )}
                                     </div>

@@ -91,7 +91,8 @@ export const assignmentsController = {
                     submission_date: sub?.submission_date || null,
                     status: sub?.status || 'PENDING',
                     score: sub?.score || null,
-                    feedback: sub?.feedback || ''
+                    feedback: sub?.feedback || '',
+                    attachment_url: sub?.attachment_url || null
                 };
             });
 
@@ -303,7 +304,9 @@ export const assignmentsController = {
                         submission_id: sub?.id,
                         status: sub?.status || 'PENDING',
                         submission_date: sub?.submission_date,
-                        score: sub?.score
+                        score: sub?.score,
+                        feedback: sub?.feedback || '',
+                        attachment_url: sub?.attachment_url
                     };
                 });
 

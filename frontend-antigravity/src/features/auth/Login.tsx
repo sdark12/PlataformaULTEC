@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login } from './authService';
 import { Lock, Mail, Loader2 } from 'lucide-react';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 const Login = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
     const loginMutation = useMutation({
         mutationFn: login,
@@ -93,6 +95,16 @@ const Login = () => {
                             </div>
                         </div>
 
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setIsForgotModalOpen(true)}
+                                className="text-xs font-bold text-brand-blue hover:text-blue-700 dark:text-blue-400 hover:underline transition-colors"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                        </div>
+
                         <button
                             type="submit"
                             disabled={loginMutation.isPending}
@@ -105,6 +117,11 @@ const Login = () => {
                             )}
                         </button>
                     </form>
+                    
+                    <ForgotPasswordModal 
+                        isOpen={isForgotModalOpen} 
+                        onClose={() => setIsForgotModalOpen(false)} 
+                    />
 
                     <div className="mt-10 text-center">
                         <p className="text-xs font-medium text-slate-400 dark:text-slate-500">

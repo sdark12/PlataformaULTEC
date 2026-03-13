@@ -15,10 +15,15 @@ app.use(express.json());
 app.use(morgan('dev'));
 import path from 'path';
 
+import authRoutes from './routes/auth.routes';
+import { auditLogger } from './middleware/audit.middleware';
+
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-import authRoutes from './routes/auth.routes';
+// Aplicar Audit Logger a todas las rutas API
+app.use('/api', auditLogger);
+
 import academicRoutes from './routes/academic.routes';
 import paymentRoutes from './routes/payments.routes';
 import invoiceRoutes from './routes/invoices.routes';
@@ -29,6 +34,10 @@ import subgradesRoutes from './routes/subgrades.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import usersRoutes from './routes/users.routes';
 import assignmentsRoutes from './routes/assignments.routes';
+import branchesRoutes from './routes/branches.routes';
+import auditRoutes from './routes/audit.routes';
+import resourcesRoutes from './routes/resources.routes';
+import announcementsRoutes from './routes/announcements.routes';
 
 app.use('/auth', authRoutes);
 app.use('/api', academicRoutes);
@@ -41,6 +50,10 @@ app.use('/api', subgradesRoutes);
 app.use('/api', notificationsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/assignments', assignmentsRoutes);
+app.use('/api/branches', branchesRoutes);
+app.use('/api/audit-logs', auditRoutes);
+app.use('/api/resources', resourcesRoutes);
+app.use('/api/announcements', announcementsRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

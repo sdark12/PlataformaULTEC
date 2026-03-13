@@ -1,13 +1,43 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
 import { createClient } from '@insforge/sdk';
+import { sendWelcomeEmail } from '../services/email.service';
 
 export const getUsers = async (req: Request, res: Response) => {
     try {
-        const { data, error } = await client.database
+        let query = client.database
             .from('profiles')
-            .select('*')
+            .select('*', { count: 'exact' })
             .order('full_name', { ascending: true });
+
+        const { page, limit, search } = req.query;
+
+        if (search) {
+            query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+        }
+
+        if (page && limit) {
+            const pageNum = parseInt(page as string, 10);
+            const limitNum = parseInt(limit as string, 10);
+            const offset = (pageNum - 1) * limitNum;
+            
+            query = query.range(offset, offset + limitNum - 1);
+            
+            const { data, error, count } = await query;
+            if (error) throw error;
+            
+            return res.json({
+                data,
+                meta: {
+                    total: count || 0,
+                    page: pageNum,
+                    limit: limitNum,
+                    totalPages: Math.ceil((count || 0) / limitNum)
+                }
+            });
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         res.json(data);
@@ -19,7 +49,7 @@ export const getUsers = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
     try {
-        const { email, password, full_name, role, phone, student_id } = req.body;
+        const { email, password, full_name, role, phone, student_id, branch_id } = req.body;
 
         // Use a temporary client for signup to avoid overriding the backend's global session
         const tempClient = createClient({
@@ -54,6 +84,7 @@ export const createUser = async (req: Request, res: Response) => {
         // Only add these to payload if they exist in DB (prevent crashes if not)
         // We assume they will be added with the SQL script.
         if (phone !== undefined) profilePayload.phone = phone;
+        if (branch_id !== undefined) profilePayload.branch_id = branch_id === '' ? null : branch_id;
         profilePayload.active = true;
 
         let profileResult;
@@ -91,6 +122,9 @@ export const createUser = async (req: Request, res: Response) => {
             }
         }
 
+        // Send Welcome Email asynchronously
+        sendWelcomeEmail(email, full_name, role, password);
+
         res.status(201).json(profileResult.data || authData.user);
     } catch (error) {
         console.error('Error creating user:', error);
@@ -120,7 +154,7 @@ export const getUserById = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { full_name, email, role, phone, active } = req.body;
+        const { full_name, email, role, phone, active, branch_id } = req.body;
 
         const updatePayload: any = {
             full_name,
@@ -130,6 +164,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
         if (phone !== undefined) updatePayload.phone = phone;
         if (active !== undefined) updatePayload.active = active;
+        if (branch_id !== undefined) updatePayload.branch_id = branch_id === '' ? null : branch_id;
 
         const { data, error } = await client.database
             .from('profiles')

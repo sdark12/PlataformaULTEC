@@ -3,7 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPayments, createPayment, updatePayment, deletePayment } from '../../features/finance/paymentService';
 import { getEnrollments } from '../../features/academic/academicService';
 import { downloadInvoicePdf } from '../../features/finance/invoiceService';
-import { Plus, Loader2, DollarSign, Edit2, Trash2, Search, CheckCircle, Printer, X } from 'lucide-react';
+import { getBranches } from '../../features/branches/branchesService';
+import { getCurrentUser } from '../../features/auth/authService';
+import { Plus, Loader2, DollarSign, Edit2, Trash2, Search, CheckCircle, Printer, X, Building2, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface SelectedCourse {
     enrollment_id: string;
@@ -18,13 +21,21 @@ const PaymentsList = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [newPayment, setNewPayment] = useState({ student_id: '', courses: [] as SelectedCourse[], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
+    const [newPayment, setNewPayment] = useState({ student_id: '', courses: [] as SelectedCourse[], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION', branch_id: '' });
     const [selectedPayment, setSelectedPayment] = useState<any>(null);
     const [lastInvoice, setLastInvoice] = useState<{ id: number; invoice_number: string } | null>(null);
 
     const { data: payments, isLoading } = useQuery({
         queryKey: ['payments'],
         queryFn: getPayments,
+    });
+
+    const user = getCurrentUser();
+
+    const { data: branches } = useQuery({
+        queryKey: ['branches-list'],
+        queryFn: getBranches,
+        enabled: !user?.branch_id && isModalOpen
     });
 
     const { data: enrollments } = useQuery({
@@ -44,7 +55,7 @@ const PaymentsList = () => {
                 setLastInvoice({ id: data.invoice_id, invoice_number: data.invoice_number || 'REC-NEW' });
             } else {
                 setIsModalOpen(false);
-                setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
+                setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION', branch_id: '' });
             }
             setSearchTerm('');
         },
@@ -62,7 +73,7 @@ const PaymentsList = () => {
             setIsModalOpen(false);
             setSelectedPayment(null);
             setSearchTerm('');
-            setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
+            setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION', branch_id: '' });
         },
         onError: (err: any) => {
             alert(err.response?.data?.message || "Error al actualizar pago");
@@ -101,19 +112,50 @@ const PaymentsList = () => {
             return;
         }
 
+        const tMonthRaw = newPayment.payment_type === 'TUITION' ? newPayment.tuition_months.filter(m => m !== '').join(', ') : undefined;
+        let formattedMonths = '';
+        if (tMonthRaw) {
+            formattedMonths = tMonthRaw.split(', ').map(m => {
+                if (m.match(/^\d{4}-\d{2}$/)) {
+                    const d = new Date(m + '-01T00:00:00');
+                    return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^./, (str) => str.toUpperCase());
+                }
+                return m;
+            }).join(', ');
+        }
+
         const data = {
             student_id: newPayment.student_id,
-            courses: newPayment.courses.map(c => ({
-                enrollment_id: c.enrollment_id,
-                amount: Number(c.amount),
-                discount: Number(c.discount || '0'),
-                payment_description: c.payment_description
-            })),
+            courses: newPayment.courses.map(c => {
+                let generatedDesc = c.payment_description;
+                if (!generatedDesc) {
+                    if (newPayment.payment_type === 'TUITION') {
+                        generatedDesc = formattedMonths
+                            ? `Colegiatura de ${formattedMonths} - ${c.course_name}`
+                            : `Colegiatura - ${c.course_name}`;
+                    } else if (newPayment.payment_type === 'ENROLLMENT') {
+                        generatedDesc = `Inscripción - ${c.course_name}`;
+                    } else if (newPayment.payment_type === 'UNIFORM') {
+                        generatedDesc = `Uniforme - ${c.course_name}`;
+                    } else if (newPayment.payment_type === 'MATERIALS') {
+                        generatedDesc = `Materiales - ${c.course_name}`;
+                    } else {
+                        generatedDesc = `Pago - ${c.course_name}`;
+                    }
+                }
+                return {
+                    enrollment_id: c.enrollment_id,
+                    amount: Number(c.amount),
+                    discount: Number(c.discount || '0'),
+                    payment_description: generatedDesc
+                };
+            }),
             method: newPayment.method,
             reference_number: newPayment.reference_number,
             description: newPayment.description,
-            tuition_month: newPayment.payment_type === 'TUITION' ? newPayment.tuition_months.filter(m => m !== '').join(', ') : undefined,
-            payment_type: newPayment.payment_type
+            tuition_month: tMonthRaw,
+            payment_type: newPayment.payment_type,
+            branch_id: newPayment.branch_id || undefined
         };
 
         if (selectedPayment) {
@@ -137,7 +179,8 @@ const PaymentsList = () => {
             reference_number: payment.reference_number || '',
             description: payment.description || '',
             tuition_months: payment.tuition_month ? payment.tuition_month.split(', ') : [''],
-            payment_type: payment.payment_type || 'TUITION'
+            payment_type: payment.payment_type || 'TUITION',
+            branch_id: payment.branch_id || ''
         });
         setIsModalOpen(true);
     };
@@ -146,7 +189,7 @@ const PaymentsList = () => {
         setSelectedPayment(null);
         setLastInvoice(null);
         setSearchTerm('');
-        setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
+        setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION', branch_id: '' });
         setIsModalOpen(true);
     };
 
@@ -189,6 +232,47 @@ const PaymentsList = () => {
         return newPayment.courses.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
     };
 
+    const exportToExcel = () => {
+        if (!payments || payments.length === 0) return;
+
+        const dataToExport = payments.map((p: any) => {
+            const typeMap: any = {
+                'TUITION': 'Mensualidad',
+                'ENROLLMENT': 'Inscripción',
+                'UNIFORM': 'Uniforme',
+                'MATERIALS': 'Materiales',
+                'OTHER': 'Otro'
+            };
+            
+            let formattedMonth = '';
+            if (p.payment_type === 'TUITION' && p.tuition_month) {
+                formattedMonth = p.tuition_month.split(', ').map((m: string) => m.match(/^\d{4}-\d{2}$/)
+                    ? new Date(m + '-01T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+                    : m).join(', ');
+            }
+
+            return {
+                'ID Pago': p.id,
+                'Estudiante': p.student_name,
+                'Curso': p.course_name,
+                'Concepto': typeMap[p.payment_type] || p.payment_type,
+                'Mes(es)': formattedMonth,
+                'Descripción': p.description || '',
+                'Monto (Q)': Number(p.amount),
+                'Descuento (Q)': Number(p.discount || 0),
+                'Método': p.method === 'CASH' ? 'Efectivo' : p.method === 'TRANSFER' ? 'Transferencia' : p.method === 'CARD' ? 'Tarjeta' : p.method,
+                'Referencia': p.reference_number || '',
+                'Fecha de Pago': new Date(p.payment_date).toLocaleDateString(),
+                'Registrado Por': p.created_by_name || ''
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Pagos");
+        XLSX.writeFile(workbook, "Reporte_Pagos.xlsx");
+    };
+
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
 
     return (
@@ -198,13 +282,23 @@ const PaymentsList = () => {
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Registro de Pagos</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Control de ingresos y facturación.</p>
                 </div>
-                <button
-                    onClick={handleNewPayment}
-                    className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
-                >
-                    <Plus className="h-5 w-5" />
-                    <span>Registrar Pago</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={exportToExcel}
+                        title="Exportar a Excel"
+                        className="flex items-center space-x-2 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all shadow-sm active:scale-95 font-semibold"
+                    >
+                        <Download className="h-5 w-5" />
+                        <span className="hidden sm:inline">Exportar</span>
+                    </button>
+                    <button
+                        onClick={handleNewPayment}
+                        className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
+                    >
+                        <Plus className="h-5 w-5" />
+                        <span>Registrar Pago</span>
+                    </button>
+                </div>
             </div>
 
             <div className="glass-card rounded-3xl overflow-hidden">
@@ -320,7 +414,7 @@ const PaymentsList = () => {
                                         onClick={() => {
                                             setIsModalOpen(false);
                                             setLastInvoice(null);
-                                            setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION' });
+                                            setNewPayment({ student_id: '', courses: [], method: 'CASH', reference_number: '', description: '', tuition_months: [''], payment_type: 'TUITION', branch_id: '' });
                                         }}
                                         className="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors text-lg"
                                     >
@@ -342,6 +436,26 @@ const PaymentsList = () => {
                                     </div>
                                 </div>
                                 <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                                    {!user?.branch_id && !selectedPayment && (
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-700 ml-1 flex items-center">
+                                                <Building2 className="h-4 w-4 mr-1 text-slate-400" />
+                                                Sede *
+                                            </label>
+                                            <select
+                                                className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
+                                                value={newPayment.branch_id}
+                                                onChange={(e) => setNewPayment({ ...newPayment, branch_id: e.target.value })}
+                                                required={!user?.branch_id}
+                                            >
+                                                <option value="">Seleccione una sede...</option>
+                                                {branches?.map((branch: any) => (
+                                                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
                                     {!selectedPayment && (
                                         <div className="relative">
                                             <label className="block text-sm font-semibold text-slate-700 ml-1">Estudiante</label>

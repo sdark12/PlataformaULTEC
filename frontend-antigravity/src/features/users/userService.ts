@@ -12,9 +12,17 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-export const getUsers = async () => {
-    const response = await api.get('/');
-    return response.data;
+export const getUsers = async (page?: number, limit?: number, search?: string) => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (search) params.append('search', search);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await api.get(`/${query}`);
+    
+    if (page) return response.data;
+    return response.data.data || response.data;
 };
 
 export const getUserById = async (id: string) => {

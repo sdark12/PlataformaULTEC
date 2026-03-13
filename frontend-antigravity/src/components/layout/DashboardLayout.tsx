@@ -1,6 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, LogOut, DollarSign, FileText, Calendar, BarChart3, Award, FileBadge, Sun, Moon, ClipboardList, ClipboardCheck } from 'lucide-react';
+import {
+    LayoutDashboard,
+    Users,
+    BookOpen,
+    DollarSign,
+    FileText,
+    LogOut,
+    Menu,
+    X,
+    ClipboardList,
+    Award,
+    Calendar,
+    GraduationCap,
+    BarChart3,
+    FileBadge,
+    ClipboardCheck,
+    ShieldAlert,
+    Library,
+    Sun,
+    Moon,
+    Bell
+} from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
 
@@ -48,6 +69,15 @@ const DashboardLayout = () => {
         window.location.href = '/login';
     };
 
+    let currentUser = null;
+    try {
+        const userStr = localStorage.getItem('user');
+        currentUser = userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+        console.error('Error parsing user data:', e);
+    }
+    const role = currentUser?.role || 'student';
+
     return (
         <div className="flex h-screen print:h-auto bg-slate-50 dark:bg-brand-dark overflow-hidden print:overflow-visible font-sans transition-colors duration-300">
             {/* Sidebar */}
@@ -69,24 +99,71 @@ const DashboardLayout = () => {
                     <nav className="space-y-1">
                         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-4">Principal</p>
                         <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" />
-                        <SidebarItem to="/reports" icon={BarChart3} label="Reportes Financieros" />
-                        <SidebarItem to="/student-reports" icon={BarChart3} label="Reporte de Alumnos" />
+                        
+                        {['admin', 'superadmin', 'secretary'].includes(role) && (
+                            <>
+                                <SidebarItem to="/reports" icon={BarChart3} label="Reportes Financieros" />
+                                <SidebarItem to="/student-reports" icon={BarChart3} label="Reporte de Alumnos" />
+                            </>
+                        )}
 
                         <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Gestión</p>
-                        <SidebarItem to="/users" icon={Users} label="Usuarios" />
-                        <SidebarItem to="/courses" icon={BookOpen} label="Cursos" />
-                        <SidebarItem to="/students" icon={Users} label="Estudiantes" />
-                        <SidebarItem to="/enrollments" icon={GraduationCap} label="Inscripciones" />
-                        <SidebarItem to="/attendance" icon={Calendar} label="Asistencia" />
-                        <SidebarItem to="/grades" icon={Award} label="Calificaciones" />
-                        <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" />
-                        <SidebarItem to="/report-cards" icon={FileBadge} label="Boletas" />
-                        <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" />
-                        <SidebarItem to="/student-assignments" icon={ClipboardCheck} label="Mis Tareas" />
 
-                        <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Finanzas</p>
-                        <SidebarItem to="/payments" icon={DollarSign} label="Pagos" />
-                        <SidebarItem to="/invoices" icon={FileText} label="Facturas" />
+                        {['admin', 'superadmin'].includes(role) && (
+                            <>
+                                <SidebarItem to="/users" icon={Users} label="Usuarios" />
+                                <SidebarItem to="/branches" icon={LayoutDashboard} label="Sedes" />
+                                <SidebarItem to="/audit-logs" icon={ShieldAlert} label="Auditoría" />
+                            </>
+                        )}
+
+                        {['admin', 'superadmin', 'secretary'].includes(role) && (
+                            <>
+                                <SidebarItem to="/courses" icon={BookOpen} label="Cursos" />
+                                <SidebarItem to="/students" icon={Users} label="Estudiantes" />
+                                <SidebarItem to="/enrollments" icon={GraduationCap} label="Inscripciones" />
+                            </>
+                        )}
+
+                        {['admin', 'superadmin', 'secretary', 'instructor'].includes(role) && (
+                            <>
+                                <SidebarItem to="/attendance" icon={Calendar} label="Asistencia" />
+                                <SidebarItem to="/grades" icon={Award} label="Calificaciones" />
+                            </>
+                        )}
+
+                        {['admin', 'superadmin', 'instructor'].includes(role) && (
+                            <>
+                                <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" />
+                                <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" />
+                            </>
+                        )}
+
+                        {['admin', 'superadmin', 'student'].includes(role) && (
+                            <SidebarItem to="/report-cards" icon={FileBadge} label="Boletas" />
+                        )}
+
+                        {role === 'student' && (
+                            <>
+                                <SidebarItem to="/student-assignments" icon={ClipboardCheck} label="Mis Tareas" />
+                                <SidebarItem to="/my-attendance" icon={Calendar} label="Mi Asistencia" />
+                            </>
+                        )}
+                        
+                        {['admin', 'superadmin', 'instructor', 'student', 'secretary'].includes(role) && (
+                            <>
+                                <SidebarItem to="/resources" icon={Library} label="Biblioteca" />
+                                <SidebarItem to="/announcements" icon={Bell} label="Comunicados" />
+                            </>
+                        )}
+
+                        {['admin', 'superadmin', 'secretary'].includes(role) && (
+                            <>
+                                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Finanzas</p>
+                                <SidebarItem to="/payments" icon={DollarSign} label="Pagos" />
+                                <SidebarItem to="/invoices" icon={FileText} label="Facturas" />
+                            </>
+                        )}
                     </nav>
                 </div>
 

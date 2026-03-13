@@ -7,6 +7,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import CoursesList from './features/academic/CoursesList';
 import StudentsList from './features/academic/StudentsList';
 import EnrollmentsList from './features/academic/EnrollmentsList';
+import ResetPassword from './features/auth/ResetPassword';
 import PaymentsList from './features/finance/PaymentsList';
 import InvoicesList from './features/finance/InvoicesList';
 import Attendance from './features/academic/Attendance';
@@ -14,13 +15,20 @@ import Reports from './features/finance/Reports';
 import StudentReports from './features/academic/StudentReports';
 import Grades from './features/academic/Grades';
 import UsersList from './features/users/UsersList';
+import AuditLogs from './features/users/AuditLogs';
 import ReportCard from './features/academic/ReportCard';
 import CourseGradebook from './features/academic/CourseGradebook';
 import AssignmentsModule from './features/academic/Assignments/AssignmentsModule';
 import StudentAssignments from './features/academic/Assignments/StudentAssignments';
+import BranchesList from './features/branches/BranchesList';
+import StudentAttendance from './features/academic/StudentAttendance';
+import CourseResources from './features/academic/CourseResources';
+import Announcements from './features/academic/Announcements';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats } from './features/finance/reportService';
 import { Users, BookOpen, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { Link } from 'react-router-dom';
 
 const DashboardHome = () => {
   const { data: stats, isLoading } = useQuery({
@@ -35,6 +43,16 @@ const DashboardHome = () => {
     </div>
   );
 
+  let currentUser = null;
+  try {
+    const userStr = localStorage.getItem('user');
+    currentUser = userStr ? JSON.parse(userStr) : null;
+  } catch (e) {
+    console.error("Error parsing user from localStorage:", e);
+  }
+  const role = currentUser?.role || 'student';
+  const isStudent = role === 'student';
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <header>
@@ -42,32 +60,75 @@ const DashboardHome = () => {
         <p className="text-slate-500 dark:text-slate-400 mt-1">Resumen general del estado de la academia.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Estudiantes Activos"
-          value={stats?.active_students || 0}
-          icon={Users}
-          color="blue"
-        />
-        <StatCard
-          title="Cursos Ofertados"
-          value={stats?.active_courses || 0}
-          icon={BookOpen}
-          color="indigo"
-        />
-        <StatCard
-          title="Recaudación Mensual"
-          value={`Q${(stats?.monthly_income || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`}
-          icon={DollarSign}
-          color="green"
-        />
-        <StatCard
-          title="Pendientes de Pago"
-          value={stats?.pending_payments || 0}
-          icon={AlertCircle}
-          color="amber"
-        />
-      </div>
+      {isStudent ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link to="/student-assignments">
+            <StatCard
+              title="Mis Tareas y Actividades"
+              value="Ver Tareas"
+              icon={BookOpen}
+              color="indigo"
+            />
+          </Link>
+          <Link to="/my-attendance">
+            <StatCard
+              title="Mi Asistencia"
+              value="Ver Historial"
+              icon={Users}
+              color="green"
+            />
+          </Link>
+          <Link to="/report-cards">
+            <StatCard
+              title="Mi Rendimiento"
+              value="Ver Boleta"
+              icon={AlertCircle}
+              color="blue"
+            />
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {['admin', 'superadmin', 'secretary'].includes(role) && (
+            <>
+              <StatCard
+                title="Estudiantes Activos"
+                value={stats?.active_students || 0}
+                icon={Users}
+                color="blue"
+              />
+              <StatCard
+                title="Cursos Ofertados"
+                value={stats?.active_courses || 0}
+                icon={BookOpen}
+                color="indigo"
+              />
+              <StatCard
+                title="Recaudación Mensual"
+                value={`Q${(stats?.monthly_income || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`}
+                icon={DollarSign}
+                color="green"
+              />
+              <StatCard
+                title="Pendientes de Pago"
+                value={stats?.pending_payments || 0}
+                icon={AlertCircle}
+                color="amber"
+              />
+            </>
+          )}
+          {['instructor'].includes(role) && (
+            <>
+              <StatCard
+                title="Mis Grupos/Cursos"
+                value={stats?.active_courses || 0}
+                icon={BookOpen}
+                color="indigo"
+              />
+            </>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 glass-card p-8 relative overflow-hidden group">
@@ -75,9 +136,13 @@ const DashboardHome = () => {
             <BookOpen className="h-64 w-64 text-blue-600" />
           </div>
           <div className="relative z-10">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Bienvenido a Ultra Tecnología</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+              {isStudent ? 'Bienvenido a tu Portal Estudiantil' : 'Bienvenido a Ultra Tecnología'}
+            </h2>
             <p className="text-slate-600 dark:text-slate-300 max-w-lg leading-relaxed mb-8">
-              Tu plataforma integral para la gestión académica y financiera. Aquí puedes supervisar el progreso de tus estudiantes, controlar los flujos de caja y optimizar la administración de tus cursos.
+              {isStudent
+                ? 'Monitorea tu progreso académico, revisa tus tareas pendientes, descarga el material de tus cursos y verifica tu historial de asistencia a tiempo real.'
+                : 'Tu plataforma integral para la gestión académica y financiera. Aquí puedes supervisar el progreso de tus estudiantes, controlar los flujos de caja y optimizar la administración de tus cursos.'}
             </p>
             <div className="flex flex-wrap gap-4">
               <div className="px-6 py-3 bg-brand-blue text-white font-bold rounded-2xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(13,89,242,0.4)] cursor-pointer">
@@ -130,34 +195,66 @@ const StatCard = ({ title, value, icon: Icon, color }: any) => {
   );
 };
 
-const ProtectedRoute = () => {
-  const isAuthenticated = !!localStorage.getItem('token');
-  return isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />;
-};
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
+          {/* Core Auth & Layout Protection */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<DashboardHome />} />
-            <Route path="/users" element={<UsersList />} />
-            <Route path="/courses" element={<CoursesList />} />
-            <Route path="/students" element={<StudentsList />} />
-            <Route path="/enrollments" element={<EnrollmentsList />} />
-            <Route path="/payments" element={<PaymentsList />} />
-            <Route path="/invoices" element={<InvoicesList />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/grades" element={<Grades />} />
-            <Route path="/course-gradebook" element={<CourseGradebook />} />
-            <Route path="/report-cards" element={<ReportCard />} />
-            <Route path="/assignments" element={<AssignmentsModule />} />
-            <Route path="/student-assignments" element={<StudentAssignments />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/student-reports" element={<StudentReports />} />
+            <Route element={<DashboardLayout />}>
+              <Route path="/" element={<DashboardHome />} />
+
+              {/* Admin & Superadmin Only */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']} />}>
+                <Route path="/users" element={<UsersList />} />
+                <Route path="/branches" element={<BranchesList />} />
+                <Route path="/audit-logs" element={<AuditLogs />} />
+              </Route>
+
+              {/* Admin, Superadmin, Secretary */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'secretary']} />}>
+                <Route path="/courses" element={<CoursesList />} />
+                <Route path="/students" element={<StudentsList />} />
+                <Route path="/enrollments" element={<EnrollmentsList />} />
+                <Route path="/payments" element={<PaymentsList />} />
+                <Route path="/invoices" element={<InvoicesList />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/student-reports" element={<StudentReports />} />
+              </Route>
+
+              {/* Attendance & Grades (Admin, Superadmin, Secretary, Instructor) */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'secretary', 'instructor']} />}>
+                <Route path="/attendance" element={<Attendance />} />
+                <Route path="/grades" element={<Grades />} />
+              </Route>
+
+              {/* Instructor/Admin Specific */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor']} />}>
+                <Route path="/course-gradebook" element={<CourseGradebook />} />
+                <Route path="/assignments" element={<AssignmentsModule />} />
+              </Route>
+
+              {/* Shared between Instructors, Students, Admins */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor', 'student', 'secretary']} />}>
+                <Route path="/resources" element={<CourseResources />} />
+                <Route path="/announcements" element={<Announcements />} />
+              </Route>
+
+              {/* Student/Admin Specific */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'student']} />}>
+                <Route path="/report-cards" element={<ReportCard />} />
+              </Route>
+
+              {/* Student Only */}
+              <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+                <Route path="/student-assignments" element={<StudentAssignments />} />
+                <Route path="/my-attendance" element={<StudentAttendance />} />
+              </Route>
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

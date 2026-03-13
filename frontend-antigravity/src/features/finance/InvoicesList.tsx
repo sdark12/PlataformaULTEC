@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getInvoices, downloadInvoicePdf } from '../../features/finance/invoiceService';
-import { Loader2, FileText, Download } from 'lucide-react';
+import { Loader2, FileText, Download, Table } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const InvoicesList = () => {
     const { data: invoices, isLoading } = useQuery({
@@ -12,6 +13,23 @@ const InvoicesList = () => {
         downloadInvoicePdf(invoice.id, invoice.invoice_number);
     };
 
+    const exportToExcel = () => {
+        if (!invoices || invoices.length === 0) return;
+
+        const dataToExport = invoices.map((inv: any) => ({
+            'ID Interno': inv.id,
+            'No. Factura/Recibo': inv.invoice_number,
+            'Estudiante / Cliente': inv.student_name,
+            'Fecha Emisión': new Date(inv.issue_date).toLocaleDateString(),
+            'Total (Q)': Number(inv.total_amount)
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas");
+        XLSX.writeFile(workbook, "Reporte_Facturas.xlsx");
+    };
+
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
 
     return (
@@ -21,6 +39,14 @@ const InvoicesList = () => {
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Facturas Emitidas</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Historial de comprobantes de pago.</p>
                 </div>
+                <button
+                    onClick={exportToExcel}
+                    title="Exportar a Excel"
+                    className="flex items-center space-x-2 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)] active:scale-95 font-semibold border border-white/10"
+                >
+                    <Table className="h-5 w-5" />
+                    <span>Exportar Todo a Excel</span>
+                </button>
             </div>
 
             <div className="glass-card rounded-3xl overflow-hidden">

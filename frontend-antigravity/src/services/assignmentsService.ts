@@ -21,6 +21,7 @@ export interface StudentAssignment extends Assignment {
     status?: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE';
     submission_date?: string;
     score?: number;
+    feedback?: string;
     attachment_url?: string;
 }
 

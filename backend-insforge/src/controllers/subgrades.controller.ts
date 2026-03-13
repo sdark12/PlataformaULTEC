@@ -33,24 +33,43 @@ export const saveSubgradeCategories = async (req: Request, res: Response) => {
     }
 
     try {
-        // Upsert categories
-        const upsertData = categories.map((c: any) => ({
-            ...(c.id ? { id: c.id } : {}),
-            course_id,
-            unit_name,
-            name: c.name,
-            max_score: Number(c.max_score) || 100,
-            created_by: userId
-        }));
+        const results: any[] = [];
 
-        const { data, error } = await client.database
-            .from('subgrade_categories')
-            .upsert(upsertData, { onConflict: 'id' })
-            .select();
+        for (const c of categories) {
+            if (c.id) {
+                // UPDATE existing category
+                const { data, error } = await client.database
+                    .from('subgrade_categories')
+                    .update({
+                        name: c.name,
+                        max_score: Number(c.max_score) || 100
+                    })
+                    .eq('id', c.id)
+                    .select()
+                    .single();
 
-        if (error) throw error;
+                if (error) throw error;
+                results.push(data);
+            } else {
+                // INSERT new category
+                const { data, error } = await client.database
+                    .from('subgrade_categories')
+                    .insert({
+                        course_id,
+                        unit_name,
+                        name: c.name,
+                        max_score: Number(c.max_score) || 100,
+                        created_by: userId
+                    })
+                    .select()
+                    .single();
 
-        res.json({ message: 'Categories saved successfully', categories: data });
+                if (error) throw error;
+                results.push(data);
+            }
+        }
+
+        res.json({ message: 'Categories saved successfully', categories: results });
     } catch (error) {
         console.error('Error saving subgrade categories:', error);
         res.status(500).json({ message: 'Error saving subgrade categories' });

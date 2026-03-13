@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { saveSubgradeCategories, deleteSubgradeCategory, getSubgrades, saveSubgrades } from './subgradeService';
-import { Loader2, Save, Plus, Trash2, Edit2, Check } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, Edit2, Check, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface SubGradesProps {
     selectedCourse: string;
@@ -105,6 +106,32 @@ const SubGrades = ({ selectedCourse, selectedUnit }: SubGradesProps) => {
         } else {
             alert('No hay calificaciones modificadas para guardar.');
         }
+    };
+
+    const exportToExcel = () => {
+        if (!studentsData || studentsData.length === 0 || !categories || categories.length === 0) return;
+
+        const dataToExport = studentsData.map(student => {
+            const row: any = {
+                'Estudiante': student.student_name
+            };
+            
+            let totalScore = 0;
+            categories.forEach(cat => {
+                const rawScore = student.scores[cat.id]?.score;
+                const score = Number(rawScore) || 0;
+                row[`${cat.name} (Max: ${cat.max_score})`] = rawScore !== '' && rawScore !== undefined ? score : 'Pendiente';
+                totalScore += score;
+            });
+            
+            row['Total'] = totalScore;
+            return row;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Subcalificaciones");
+        XLSX.writeFile(workbook, `Subcalificaciones_${selectedUnit}.xlsx`);
     };
 
     // Category Handlers
@@ -306,7 +333,14 @@ const SubGrades = ({ selectedCourse, selectedUnit }: SubGradesProps) => {
                             </tbody>
                         </table>
                     </div>
-                    <div className="bg-slate-50/80 p-5 border-t border-slate-200 flex justify-end items-center sticky bottom-0 z-20 backdrop-blur-md">
+                    <div className="bg-slate-50/80 p-5 border-t border-slate-200 flex justify-end items-center sticky bottom-0 z-20 backdrop-blur-md gap-3">
+                        <button
+                            onClick={exportToExcel}
+                            className="flex items-center space-x-2 px-6 py-2.5 bg-green-500 text-white font-bold rounded-xl shadow-sm hover:bg-green-600 transition-all active:scale-95"
+                        >
+                            <Download className="w-5 h-5" />
+                            <span>Exportar Excel</span>
+                        </button>
                         <button
                             onClick={handleSaveScores}
                             disabled={mutationSaveScores.isPending}

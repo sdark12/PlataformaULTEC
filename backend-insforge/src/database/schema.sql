@@ -195,6 +195,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     action VARCHAR(100) NOT NULL,
     entity VARCHAR(100),
     entity_id INTEGER,
+    old_data JSONB,
+    new_data JSONB,
+    ip_address VARCHAR(45),
     metadata JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

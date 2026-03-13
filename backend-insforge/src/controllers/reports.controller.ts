@@ -1,8 +1,18 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
+import NodeCache from 'node-cache';
+
+// Cache for 5 minutes by default
+const dashboardCache = new NodeCache({ stdTTL: 300, checkperiod: 320 });
 
 export const getDashboardStats = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = req.currentUser?.branch_id || 'global';
+    
+    // Check if we have cached stats for this branch
+    const cachedStats = dashboardCache.get(branchId);
+    if (cachedStats) {
+        return res.json(cachedStats);
+    }
 
     try {
         // 1. Active Students
@@ -65,12 +75,16 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         if (pendingError) console.error('Stats Pending Error:', pendingError);
 
 
-        res.json({
+        const responsePayload = {
             active_students: activeStudents || 0,
             active_courses: activeCourses || 0,
             monthly_income: monthlyIncome,
             pending_payments: pendingPayments || 0
-        });
+        };
+
+        dashboardCache.set(branchId, responsePayload);
+
+        res.json(responsePayload);
 
     } catch (error) {
         console.error(error);

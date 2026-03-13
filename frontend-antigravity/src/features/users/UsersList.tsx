@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUsers, updateUser, createUser, resetUserPassword, deleteUser } from './userService';
 import { getStudents } from '../academic/academicService';
-import { Loader2, Users, Search, Edit2, Shield, Mail, CheckCircle, XCircle, Plus, Link as LinkIcon, KeyRound, Trash2, AlertTriangle } from 'lucide-react';
+import { getBranches } from '../branches/branchesService';
+import { Loader2, Users, Search, Edit2, Shield, Mail, CheckCircle, XCircle, Plus, Link as LinkIcon, KeyRound, Trash2, AlertTriangle, Building2 } from 'lucide-react';
 
 const UsersList = () => {
     const queryClient = useQueryClient();
@@ -14,7 +15,8 @@ const UsersList = () => {
         email: '',
         phone: '',
         active: true,
-        student_id: ''
+        student_id: '',
+        branch_id: ''
     });
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<any>(null);
@@ -25,7 +27,8 @@ const UsersList = () => {
         email: '',
         password: '',
         phone: '',
-        student_id: ''
+        student_id: '',
+        branch_id: ''
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
@@ -38,14 +41,26 @@ const UsersList = () => {
         confirmPassword: ''
     });
 
-    const { data: users, isLoading, isError } = useQuery({
-        queryKey: ['users'],
-        queryFn: getUsers,
+    // Paginación
+    const [page, setPage] = useState(1);
+    const limit = 50;
+
+    const { data: usersResponse, isLoading, isError } = useQuery({
+        queryKey: ['users', page, limit, searchTerm],
+        queryFn: () => getUsers(page, limit, searchTerm),
     });
+
+    const users = usersResponse?.data || usersResponse;
+    const meta = usersResponse?.meta || null;
 
     const { data: students } = useQuery({
         queryKey: ['students-list'],
-        queryFn: getStudents,
+        queryFn: () => getStudents(),
+    });
+
+    const { data: branches } = useQuery({
+        queryKey: ['branches-list'],
+        queryFn: getBranches,
     });
 
     const createMutation = useMutation({
@@ -54,7 +69,7 @@ const UsersList = () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             queryClient.invalidateQueries({ queryKey: ['students-list'] });
             setIsCreateModalOpen(false);
-            setCreateForm({ full_name: '', role: 'student', email: '', password: '', phone: '', student_id: '' });
+            setCreateForm({ full_name: '', role: 'student', email: '', password: '', phone: '', student_id: '', branch_id: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -69,7 +84,7 @@ const UsersList = () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             queryClient.invalidateQueries({ queryKey: ['students-list'] });
             setIsEditModalOpen(false);
-            setEditForm({ full_name: '', role: 'student', email: '', phone: '', active: true, student_id: '' });
+            setEditForm({ full_name: '', role: 'student', email: '', phone: '', active: true, student_id: '', branch_id: '' });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -128,7 +143,8 @@ const UsersList = () => {
             email: user.email || '',
             phone: user.phone || '',
             active: user.active !== false,
-            student_id: linkedStudentId
+            student_id: linkedStudentId,
+            branch_id: user.branch_id || ''
         });
         setIsEditModalOpen(true);
     };
@@ -230,7 +246,7 @@ const UsersList = () => {
                 <button
                     onClick={() => {
                         setErrorMsg('');
-                        setCreateForm({ full_name: '', role: 'student', email: '', password: '', phone: '', student_id: '' });
+                        setCreateForm({ full_name: '', role: 'student', email: '', password: '', phone: '', student_id: '', branch_id: '' });
                         setIsCreateModalOpen(true);
                     }}
                     className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold border border-white/10"
@@ -361,6 +377,30 @@ const UsersList = () => {
                 </div>
             </div>
 
+            {meta && meta.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700/50 pt-6 animate-in fade-in">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Mostrando registros del <span className="font-bold text-slate-900 dark:text-white">{(meta.page - 1) * meta.limit + 1}</span> al <span className="font-bold text-slate-900 dark:text-white">{Math.min(meta.page * meta.limit, meta.total)}</span> de <span className="font-bold text-brand-blue">{meta.total}</span> en total
+                    </p>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer flex items-center shadow-sm"
+                        >
+                            Anterior
+                        </button>
+                        <button
+                            onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                            disabled={page === meta.totalPages}
+                            className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer flex items-center shadow-sm"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Create Modal */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -430,6 +470,26 @@ const UsersList = () => {
                                             <option value="admin">Administrador</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 flex items-center">
+                                        <Building2 className="h-4 w-4 mr-2 text-slate-400" />
+                                        Sede (Opcional)
+                                    </label>
+                                    <select
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                        value={createForm.branch_id}
+                                        onChange={(e) => setCreateForm({ ...createForm, branch_id: e.target.value })}
+                                    >
+                                        <option value="">-- Sin sede asignada (Acceso Global) --</option>
+                                        {branches?.map((branch: any) => (
+                                            <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 px-1">
+                                        Si se asigna una sede, este usuario solo podrá ver y crear registros para dicha sede.
+                                    </p>
                                 </div>
 
                                 {createForm.role === 'student' && (
@@ -565,6 +625,23 @@ const UsersList = () => {
                                             </label>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 flex items-center">
+                                        <Building2 className="h-4 w-4 mr-2 text-slate-400" />
+                                        Sede Asignada
+                                    </label>
+                                    <select
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                        value={editForm.branch_id}
+                                        onChange={(e) => setEditForm({ ...editForm, branch_id: e.target.value })}
+                                    >
+                                        <option value="">-- Ninguna (Acceso global) --</option>
+                                        {branches?.map((branch: any) => (
+                                            <option key={branch.id} value={branch.id}>{branch.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 {editForm.role === 'student' && (

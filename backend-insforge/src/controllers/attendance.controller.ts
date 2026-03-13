@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 // Get Attendance (merged with enrolled students)
 export const getAttendance = async (req: Request, res: Response) => {
@@ -104,5 +104,63 @@ export const markAttendance = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error marking attendance' });
+    }
+};
+
+// Get personal attendance history for a single student
+export const getStudentAttendanceHistory = async (req: Request, res: Response) => {
+    // We assume the user is asking for their own records, or an admin provides a student ID
+    let studentId = req.query.student_id ? req.query.student_id as string : req.currentUser?.id;
+
+    if (!studentId) {
+        return res.status(400).json({ message: 'Student ID is required' });
+    }
+
+    try {
+        // Map user_id to actual student_id avoiding RLS
+        const { data: studentRecord, error: findError } = await adminClient.database
+            .from('students')
+            .select('id, user_id')
+            .or(`id.eq.${studentId},user_id.eq.${studentId}`)
+            .maybeSingle();
+
+        if (findError) throw findError;
+
+        if (studentRecord) {
+            studentId = studentRecord.id;
+        } else {
+            // If the user's profile is not linked to any student, return empty gracefully
+            return res.json([]);
+        }
+
+        const { data, error } = await client.database
+            .from('attendance')
+            .select(`
+                id,
+                date,
+                status,
+                remarks,
+                course_id,
+                courses ( name )
+            `)
+            .eq('student_id', studentId)
+            .order('date', { ascending: false });
+
+        if (error) throw error;
+        
+        // Transform the data slightly to make it easier for the frontend
+        const formattedData = data.map((record: any) => ({
+            id: record.id,
+            date: record.date,
+            status: record.status,
+            remarks: record.remarks,
+            course_id: record.course_id,
+            course_name: record.courses ? record.courses.name : 'Curso Desconocido'
+        }));
+
+        res.json(formattedData);
+    } catch (error) {
+        console.error('Error retrieving personal attendance:', error);
+        res.status(500).json({ message: 'Error retrieving personal attendance' });
     }
 };

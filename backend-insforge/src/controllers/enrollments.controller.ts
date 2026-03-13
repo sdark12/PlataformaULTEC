@@ -3,8 +3,8 @@ import client from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
 
 export const enrollStudent = async (req: Request, res: Response) => {
-    const { student_id, course_id, schedule_id } = req.body;
-    const branchId = req.currentUser?.branch_id;
+    const { student_id, course_id, schedule_id, branch_id } = req.body;
+    const finalBranchId = branch_id || req.currentUser?.branch_id;
 
     try {
         // Use the authenticated client attached by middleware
@@ -40,7 +40,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
         // 3. Create Enrollment
         const { data: enrollment, error: enrollError } = await db
             .from('enrollments')
-            .insert([{ branch_id: branchId, student_id, course_id, schedule_id }])
+            .insert([{ branch_id: finalBranchId, student_id, course_id, schedule_id }])
             .select()
             .single();
 
@@ -70,7 +70,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
         if (enrollment) {
             await broadcastNotification(
                 client,
-                branchId || enrollment.branch_id,
+                finalBranchId || enrollment.branch_id,
                 'Nueva Inscripción',
                 `Se ha registrado una nueva inscripción en el curso.`,
                 'ENROLLMENT'
@@ -140,13 +140,19 @@ export const updateEnrollment = async (req: Request, res: Response) => {
     if (is_active !== undefined) updates.is_active = is_active;
     if (schedule_id !== undefined) updates.schedule_id = schedule_id === '' ? null : schedule_id;
 
+    const branchId = req.currentUser?.branch_id;
+
     try {
-        const { data, error } = await db
+        let query = db
             .from('enrollments')
             .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
+            .eq('id', id);
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query.select().single();
 
         if (error) throw error;
 
@@ -160,8 +166,22 @@ export const updateEnrollment = async (req: Request, res: Response) => {
 export const deleteEnrollment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const branchId = req.currentUser?.branch_id;
 
     try {
+        if (branchId) {
+            const { data: checkEnrollment } = await db
+                .from('enrollments')
+                .select('id')
+                .eq('id', id)
+                .eq('branch_id', branchId)
+                .maybeSingle();
+
+            if (!checkEnrollment) {
+                return res.status(403).json({ message: 'Forbidden: Enrollment does not belong to your branch.' });
+            }
+        }
+
         // Optimistically clean up related financial records first to avoid FK constraints
         // We use Promise.all to do it in parallel if supported, or sequential
 
@@ -197,7 +217,6 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
 
         if (error) throw error;
 
-        const branchId = req.currentUser?.branch_id;
         if (branchId) {
             await broadcastNotification(
                 client,
