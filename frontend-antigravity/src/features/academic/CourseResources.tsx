@@ -228,7 +228,7 @@ const CourseResources = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
                                                     <a 
-                                                        href={resource.file_url.startsWith('http') ? resource.file_url : `http://localhost:3000${resource.file_url}`} 
+                                                        href={resource.file_url.startsWith('http') ? resource.file_url : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${resource.file_url}`} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-brand-blue/10 text-slate-600 dark:text-slate-400 hover:text-brand-blue flex items-center justify-center transition-colors"

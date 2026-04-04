@@ -1,16 +1,4 @@
-import axios from 'axios';
-
-const api = axios.create({
-    baseURL: 'http://localhost:3000/api/users',
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+import api from '../../services/apiClient';
 
 export const getUsers = async (page?: number, limit?: number, search?: string, role?: string) => {
     const params = new URLSearchParams();
@@ -20,33 +8,33 @@ export const getUsers = async (page?: number, limit?: number, search?: string, r
     if (role && role !== 'all') params.append('role', role);
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await api.get(`/${query}`);
+    const response = await api.get(`/api/users${query}`);
     
     if (page) return response.data;
     return response.data.data || response.data;
 };
 
 export const getUserById = async (id: string) => {
-    const response = await api.get(`/${id}`);
+    const response = await api.get(`/api/users/${id}`);
     return response.data;
 };
 
 export const createUser = async (data: any) => {
-    const response = await api.post('/', data);
+    const response = await api.post('/api/users', data);
     return response.data;
 };
 
 export const updateUser = async (id: string, data: any) => {
-    const response = await api.put(`/${id}`, data);
+    const response = await api.put(`/api/users/${id}`, data);
     return response.data;
 };
 
 export const deleteUser = async (id: string) => {
-    const response = await api.delete(`/${id}`);
+    const response = await api.delete(`/api/users/${id}`);
     return response.data;
 };
 
 export const resetUserPassword = async (data: { userId: string, newPassword: string }) => {
-    const response = await api.post('http://localhost:3000/auth/admin-reset-password', data);
+    const response = await api.post('/auth/admin-reset-password', data);
     return response.data;
 };

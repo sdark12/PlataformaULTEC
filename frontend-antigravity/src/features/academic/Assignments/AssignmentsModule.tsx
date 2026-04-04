@@ -667,7 +667,7 @@ const AssignmentsModule = () => {
                                                                     El alumno subió un archivo
                                                                 </div>
                                                                 <a 
-                                                                    href={`http://localhost:3000${sub.attachment_url}`} 
+                                                                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${sub.attachment_url}`} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer" 
                                                                     className="flex items-center text-sm text-white bg-brand-blue hover:bg-blue-600 transition-all w-max px-4 py-2 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95"

@@ -124,7 +124,7 @@ const AssignmentCard = ({ assignment, onOpenSubmitModal }: { assignment: Student
                     </button>
                 ) : assignment.attachment_url ? (
                     <a
-                        href={`http://localhost:3000${assignment.attachment_url}`}
+                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${assignment.attachment_url}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full mt-2 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center space-x-2 text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 transition-all border border-brand-blue/20"
