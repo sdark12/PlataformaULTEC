@@ -9,3 +9,14 @@ export const loginRateLimiter = rateLimit({
     standardHeaders: true, 
     legacyHeaders: false, 
 });
+
+export const apiRateLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: 100, // 100 peticiones por minuto por IP
+    message: {
+        message: 'Demasiadas solicitudes. Inténtelo de nuevo en un momento.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from './academicService';
 import { getAttendance, markAttendance } from './attendanceService';
-import { Loader2, Save, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, Save, Users, CheckCircle, XCircle, Clock, Download, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 
 const STATUS_COLORS: Record<string, string> = {
     PRESENT: 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200',
@@ -233,8 +234,27 @@ const Attendance = () => {
                                     </table>
                                 </div>
                                 <div className="bg-slate-50/80 p-5 border-t border-slate-200 flex justify-between items-center sticky bottom-0 z-10 backdrop-blur-md">
-                                    <div className="text-sm font-medium text-slate-500">
-                                        Revisa que todos los estados sean correctos antes de guardar.
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => exportToExcel(
+                                                attendanceData.map(a => ({ Estudiante: a.student_name, Estado: a.status, Observaciones: a.remarks || '' })),
+                                                `asistencia_${selectedDate}`
+                                            )}
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 font-semibold rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors text-sm"
+                                        >
+                                            <FileSpreadsheet className="w-4 h-4" /> Excel
+                                        </button>
+                                        <button
+                                            onClick={() => exportToPDF(
+                                                [{ header: 'Estudiante', dataKey: 'student_name' }, { header: 'Estado', dataKey: 'status' }, { header: 'Observaciones', dataKey: 'remarks' }],
+                                                attendanceData,
+                                                `Asistencia — ${selectedDate}`,
+                                                `asistencia_${selectedDate}`
+                                            )}
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 text-rose-700 font-semibold rounded-xl border border-rose-200 hover:bg-rose-100 transition-colors text-sm"
+                                        >
+                                            <Download className="w-4 h-4" /> PDF
+                                        </button>
                                     </div>
                                     <button
                                         onClick={handleSave}

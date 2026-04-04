@@ -41,13 +41,16 @@ const UsersList = () => {
         confirmPassword: ''
     });
 
+    // Filtro por Rol
+    const [selectedRole, setSelectedRole] = useState('all');
+
     // Paginación
     const [page, setPage] = useState(1);
     const limit = 50;
 
     const { data: usersResponse, isLoading, isError } = useQuery({
-        queryKey: ['users', page, limit, searchTerm],
-        queryFn: () => getUsers(page, limit, searchTerm),
+        queryKey: ['users', page, limit, searchTerm, selectedRole],
+        queryFn: () => getUsers(page, limit, searchTerm, selectedRole),
     });
 
     const users = usersResponse?.data || usersResponse;
@@ -261,11 +264,41 @@ const UsersList = () => {
                     <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 group-focus-within:text-brand-blue transition-colors" />
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, correo o rol..."
+                        placeholder="Buscar por nombre o correo..."
                         className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all shadow-sm backdrop-blur-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                </div>
+            </div>
+
+            {/* Role Tabs */}
+            <div className="flex overflow-x-auto pb-2 scrollbar-hide border-b border-slate-200 dark:border-slate-700/50">
+                <div className="flex space-x-1 min-w-max">
+                    {[
+                        { id: 'all', label: 'Todos' },
+                        { id: 'admin', label: 'Administradores' },
+                        { id: 'superadmin', label: 'Superadmins' },
+                        { id: 'secretary', label: 'Secretaría' },
+                        { id: 'instructor', label: 'Instructores' },
+                        { id: 'student', label: 'Estudiantes' },
+                        { id: 'parent', label: 'Padres' }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => {
+                                setSelectedRole(tab.id);
+                                setPage(1); // Reset page when changing tab
+                            }}
+                            className={`px-4 py-2 text-sm font-bold rounded-t-lg transition-colors border-b-2 ${
+                                selectedRole === tab.id
+                                    ? 'border-brand-blue text-brand-blue bg-blue-50/50 dark:bg-blue-500/10'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-300 dark:hover:bg-slate-800/50'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -465,6 +498,7 @@ const UsersList = () => {
                                             onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
                                         >
                                             <option value="student">Estudiante / Alumno</option>
+                                            <option value="parent">Padre / Madre de Familia</option>
                                             <option value="instructor">Instructor / Profesor</option>
                                             <option value="secretary">Secretario(a)</option>
                                             <option value="admin">Administrador</option>
@@ -601,6 +635,7 @@ const UsersList = () => {
                                             onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                                         >
                                             <option value="student">Estudiante</option>
+                                            <option value="parent">Padre / Madre de Familia</option>
                                             <option value="instructor">Instructor</option>
                                             <option value="admin">Administrador</option>
                                             <option value="superadmin">Superadmin</option>

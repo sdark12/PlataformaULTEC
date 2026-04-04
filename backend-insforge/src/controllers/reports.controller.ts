@@ -1,37 +1,38 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 import NodeCache from 'node-cache';
 
 // Cache for 5 minutes by default
 const dashboardCache = new NodeCache({ stdTTL: 300, checkperiod: 320 });
 
 export const getDashboardStats = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id || 'global';
+    const branchId = req.currentUser?.branch_id;
+    const cacheKey = branchId || 'global';
     
     // Check if we have cached stats for this branch
-    const cachedStats = dashboardCache.get(branchId);
+    const cachedStats = dashboardCache.get(cacheKey);
     if (cachedStats) {
         return res.json(cachedStats);
     }
 
     try {
         // 1. Active Students
-        const { count: activeStudents, error: studentsError } = await client.database
+        let studentsQuery = client.database
             .from('students')
-            .select('*', { count: 'exact', head: true })
-            .eq('branch_id', branchId)
-            // .eq('status', 'ACTIVE') // Assuming status column exists
-            ;
+            .select('*', { count: 'exact', head: true });
+        if (branchId) studentsQuery = studentsQuery.eq('branch_id', branchId);
 
+        const { count: activeStudents, error: studentsError } = await studentsQuery;
         if (studentsError) console.error('Stats Students Error:', studentsError);
 
         // 2. Active Courses
-        const { count: activeCourses, error: coursesError } = await client.database
+        let coursesQuery = client.database
             .from('courses')
             .select('*', { count: 'exact', head: true })
-            .eq('branch_id', branchId)
             .eq('is_active', true);
+        if (branchId) coursesQuery = coursesQuery.eq('branch_id', branchId);
 
+        const { count: activeCourses, error: coursesError } = await coursesQuery;
         if (coursesError) console.error('Stats Courses Error:', coursesError);
 
         // 3. Monthly Income (Current Month)
@@ -39,9 +40,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         currentMonthStart.setDate(1);
         currentMonthStart.setHours(0, 0, 0, 0);
 
-        // Fetch payments for this branch this month
-        // We need to join with enrollments to filter by branch
-        const { data: payments, error: incomeError } = await client.database
+        let paymentsQuery = client.database
             .from('payments')
             .select(`
                 amount,
@@ -49,8 +48,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
                     branch_id
                 )
             `)
-            .eq('enrollments.branch_id', branchId)
             .gte('payment_date', currentMonthStart.toISOString());
+        if (branchId) paymentsQuery = paymentsQuery.eq('enrollments.branch_id', branchId);
+
+        const { data: payments, error: incomeError } = await paymentsQuery;
 
         let monthlyIncome = 0;
         if (!incomeError && payments) {
@@ -60,8 +61,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         }
 
         // 4. Pending Payments Count
-        // Join financial_status with enrollments
-        const { count: pendingPayments, error: pendingError } = await client.database
+        let pendingQuery = client.database
             .from('financial_status')
             .select(`
                 *,
@@ -69,11 +69,11 @@ export const getDashboardStats = async (req: Request, res: Response) => {
                     branch_id
                 )
             `, { count: 'exact', head: true })
-            .eq('enrollments.branch_id', branchId)
             .eq('status', 'PENDING');
+        if (branchId) pendingQuery = pendingQuery.eq('enrollments.branch_id', branchId);
 
+        const { count: pendingPayments, error: pendingError } = await pendingQuery;
         if (pendingError) console.error('Stats Pending Error:', pendingError);
-
 
         const responsePayload = {
             active_students: activeStudents || 0,
@@ -82,7 +82,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             pending_payments: pendingPayments || 0
         };
 
-        dashboardCache.set(branchId, responsePayload);
+        dashboardCache.set(cacheKey, responsePayload);
 
         res.json(responsePayload);
 
@@ -110,9 +110,11 @@ export const getFinancialReport = async (req: Request, res: Response) => {
                     courses (name)
                 )
             `)
-            .eq('enrollments.branch_id', branchId)
             .order('payment_date', { ascending: false });
 
+        if (branchId) {
+            query = query.eq('enrollments.branch_id', branchId);
+        }
         if (start_date) {
             query = query.gte('payment_date', `${start_date}T00:00:00.000Z`);
         }
@@ -150,7 +152,7 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch active enrollments with their courses and student details
-        const { data: enrollments, error: enrollError } = await client.database
+        let enrollQuery = client.database
             .from('enrollments')
             .select(`
                 id,
@@ -160,13 +162,14 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
                 students!inner (full_name),
                 courses!inner (name, monthly_fee, duration_months, start_date, end_date)
             `)
-            .eq('branch_id', branchId)
             .eq('is_active', true);
+        if (branchId) enrollQuery = enrollQuery.eq('branch_id', branchId);
 
+        const { data: enrollments, error: enrollError } = await enrollQuery;
         if (enrollError) throw enrollError;
 
         // 2. Fetch all successful TUITION payments for this branch
-        const { data: payments, error: paymentsError } = await client.database
+        let paymentsQuery = client.database
             .from('payments')
             .select(`
                 enrollment_id,
@@ -174,9 +177,10 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
                 discount,
                 enrollments!inner (branch_id)
             `)
-            .eq('enrollments.branch_id', branchId)
             .eq('payment_type', 'TUITION'); // IMPORTANT! Only count TUITION payments to clear debt
+        if (branchId) paymentsQuery = paymentsQuery.eq('enrollments.branch_id', branchId);
 
+        const { data: payments, error: paymentsError } = await paymentsQuery;
         if (paymentsError) throw paymentsError;
 
         // Group payments by enrollment
@@ -295,5 +299,206 @@ export const getStudentReports = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error fetching student reports:', error);
         res.status(500).json({ message: 'Error retrieving student reports' });
+    }
+};
+
+// ==========================================
+// STUDENT DASHBOARD STATS
+// ==========================================
+export const getStudentDashboardStats = async (req: Request, res: Response) => {
+    const userId = req.currentUser?.id;
+
+    if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+        // 1. Find student record
+        const { data: studentRecord } = await adminClient.database
+            .from('students')
+            .select('id')
+            .or(`id.eq.${userId},user_id.eq.${userId}`)
+            .maybeSingle();
+
+        if (!studentRecord) {
+            return res.json({
+                pending_assignments: 0,
+                attendance_percentage: 0,
+                average_grade: 0,
+                total_courses: 0,
+                recent_resources: [],
+                latest_announcement: null
+            });
+        }
+
+        const studentId = studentRecord.id;
+
+        // 2. Get enrollments to find courses
+        const { data: enrollments } = await adminClient.database
+            .from('enrollments')
+            .select('course_id, courses (id, name)')
+            .eq('student_id', studentId)
+            .eq('is_active', true);
+
+        const courseIds = enrollments?.map((e: any) => e.course_id) || [];
+        const totalCourses = courseIds.length;
+
+        // 3. Pending assignments (not submitted by this student)
+        let pendingAssignments = 0;
+        if (courseIds.length > 0) {
+            const { data: allAssignments } = await adminClient.database
+                .from('assignments')
+                .select('id')
+                .in('course_id', courseIds)
+                .gte('due_date', new Date().toISOString());
+
+            const { data: submissions } = await adminClient.database
+                .from('assignment_submissions')
+                .select('assignment_id')
+                .eq('student_id', studentId);
+
+            const submittedIds = new Set(submissions?.map((s: any) => s.assignment_id) || []);
+            pendingAssignments = allAssignments?.filter((a: any) => !submittedIds.has(a.id)).length || 0;
+        }
+
+        // 4. Attendance percentage
+        const { data: attendanceRecords } = await adminClient.database
+            .from('attendance')
+            .select('status')
+            .eq('student_id', studentId);
+
+        let attendancePercentage = 0;
+        if (attendanceRecords && attendanceRecords.length > 0) {
+            const totalRecords = attendanceRecords.length;
+            const presentRecords = attendanceRecords.filter((r: any) => r.status === 'present' || r.status === 'late').length;
+            attendancePercentage = Math.round((presentRecords / totalRecords) * 100);
+        }
+
+        // 5. Average grade
+        const { data: grades } = await adminClient.database
+            .from('grades')
+            .select('score')
+            .eq('student_id', studentId);
+
+        let averageGrade = 0;
+        if (grades && grades.length > 0) {
+            const totalScore = grades.reduce((sum: number, g: any) => sum + Number(g.score), 0);
+            averageGrade = Math.round((totalScore / grades.length) * 10) / 10;
+        }
+
+        // 6. Recent resources from enrolled courses
+        let recentResources: any[] = [];
+        if (courseIds.length > 0) {
+            const { data: resources } = await adminClient.database
+                .from('course_resources')
+                .select('id, title, resource_type, created_at, course_id, courses (name)')
+                .in('course_id', courseIds)
+                .order('created_at', { ascending: false })
+                .limit(3);
+            recentResources = resources || [];
+        }
+
+        // 7. Latest announcement
+        const { data: announcements } = await adminClient.database
+            .from('announcements')
+            .select('id, title, content, created_at')
+            .or('target_role.eq.all,target_role.eq.student')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        res.json({
+            pending_assignments: pendingAssignments,
+            attendance_percentage: attendancePercentage,
+            average_grade: averageGrade,
+            total_courses: totalCourses,
+            recent_resources: recentResources,
+            latest_announcement: announcements?.[0] || null
+        });
+
+    } catch (error) {
+        console.error('Error getting student dashboard stats:', error);
+        res.status(500).json({ message: 'Error retrieving student stats' });
+    }
+};
+
+// ==========================================
+// ADMIN DASHBOARD EXTENDED
+// ==========================================
+export const getAdminDashboardExtended = async (req: Request, res: Response) => {
+    const branchId = req.currentUser?.branch_id;
+    const db = req.dbUserClient || client;
+
+    try {
+        // 1. Enrollments this month
+        const currentMonthStart = new Date();
+        currentMonthStart.setDate(1);
+        currentMonthStart.setHours(0, 0, 0, 0);
+
+        let enrollThisMonthQuery = db.database
+            .from('enrollments')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', currentMonthStart.toISOString());
+        if (branchId) enrollThisMonthQuery = enrollThisMonthQuery.eq('branch_id', branchId);
+
+        const { count: enrollmentsThisMonth } = await enrollThisMonthQuery;
+
+        // 2. Top delinquent students (with pending payments)
+        let pendingQuery = db.database
+            .from('financial_status')
+            .select(`
+                amount_due,
+                due_date,
+                enrollments!inner (
+                    branch_id,
+                    students (id, full_name)
+                )
+            `)
+            .eq('status', 'PENDING')
+            .order('due_date', { ascending: true })
+            .limit(20);
+        if (branchId) pendingQuery = pendingQuery.eq('enrollments.branch_id', branchId);
+
+        const { data: pendingStatuses } = await pendingQuery;
+
+        // Group by student and sum amounts
+        const studentDebtMap = new Map<string, { name: string; total: number; oldest_due: string }>();
+        pendingStatuses?.forEach((item: any) => {
+            const student = item.enrollments?.students;
+            if (!student) return;
+            const existing = studentDebtMap.get(student.id);
+            if (existing) {
+                existing.total += Number(item.amount_due);
+            } else {
+                studentDebtMap.set(student.id, {
+                    name: student.full_name,
+                    total: Number(item.amount_due),
+                    oldest_due: item.due_date
+                });
+            }
+        });
+
+        const delinquentStudents = Array.from(studentDebtMap.values())
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
+        // 3. Recent enrollments (last 5)
+        let recentEnrollQuery = db.database
+            .from('enrollments')
+            .select('created_at, students (full_name), courses (name)')
+            .order('created_at', { ascending: false })
+            .limit(5);
+        if (branchId) recentEnrollQuery = recentEnrollQuery.eq('branch_id', branchId);
+
+        const { data: recentEnrollments } = await recentEnrollQuery;
+
+        res.json({
+            enrollments_this_month: enrollmentsThisMonth || 0,
+            delinquent_students: delinquentStudents,
+            recent_enrollments: recentEnrollments || []
+        });
+
+    } catch (error) {
+        console.error('Error getting admin extended dashboard:', error);
+        res.status(500).json({ message: 'Error retrieving extended stats' });
     }
 };

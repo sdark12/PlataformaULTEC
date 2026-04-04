@@ -12,11 +12,12 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-export const getUsers = async (page?: number, limit?: number, search?: string) => {
+export const getUsers = async (page?: number, limit?: number, search?: string, role?: string) => {
     const params = new URLSearchParams();
     if (page) params.append('page', page.toString());
     if (limit) params.append('limit', limit.toString());
     if (search) params.append('search', search);
+    if (role && role !== 'all') params.append('role', role);
 
     const query = params.toString() ? `?${params.toString()}` : '';
     const response = await api.get(`/${query}`);

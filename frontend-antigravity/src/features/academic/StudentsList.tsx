@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getStudents, createStudent, updateStudent, deleteStudent } from '../../features/academic/academicService';
 import { getBranches } from '../../features/branches/branchesService';
 import { getCurrentUser } from '../../features/auth/authService';
-import { Loader2, Users, Search, Filter, Calendar, UserPlus, X, Phone, MapPin, Heart, Shield, GraduationCap, Pencil, Trash2, Building2, Download } from 'lucide-react';
+import { Loader2, Users, Search, Filter, Calendar, UserPlus, X, Phone, MapPin, Heart, Shield, GraduationCap, Pencil, Trash2, Building2, Download, Link2, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import api from '../../services/apiClient';
 
 const StudentsList = () => {
     const queryClient = useQueryClient();
@@ -43,6 +44,10 @@ const StudentsList = () => {
     const [page, setPage] = useState(1);
     const limit = 50;
 
+    // Vinculación de Padres
+    const [parentSearch, setParentSearch] = useState('');
+    const [selectedParent, setSelectedParent] = useState<any>(null);
+
     const user = getCurrentUser();
 
     // Ahora getStudents recibe (page, limit, search)
@@ -58,6 +63,25 @@ const StudentsList = () => {
         queryKey: ['branches-list'],
         queryFn: getBranches,
         enabled: !user?.branch_id // Solo cargar sedes si es superadmin
+    });
+
+    const { data: parentLinks } = useQuery({
+        queryKey: ['parentLinks'],
+        queryFn: async () => {
+            const res = await api.get('/api/parents/links');
+            return res.data;
+        }
+    });
+
+    const { data: parentResults } = useQuery({
+        queryKey: ['parent-search', parentSearch],
+        queryFn: async () => {
+            const res = await api.get('/api/users', { params: { search: parentSearch, limit: 10 } });
+            // Solo retornamos usuarios que sean rol 'parent' o podrían ser padres
+            const allUsers = res.data?.data || res.data || [];
+            return allUsers.filter((u: any) => u.role === 'parent' || u.role === 'student'); 
+        },
+        enabled: parentSearch.length >= 2 && !selectedParent,
     });
 
     const { data: users } = useQuery({
@@ -112,6 +136,23 @@ const StudentsList = () => {
             console.error('Error deleting student:', err);
             alert(err.response?.data?.message || 'Error al eliminar al estudiante.');
         }
+    });
+
+    const createLinkMutation = useMutation({
+        mutationFn: (data: any) => api.post('/api/parents/links', data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parentLinks'] });
+            setParentSearch('');
+            setSelectedParent(null);
+        },
+        onError: (err: any) => {
+            alert(err.response?.data?.message || 'Error al crear vínculo');
+        }
+    });
+
+    const deleteLinkMutation = useMutation({
+        mutationFn: (id: string) => api.delete(`/api/parents/links/${id}`),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['parentLinks'] }),
     });
 
     const handleDelete = (id: string) => {
@@ -848,6 +889,92 @@ const StudentsList = () => {
                                 </div>
                             )}
 
+                            {/* Parent Links Section */}
+                            <div className="pt-6 border-t border-slate-100">
+                                <div className="flex items-center space-x-2 text-brand-blue font-bold mb-4">
+                                    <Link2 className="h-5 w-5" />
+                                    <span>Accesos de Cuidados Familiares</span>
+                                </div>
+                                <p className="text-sm text-slate-500 mb-4">Usuarios registrados en la plataforma que tienen acceso al portal financiero y académico de este estudiante.</p>
+
+                                <div className="space-y-4">
+                                    {/* Link List */}
+                                    {parentLinks?.filter((link: any) => link.student_id === selectedStudent.id).map((link: any) => (
+                                        <div key={link.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                                                    {link.profiles?.full_name?.charAt(0) || 'P'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800">{link.profiles?.full_name}</p>
+                                                    <p className="text-xs text-slate-500">{link.profiles?.email}</p>
+                                                </div>
+                                                <span className="ml-2 px-2.5 py-1 bg-brand-blue/10 text-brand-blue text-[10px] font-bold rounded-lg uppercase">
+                                                    {link.relationship}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => { if (confirm('¿Eliminar este vínculo? El padre perderá acceso a la información de este estudiante.')) deleteLinkMutation.mutate(link.id); }}
+                                                className="mt-3 sm:mt-0 p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors flex items-center justify-center"
+                                                title="Eliminar Vínculo"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {parentLinks?.filter((link: any) => link.student_id === selectedStudent.id).length === 0 && (
+                                        <div className="text-center py-6 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                                            <p className="text-sm text-slate-500">Ningún usuario tiene acceso al portal de este estudiante.</p>
+                                        </div>
+                                    )}
+
+                                    {/* Add Link Form */}
+                                    <div className="mt-6 p-5 bg-blue-50/50 border border-blue-100 rounded-xl">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Vincular a un Padre / Encargado</label>
+                                        <div className="flex flex-col sm:flex-row items-end gap-3">
+                                            <div className="relative w-full">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Buscar por nombre o correo (Mín 2 letras)..."
+                                                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                    value={selectedParent ? selectedParent.full_name : parentSearch}
+                                                    onChange={e => { setParentSearch(e.target.value); setSelectedParent(null); }}
+                                                />
+                                                {parentResults && !selectedParent && parentSearch.length >= 2 && (
+                                                    <div className="absolute z-10 bottom-full mb-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-auto">
+                                                        {parentResults.length > 0 ? parentResults.map((u: any) => (
+                                                            <button key={u.id} onClick={() => { setSelectedParent(u); setParentSearch(u.full_name); }}
+                                                                className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm font-medium text-slate-700 border-b border-slate-50 last:border-0">
+                                                                {u.full_name} <span className="text-slate-400 text-xs">({u.email}) - Rol: {u.role}</span>
+                                                            </button>
+                                                        )) : (
+                                                            <div className="px-4 py-3 text-sm text-slate-500">No se encontraron usuarios. Primero cree la cuenta en Gestión de Usuarios.</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    if (selectedParent) {
+                                                        createLinkMutation.mutate({
+                                                            parent_user_id: selectedParent.id,
+                                                            student_id: selectedStudent.id,
+                                                            relationship: 'parent'
+                                                        });
+                                                    }
+                                                }}
+                                                disabled={!selectedParent || createLinkMutation.isPending}
+                                                className="w-full sm:w-auto px-6 py-3 bg-brand-blue text-white font-bold rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50 shrink-0 flex items-center justify-center gap-2"
+                                            >
+                                                {createLinkMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                                Vincular
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

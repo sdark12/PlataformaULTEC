@@ -1,6 +1,75 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
+import { createClient } from '@insforge/sdk';
+import { sendWelcomeEmail } from '../services/email.service';
+
+const linkOrCreateParent = async (studentId: string, email: string, fullName: string, relationship: string, createdBy: string | undefined) => {
+    try {
+        const { data: existingProfile } = await client.database
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+        
+        let parentUserId: string;
+
+        if (existingProfile) {
+            parentUserId = existingProfile.id;
+        } else {
+             const tempClient = createClient({
+                baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
+                anonKey: process.env.INSFORGE_API_KEY || 'ik_065cc96706290cd59a1103c714006c96'
+            });
+            
+            const password = 'Padre' + Math.floor(1000 + Math.random() * 9000) + '!';
+            const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
+            
+            if (authError || !authData?.user) {
+                console.error('Failed to auto-create parent user auth:', authError);
+                return;
+            }
+
+            parentUserId = authData.user.id;
+            
+            const { error: profileError } = await client.database
+                .from('profiles')
+                .upsert({
+                    id: parentUserId,
+                    email,
+                    full_name: fullName || 'Encargado',
+                    role: 'parent',
+                    active: true
+                });
+                
+            if (profileError) {
+                console.error('Failed to auto-create parent profile:', profileError);
+                return;
+            }
+            sendWelcomeEmail(email, fullName || 'Encargado', 'parent', password);
+        }
+
+        const { data: existingLink } = await client.database
+            .from('parent_student_links')
+            .select('id')
+            .eq('parent_user_id', parentUserId)
+            .eq('student_id', studentId)
+            .maybeSingle();
+
+        if (!existingLink) {
+            await client.database
+                .from('parent_student_links')
+                .insert({
+                    parent_user_id: parentUserId,
+                    student_id: studentId,
+                    relationship: relationship || 'parent',
+                    created_by: createdBy
+                });
+        }
+    } catch (err) {
+        console.error('Error linking or creating parent:', err);
+    }
+};
 
 export const getStudents = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
@@ -124,6 +193,11 @@ export const createStudent = async (req: Request, res: Response) => {
 
         if (error) throw error;
 
+        // Auto-create/link parent if email is provided
+        if (guardian_email && data?.id) {
+            await linkOrCreateParent(data.id, guardian_email.trim(), guardian_name, guardian_relationship, req.currentUser?.id);
+        }
+
         res.status(201).json(data);
     } catch (error) {
         console.error("Error creating student:", error);
@@ -156,6 +230,11 @@ export const updateStudent = async (req: Request, res: Response) => {
         const { data, error } = await query.select().single();
 
         if (error) throw error;
+
+        // Auto-create/link parent if email is provided and updated
+        if (updates.guardian_email && updates.guardian_name && data?.id) {
+            await linkOrCreateParent(data.id, updates.guardian_email.trim(), updates.guardian_name, updates.guardian_relationship, req.currentUser?.id);
+        }
 
         res.json(data);
     } catch (error) {

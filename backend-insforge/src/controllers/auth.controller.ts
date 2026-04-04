@@ -60,9 +60,8 @@ export const adminResetPassword = async (req: Request, res: Response) => {
         // We need the SERVICE ROLE KEY to update another user's password
         const { createClient } = require('@insforge/sdk');
         const adminClient = createClient({
-            baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-            // WARNING: Must use service_role key here, but fallback to anon if we don't have it for this scope
-            anonKey: process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_API_KEY || 'ik_065cc96706290cd59a1103c714006c96'
+            baseUrl: process.env.INSFORGE_URL,
+            anonKey: process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_API_KEY
         });
 
         // Given that Insforge SDK doesn't expose auth.admin, we call a trusted Postgres RPC 

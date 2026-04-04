@@ -3,14 +3,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (!process.env.INSFORGE_URL || !process.env.INSFORGE_API_KEY) {
+    console.error('FATAL: INSFORGE_URL and INSFORGE_API_KEY environment variables are required.');
+    process.exit(1);
+}
+
 const client = createClient({
-    baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-    anonKey: process.env.INSFORGE_API_KEY || 'ik_065cc96706290cd59a1103c714006c96'
+    baseUrl: process.env.INSFORGE_URL,
+    anonKey: process.env.INSFORGE_API_KEY
 });
 
 export const adminClient = createClient({
-    baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-    anonKey: process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_MASTER_KEY || process.env.INSFORGE_API_KEY || ''
+    baseUrl: process.env.INSFORGE_URL,
+    anonKey: process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_MASTER_KEY || process.env.INSFORGE_API_KEY
 });
 
 export default client;

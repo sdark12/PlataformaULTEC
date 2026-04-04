@@ -5,7 +5,11 @@ import { getStudentReportCard } from './gradeService';
 import { Loader2, Printer, Search, GraduationCap } from 'lucide-react';
 import { getCurrentUser } from '../auth/authService';
 
-const ReportCard = () => {
+interface ReportCardProps {
+    isEmbedded?: boolean;
+}
+
+const ReportCard = ({ isEmbedded = false }: ReportCardProps) => {
     const user = getCurrentUser();
     const isStudent = user?.role === 'student';
 
@@ -37,22 +41,24 @@ const ReportCard = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto pb-12">
+        <div className={`max-w-7xl mx-auto ${isEmbedded ? '' : 'pb-12'}`}>
 
             {/* Control Panel (Hidden during print) */}
             <div className="print:hidden">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-                            {isStudent ? 'Mi Boleta de Calificaciones' : 'Boletas de Calificaciones'}
-                        </h2>
-                        <p className="text-slate-500 mt-1">
-                            {isStudent
-                                ? 'Revisa tu rendimiento académico y calificaciones del bimestre actual.'
-                                : 'Genera y visualiza reportes consolidados del rendimiento estudiantil.'}
-                        </p>
+                {!isEmbedded && (
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+                                {isStudent ? 'Mi Boleta de Calificaciones' : 'Boletas de Calificaciones'}
+                            </h2>
+                            <p className="text-slate-500 mt-1">
+                                {isStudent
+                                    ? 'Revisa tu rendimiento académico y calificaciones del bimestre actual.'
+                                    : 'Genera y visualiza reportes consolidados del rendimiento estudiantil.'}
+                            </p>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {!isStudent && (
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 mb-8 max-w-2xl">
@@ -206,6 +212,12 @@ const ReportCard = () => {
                                 <h3 className="text-xl font-bold text-slate-800">{course.course_name}</h3>
                                 <div className="text-sm font-bold bg-slate-100 px-3 py-1 rounded text-slate-600">Promedio Curso: {course.average}</div>
                             </div>
+                            {course.payment_restricted && (
+                                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-sm text-amber-700 print:hidden">
+                                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    <span>Algunas calificaciones están restringidas por pagos pendientes. Ponte al día para ver todas las notas.</span>
+                                </div>
+                            )}
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50/50">
                                     <tr>
@@ -216,13 +228,20 @@ const ReportCard = () => {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {course.units.map((unit: any, idx: number) => (
-                                        <tr key={idx} className="hover:bg-slate-50/30">
+                                        <tr key={idx} className={`hover:bg-slate-50/30 ${unit.restricted ? 'opacity-50 bg-slate-50/40' : ''}`}>
                                             <td className="px-4 py-3 font-medium text-slate-800">{unit.unit_name}</td>
                                             <td className="px-4 py-3 font-bold">
-                                                <span className={Number(unit.score) >= 60 ? 'text-emerald-600' : 'text-rose-600'}>{unit.score}</span>
+                                                {unit.restricted ? (
+                                                    <span className="text-slate-400 flex items-center gap-1 text-sm">
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                        Pago pendiente
+                                                    </span>
+                                                ) : (
+                                                    <span className={Number(unit.score) >= 60 ? 'text-emerald-600' : 'text-rose-600'}>{unit.score}</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-slate-600 italic">
-                                                {unit.remarks || '-'}
+                                                {unit.restricted ? '—' : (unit.remarks || '-')}
                                             </td>
                                         </tr>
                                     ))}

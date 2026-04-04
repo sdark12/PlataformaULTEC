@@ -169,28 +169,34 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
                 inscriptionDate = new Date(enrollmentPayments[0].created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
             }
 
-            // Map tuitions to months
+            // Map tuitions to months — handle multi-month entries like "2026-01, 2026-02"
             studentPayments.filter(p => p.payment_type === 'TUITION' && p.tuition_month).forEach((p) => {
-                const match = p.tuition_month.match(/^\d{4}-(\d{2})$/);
-                if (match) {
-                    const monthNum = parseInt(match[1], 10);
-                    if (!monthlyPayments[monthNum] || new Date(p.created_at) > new Date(monthlyPayments[monthNum].split('/').reverse().join('-'))) {
-                        monthlyPayments[monthNum] = new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                // Split comma/space separated months
+                const monthEntries = p.tuition_month.split(/[,;]\s*/);
+                const paymentDateStr = new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                
+                monthEntries.forEach((entry: string) => {
+                    const match = entry.trim().match(/(\d{4})-(\d{2})/);
+                    if (match) {
+                        const monthNum = parseInt(match[2], 10);
+                        if (!monthlyPayments[monthNum]) {
+                            monthlyPayments[monthNum] = paymentDateStr;
+                        }
                     }
-                }
+                });
             });
         }
 
         let classSchedule = 'Sin horario asignado';
         const { data: schedCheck } = await client.database
             .from('enrollments')
-            .select(`schedules!inner(day_of_week, start_time, end_time)`)
+            .select(`course_schedules!inner(day_of_week, start_time, end_time)`)
             .eq('student_id', invoice.student_id)
             .limit(1)
             .maybeSingle();
             
-        if (schedCheck && schedCheck.schedules) {
-            const s: any = schedCheck.schedules;
+        if (schedCheck && (schedCheck as any).course_schedules) {
+            const s: any = (schedCheck as any).course_schedules;
             classSchedule = `${s.day_of_week} ${s.start_time?.substring(0,5)} - ${s.end_time?.substring(0,5)}`;
         }
 

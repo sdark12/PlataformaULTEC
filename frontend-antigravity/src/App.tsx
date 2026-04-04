@@ -16,7 +16,6 @@ import StudentReports from './features/academic/StudentReports';
 import Grades from './features/academic/Grades';
 import UsersList from './features/users/UsersList';
 import AuditLogs from './features/users/AuditLogs';
-import ReportCard from './features/academic/ReportCard';
 import CourseGradebook from './features/academic/CourseGradebook';
 import AssignmentsModule from './features/academic/Assignments/AssignmentsModule';
 import StudentAssignments from './features/academic/Assignments/StudentAssignments';
@@ -24,176 +23,13 @@ import BranchesList from './features/branches/BranchesList';
 import StudentAttendance from './features/academic/StudentAttendance';
 import CourseResources from './features/academic/CourseResources';
 import Announcements from './features/academic/Announcements';
-import { useQuery } from '@tanstack/react-query';
-import { getDashboardStats } from './features/finance/reportService';
-import { Users, BookOpen, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
+import StudentSchedule from './features/academic/StudentSchedule';
+import DocumentCenter from './features/academic/DocumentCenter';
+import ParentDashboard from './pages/ParentDashboard';
+import DashboardHome from './pages/DashboardHome';
+import DisciplineModule from './features/academic/DisciplineModule';
+import SettingsPage from './features/settings/SettingsPage';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
-import { Link } from 'react-router-dom';
-
-const DashboardHome = () => {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: getDashboardStats,
-  });
-
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-      <Loader2 className="animate-spin h-12 w-12 text-blue-500/50" />
-      <p className="text-slate-400 font-medium animate-pulse">Cargando estadísticas...</p>
-    </div>
-  );
-
-  let currentUser = null;
-  try {
-    const userStr = localStorage.getItem('user');
-    currentUser = userStr ? JSON.parse(userStr) : null;
-  } catch (e) {
-    console.error("Error parsing user from localStorage:", e);
-  }
-  const role = currentUser?.role || 'student';
-  const isStudent = role === 'student';
-
-  return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      <header>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Panel Principal</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Resumen general del estado de la academia.</p>
-      </header>
-
-      {isStudent ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link to="/student-assignments">
-            <StatCard
-              title="Mis Tareas y Actividades"
-              value="Ver Tareas"
-              icon={BookOpen}
-              color="indigo"
-            />
-          </Link>
-          <Link to="/my-attendance">
-            <StatCard
-              title="Mi Asistencia"
-              value="Ver Historial"
-              icon={Users}
-              color="green"
-            />
-          </Link>
-          <Link to="/report-cards">
-            <StatCard
-              title="Mi Rendimiento"
-              value="Ver Boleta"
-              icon={AlertCircle}
-              color="blue"
-            />
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {['admin', 'superadmin', 'secretary'].includes(role) && (
-            <>
-              <StatCard
-                title="Estudiantes Activos"
-                value={stats?.active_students || 0}
-                icon={Users}
-                color="blue"
-              />
-              <StatCard
-                title="Cursos Ofertados"
-                value={stats?.active_courses || 0}
-                icon={BookOpen}
-                color="indigo"
-              />
-              <StatCard
-                title="Recaudación Mensual"
-                value={`Q${(stats?.monthly_income || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`}
-                icon={DollarSign}
-                color="green"
-              />
-              <StatCard
-                title="Pendientes de Pago"
-                value={stats?.pending_payments || 0}
-                icon={AlertCircle}
-                color="amber"
-              />
-            </>
-          )}
-          {['instructor'].includes(role) && (
-            <>
-              <StatCard
-                title="Mis Grupos/Cursos"
-                value={stats?.active_courses || 0}
-                icon={BookOpen}
-                color="indigo"
-              />
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 h-full flex items-center justify-center transition-transform group-hover:scale-110 duration-700 opacity-5 pointer-events-none">
-            <BookOpen className="h-64 w-64 text-blue-600" />
-          </div>
-          <div className="relative z-10">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-              {isStudent ? 'Bienvenido a tu Portal Estudiantil' : 'Bienvenido a Ultra Tecnología'}
-            </h2>
-            <p className="text-slate-600 dark:text-slate-300 max-w-lg leading-relaxed mb-8">
-              {isStudent
-                ? 'Monitorea tu progreso académico, revisa tus tareas pendientes, descarga el material de tus cursos y verifica tu historial de asistencia a tiempo real.'
-                : 'Tu plataforma integral para la gestión académica y financiera. Aquí puedes supervisar el progreso de tus estudiantes, controlar los flujos de caja y optimizar la administración de tus cursos.'}
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <div className="px-6 py-3 bg-brand-blue text-white font-bold rounded-2xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(13,89,242,0.4)] cursor-pointer">
-                Ver Reportes Detallados
-              </div>
-              <div className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-transparent dark:border-slate-700">
-                Documentación
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-brand-card to-slate-900 dark:from-slate-900 dark:to-black p-8 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col justify-between border border-slate-200 dark:border-white/5">
-          <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-brand-purple/20 blur-[60px] rounded-full pointer-events-none" />
-          <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-brand-blue/20 blur-[60px] rounded-full pointer-events-none" />
-          <div className="relative z-10">
-            <h3 className="text-xl font-bold text-white mb-2">Soporte Directo</h3>
-            <p className="text-slate-400 text-sm">¿Necesitas ayuda con la plataforma? Estamos para servirte.</p>
-          </div>
-          <div className="mt-8 relative z-10">
-            <button className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl border border-white/10 backdrop-blur-sm transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-              Contactar Soporte
-            </button>
-          </div>
-          <p className="text-[10px] text-slate-500 text-center mt-6 z-10 relative">Versión 1.3.0 Premium Edition</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const StatCard = ({ title, value, icon: Icon, color }: any) => {
-  const colors: any = {
-    blue: "bg-blue-50 text-brand-blue dark:bg-brand-blue/10",
-    indigo: "bg-indigo-50 text-brand-purple dark:bg-brand-purple/10",
-    green: "bg-green-50 text-brand-success dark:bg-brand-success/10",
-    amber: "bg-amber-50 text-brand-warning dark:bg-brand-warning/10"
-  };
-
-  return (
-    <div className="glass-card p-6 flex items-center space-x-5 group">
-      <div className={`p-4 ${colors[color]} rounded-2xl group-hover:scale-110 transition-transform duration-300 font-bold shadow-sm`}>
-        <Icon className="h-7 w-7" />
-      </div>
-      <div>
-        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{title}</p>
-        <p className="text-3xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-};
 
 function App() {
   return (
@@ -213,6 +49,7 @@ function App() {
                 <Route path="/users" element={<UsersList />} />
                 <Route path="/branches" element={<BranchesList />} />
                 <Route path="/audit-logs" element={<AuditLogs />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
 
               {/* Admin, Superadmin, Secretary */}
@@ -236,23 +73,30 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor']} />}>
                 <Route path="/course-gradebook" element={<CourseGradebook />} />
                 <Route path="/assignments" element={<AssignmentsModule />} />
+                <Route path="/discipline" element={<DisciplineModule />} />
               </Route>
 
               {/* Shared between Instructors, Students, Admins */}
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor', 'student', 'secretary']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor', 'student', 'secretary', 'parent']} />}>
                 <Route path="/resources" element={<CourseResources />} />
                 <Route path="/announcements" element={<Announcements />} />
               </Route>
 
-              {/* Student/Admin Specific */}
-              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'student']} />}>
-                <Route path="/report-cards" element={<ReportCard />} />
+              {/* Shared Documents Center (Students, Admins, Secs) */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'secretary', 'student']} />}>
+                <Route path="/documents" element={<DocumentCenter />} />
               </Route>
 
               {/* Student Only */}
               <Route element={<ProtectedRoute allowedRoles={['student']} />}>
                 <Route path="/student-assignments" element={<StudentAssignments />} />
                 <Route path="/my-attendance" element={<StudentAttendance />} />
+                <Route path="/my-schedule" element={<StudentSchedule />} />
+              </Route>
+
+              {/* Parent Only */}
+              <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
+                <Route path="/parent-dashboard" element={<ParentDashboard />} />
               </Route>
             </Route>
           </Route>

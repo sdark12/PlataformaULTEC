@@ -7,8 +7,6 @@ import {
     DollarSign,
     FileText,
     LogOut,
-    Menu,
-    X,
     ClipboardList,
     Award,
     Calendar,
@@ -20,7 +18,8 @@ import {
     Library,
     Sun,
     Moon,
-    Bell
+    Bell,
+    Settings
 } from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
@@ -122,6 +121,7 @@ const DashboardLayout = () => {
                                 <SidebarItem to="/courses" icon={BookOpen} label="Cursos" />
                                 <SidebarItem to="/students" icon={Users} label="Estudiantes" />
                                 <SidebarItem to="/enrollments" icon={GraduationCap} label="Inscripciones" />
+                                <SidebarItem to="/documents" icon={FileBadge} label="Documentos" />
                             </>
                         )}
 
@@ -136,21 +136,29 @@ const DashboardLayout = () => {
                             <>
                                 <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" />
                                 <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" />
+                                <SidebarItem to="/discipline" icon={ShieldAlert} label="Disciplina" />
                             </>
                         )}
 
                         {['admin', 'superadmin', 'student'].includes(role) && (
-                            <SidebarItem to="/report-cards" icon={FileBadge} label="Boletas" />
+                            <SidebarItem to="/documents" icon={FileBadge} label="Documentos" />
                         )}
 
                         {role === 'student' && (
                             <>
                                 <SidebarItem to="/student-assignments" icon={ClipboardCheck} label="Mis Tareas" />
                                 <SidebarItem to="/my-attendance" icon={Calendar} label="Mi Asistencia" />
+                                <SidebarItem to="/my-schedule" icon={Calendar} label="Mi Horario" />
+                            </>
+                        )}
+
+                        {role === 'parent' && (
+                            <>
+                                <SidebarItem to="/parent-dashboard" icon={LayoutDashboard} label="Panel de Padres" />
                             </>
                         )}
                         
-                        {['admin', 'superadmin', 'instructor', 'student', 'secretary'].includes(role) && (
+                        {['admin', 'superadmin', 'instructor', 'student', 'secretary', 'parent'].includes(role) && (
                             <>
                                 <SidebarItem to="/resources" icon={Library} label="Biblioteca" />
                                 <SidebarItem to="/announcements" icon={Bell} label="Comunicados" />
@@ -162,6 +170,13 @@ const DashboardLayout = () => {
                                 <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Finanzas</p>
                                 <SidebarItem to="/payments" icon={DollarSign} label="Pagos" />
                                 <SidebarItem to="/invoices" icon={FileText} label="Facturas" />
+                            </>
+                        )}
+
+                        {['admin', 'superadmin'].includes(role) && (
+                            <>
+                                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Sistema</p>
+                                <SidebarItem to="/settings" icon={Settings} label="Configuración" />
                             </>
                         )}
                     </nav>

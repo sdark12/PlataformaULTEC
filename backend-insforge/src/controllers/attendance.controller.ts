@@ -12,7 +12,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch all active students enrolled in this course
-        let enrollmentsQuery = client.database
+        let enrollmentsQuery = adminClient.database
             .from('enrollments')
             .select(`
                 student_id,
@@ -24,8 +24,11 @@ export const getAttendance = async (req: Request, res: Response) => {
                 )
             `)
             .eq('course_id', course_id)
-            .eq('is_active', true)
-            .eq('students.branch_id', branchId);
+            .eq('is_active', true);
+
+        if (branchId) {
+            enrollmentsQuery = enrollmentsQuery.eq('students.branch_id', branchId);
+        }
 
         if (schedule_id) {
             enrollmentsQuery = enrollmentsQuery.eq('schedule_id', schedule_id);
@@ -36,7 +39,7 @@ export const getAttendance = async (req: Request, res: Response) => {
         if (enrollError) throw enrollError;
 
         // 2. Fetch existing attendance records for the given course and date
-        const { data: attendanceData, error: attError } = await client.database
+        const { data: attendanceData, error: attError } = await adminClient.database
             .from('attendance')
             .select('student_id, status, remarks')
             .eq('course_id', course_id)
@@ -59,7 +62,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
             return {
                 student_id: studentId,
-                student_name: enrollment.students.full_name,
+                student_name: enrollment.students?.full_name || 'Desconocido',
                 date: date,
                 status: existingRecord ? existingRecord.status : 'PRESENT', // default
                 remarks: existingRecord ? existingRecord.remarks : ''
@@ -94,7 +97,7 @@ export const markAttendance = async (req: Request, res: Response) => {
 
         // Perform Bulk Upsert
         // Requires a unique constraint on (course_id, student_id, date) in the database
-        const { error } = await client.database
+        const { error } = await adminClient.database
             .from('attendance')
             .upsert(upsertData, { onConflict: 'student_id, course_id, date' });
 
@@ -133,7 +136,7 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
             return res.json([]);
         }
 
-        const { data, error } = await client.database
+        const { data, error } = await adminClient.database
             .from('attendance')
             .select(`
                 id,

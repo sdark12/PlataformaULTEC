@@ -17,7 +17,8 @@ const getResourceStyle = (type?: string) => RESOURCE_TYPE_MAP[type || 'link'] ||
 const CourseResources = () => {
     const queryClient = useQueryClient();
     const userRole = JSON.parse(localStorage.getItem('user') || '{}')?.role;
-    const isStudent = userRole === 'student';
+
+    const isStudentOrParent = userRole === 'student' || userRole === 'parent';
     const canManage = ['admin', 'superadmin', 'instructor'].includes(userRole);
 
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -31,10 +32,10 @@ const CourseResources = () => {
     const [resourceType, setResourceType] = useState('link');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Get courses — students: enrolled only, others: all courses
+    // Get courses — students/parents: enrolled only, others: all courses
     const { data: courses, isLoading: loadingCourses } = useQuery({
-        queryKey: isStudent ? ['my-enrolled-courses'] : ['courses'],
-        queryFn: isStudent ? getMyEnrolledCourses : getCourses,
+        queryKey: isStudentOrParent ? ['my-enrolled-courses'] : ['courses'],
+        queryFn: isStudentOrParent ? getMyEnrolledCourses : getCourses,
     });
 
     // Get Resources for selected course
@@ -96,8 +97,8 @@ const CourseResources = () => {
         <div className="max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">Biblioteca de Recursos</h2>
             <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-2xl">
-                {isStudent
-                    ? 'Accede al material de estudio, documentos, enlaces y herramientas compartidas por tus profesores.'
+                {isStudentOrParent
+                    ? 'Accede al material de estudio, documentos, enlaces y herramientas compartidas por los profesores de los cursos.'
                     : 'Gestiona y comparte material de estudio, documentos y enlaces con tus estudiantes.'}
             </p>
 
@@ -105,7 +106,7 @@ const CourseResources = () => {
                 {/* Courses Sidebar */}
                 <div className="md:col-span-1 space-y-3">
                     <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase tracking-wider mb-4">
-                        {isStudent ? 'Mis Cursos' : 'Cursos Disponibles'}
+                        {isStudentOrParent ? 'Cursos Inscritos' : 'Cursos Disponibles'}
                     </h3>
                     {loadingCourses ? (
                         <div className="flex justify-center p-6"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
@@ -113,7 +114,7 @@ const CourseResources = () => {
                         <div className="text-center p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                             <Library className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
                             <p className="text-sm text-slate-500 dark:text-slate-400">
-                                {isStudent ? 'No tienes cursos inscritos actualmente.' : 'No hay cursos registrados.'}
+                                {isStudentOrParent ? 'No hay cursos inscritos actualmente.' : 'No hay cursos registrados.'}
                             </p>
                         </div>
                     ) : (

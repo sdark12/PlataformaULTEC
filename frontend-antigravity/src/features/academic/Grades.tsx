@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from './academicService';
 import { getGrades, saveGrades } from './gradeService';
-import { Loader2, Save, Users, Award, TrendingUp, TrendingDown, AlignJustify, ListChecks, Download } from 'lucide-react';
+import { Loader2, Save, Users, Award, TrendingUp, TrendingDown, AlignJustify, ListChecks, Download, FileSpreadsheet } from 'lucide-react';
 import SubGrades from './SubGrades';
-import * as XLSX from 'xlsx';
+import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 
 const EVALUATION_UNITS = [
     'Unidad 1',
@@ -87,22 +87,25 @@ const Grades = () => {
         lowest: validScores.length > 0 ? Math.min(...validScores) : 0,
     };
 
-    const exportToExcel = () => {
+    const handleExportExcel = () => {
         if (!gradesData || gradesData.length === 0) return;
+        const courseName = courses?.find((c: any) => c.id === selectedCourse)?.name || 'Curso';
+        exportToExcel(
+            gradesData.map(g => ({ Estudiante: g.student_name, Calificación: g.score !== '' ? Number(g.score) : 'Pendiente', Unidad: selectedUnit, Comentario: g.remarks || '' })),
+            `Calificaciones_${courseName}_${selectedUnit}`,
+            'Calificaciones'
+        );
+    };
 
-        const courseName = courses?.find((c: any) => c.id === selectedCourse)?.name || 'Curso_Desconocido';
-
-        const dataToExport = gradesData.map(g => ({
-            'Estudiante': g.student_name,
-            'Calificación': g.score !== '' ? Number(g.score) : 'Pendiente',
-            'Unidad': selectedUnit,
-            'Comentario / Notas': g.remarks || ''
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Calificaciones");
-        XLSX.writeFile(workbook, `Calificaciones_${courseName}_${selectedUnit}.xlsx`);
+    const handleExportPDF = () => {
+        if (!gradesData || gradesData.length === 0) return;
+        const courseName = courses?.find((c: any) => c.id === selectedCourse)?.name || 'Curso';
+        exportToPDF(
+            [{ header: 'Estudiante', dataKey: 'student_name' }, { header: 'Nota', dataKey: 'score' }, { header: 'Comentario', dataKey: 'remarks' }],
+            gradesData,
+            `Calificaciones — ${courseName} — ${selectedUnit}`,
+            `Calificaciones_${courseName}_${selectedUnit}`
+        );
     };
 
     return (
@@ -113,13 +116,22 @@ const Grades = () => {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Ingresa y administra las notas de los estudiantes por curso y unidad.</p>
                 </div>
                 {selectedCourse && gradesData.length > 0 && activeTab === 'general' && (
-                    <button
-                        onClick={exportToExcel}
-                        className="flex items-center space-x-2 px-4 py-2.5 bg-green-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:bg-green-600 transition-all active:scale-95"
-                    >
-                        <Download className="w-5 h-5" />
-                        <span className="hidden sm:inline">Exportar Excel</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleExportExcel}
+                            className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-all active:scale-95"
+                        >
+                            <FileSpreadsheet className="w-4 h-4" />
+                            <span className="hidden sm:inline">Excel</span>
+                        </button>
+                        <button
+                            onClick={handleExportPDF}
+                            className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 text-rose-700 font-bold rounded-xl border border-rose-200 hover:bg-rose-100 transition-all active:scale-95"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span className="hidden sm:inline">PDF</span>
+                        </button>
+                    </div>
                 )}
             </div>
 
