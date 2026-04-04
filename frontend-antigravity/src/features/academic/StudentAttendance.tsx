@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getStudentAttendance } from './academicService';
 import { Loader2, Users, Calendar, AlertCircle, CheckCircle, Clock } from 'lucide-react';
-import React from 'react';
 
 const StudentAttendance = () => {
     const { data: attendanceHistory, isLoading, error } = useQuery({
