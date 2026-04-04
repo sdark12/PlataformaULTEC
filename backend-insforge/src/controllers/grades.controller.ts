@@ -24,8 +24,11 @@ export const getGrades = async (req: Request, res: Response) => {
                 )
             `)
             .eq('course_id', course_id)
-            .eq('is_active', true)
-            .eq('students.branch_id', branchId);
+            .eq('is_active', true);
+
+        if (branchId) {
+            enrollmentsQuery = enrollmentsQuery.eq('students.branch_id', branchId);
+        }
 
         if (schedule_id) {
             enrollmentsQuery = enrollmentsQuery.eq('schedule_id', schedule_id);
@@ -371,8 +374,11 @@ export const getCourseGradebook = async (req: Request, res: Response) => {
                 )
             `)
             .eq('course_id', course_id)
-            .eq('is_active', true)
-            .eq('students.branch_id', branchId);
+            .eq('is_active', true);
+
+        if (branchId) {
+            enrollmentsQuery = enrollmentsQuery.eq('students.branch_id', branchId);
+        }
 
         if (schedule_id) {
             enrollmentsQuery = enrollmentsQuery.eq('schedule_id', schedule_id);

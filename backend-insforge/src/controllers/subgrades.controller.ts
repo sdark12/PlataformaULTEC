@@ -112,7 +112,7 @@ export const getSubgrades = async (req: Request, res: Response) => {
         if (catError) throw catError;
 
         // 2. Fetch Enrolled Students
-        const { data: enrollments, error: enrollError } = await client.database
+        let enrollmentsQuery = client.database
             .from('enrollments')
             .select(`
                 student_id,
@@ -123,8 +123,13 @@ export const getSubgrades = async (req: Request, res: Response) => {
                 )
             `)
             .eq('course_id', course_id)
-            .eq('is_active', true)
-            .eq('students.branch_id', branchId);
+            .eq('is_active', true);
+            
+        if (branchId) {
+            enrollmentsQuery = enrollmentsQuery.eq('students.branch_id', branchId);
+        }
+
+        const { data: enrollments, error: enrollError } = await enrollmentsQuery;
 
         if (enrollError) throw enrollError;
 

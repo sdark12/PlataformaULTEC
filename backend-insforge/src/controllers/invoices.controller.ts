@@ -5,7 +5,7 @@ import PDFDocument from 'pdfkit';
 export const getInvoices = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
-        const { data, error } = await client.database
+        let invQuery = client.database
             .from('invoices')
             .select(`
                 id,
@@ -17,9 +17,13 @@ export const getInvoices = async (req: Request, res: Response) => {
                     full_name,
                     branch_id
                 )
-            `)
-            .eq('students.branch_id', branchId)
-            .order('issue_date', { ascending: false });
+            `);
+        
+        if (branchId) {
+            invQuery = invQuery.eq('students.branch_id', branchId);
+        }
+
+        const { data, error } = await invQuery.order('issue_date', { ascending: false });
 
         if (error) throw error;
 
