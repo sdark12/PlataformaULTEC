@@ -10,7 +10,7 @@ if (!process.env.INSFORGE_URL || !process.env.INSFORGE_API_KEY) {
 
 const client = createClient({
     baseUrl: process.env.INSFORGE_URL,
-    anonKey: process.env.INSFORGE_API_KEY
+    anonKey: process.env.INSFORGE_ANON_KEY || process.env.INSFORGE_API_KEY
 });
 
 export const adminClient = createClient({

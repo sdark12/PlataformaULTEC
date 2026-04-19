@@ -1,0 +1,1064 @@
+[
+  {
+    "sha": "866a709d471bff2cba368d137daf1dbe4cc2841b",
+    "node_id": "C_kwDORU_ilNoAKDg2NmE3MDlkNDcxYmZmMmNiYTM2OGQxMzdkYWYxZGJlNGNjMjg0MWI",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:42:11Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:42:11Z"
+      },
+      "message": "Fix syntax for type uuid null by making branchId conditionals explicitly handle nulls",
+      "tree": {
+        "sha": "615ba239a4cd7a618da7ea3a2d541ccba1858592",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/615ba239a4cd7a618da7ea3a2d541ccba1858592"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/866a709d471bff2cba368d137daf1dbe4cc2841b",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/866a709d471bff2cba368d137daf1dbe4cc2841b",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/866a709d471bff2cba368d137daf1dbe4cc2841b",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/866a709d471bff2cba368d137daf1dbe4cc2841b/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "4fe48c4e25399e035d85a5b3e137442c4d9bb2a7",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/4fe48c4e25399e035d85a5b3e137442c4d9bb2a7",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/4fe48c4e25399e035d85a5b3e137442c4d9bb2a7"
+      }
+    ]
+  },
+  {
+    "sha": "4fe48c4e25399e035d85a5b3e137442c4d9bb2a7",
+    "node_id": "C_kwDORU_ilNoAKDRmZTQ4YzRlMjUzOTllMDM1ZDg1YTViM2UxMzc0NDJjNGQ5YmIyYTc",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:35:01Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:35:01Z"
+      },
+      "message": "Fix absolute localhost URLs in frontend to use VITE_API_URL",
+      "tree": {
+        "sha": "de8338c8f9df05c1cee812cf2f153c5330805f0a",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/de8338c8f9df05c1cee812cf2f153c5330805f0a"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/4fe48c4e25399e035d85a5b3e137442c4d9bb2a7",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/4fe48c4e25399e035d85a5b3e137442c4d9bb2a7",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/4fe48c4e25399e035d85a5b3e137442c4d9bb2a7",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/4fe48c4e25399e035d85a5b3e137442c4d9bb2a7/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "932519c03ca203c39192aeef894ca34d8e31ec85",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/932519c03ca203c39192aeef894ca34d8e31ec85",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/932519c03ca203c39192aeef894ca34d8e31ec85"
+      }
+    ]
+  },
+  {
+    "sha": "932519c03ca203c39192aeef894ca34d8e31ec85",
+    "node_id": "C_kwDORU_ilNoAKDkzMjUxOWMwM2NhMjAzYzM5MTkyYWVlZjg5NGNhMzRkOGUzMWVjODU",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:27:58Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:27:58Z"
+      },
+      "message": "Novena actualizacion: Correcciones en la configuracion del backend y optimizacion de TSConfig",
+      "tree": {
+        "sha": "85107aee623b6c8db615a314111a60e6030e338c",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/85107aee623b6c8db615a314111a60e6030e338c"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/932519c03ca203c39192aeef894ca34d8e31ec85",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/932519c03ca203c39192aeef894ca34d8e31ec85",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/932519c03ca203c39192aeef894ca34d8e31ec85",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/932519c03ca203c39192aeef894ca34d8e31ec85/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e5a0d5ddf2106984c574196c6f5b572edf095c6d",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/e5a0d5ddf2106984c574196c6f5b572edf095c6d",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/e5a0d5ddf2106984c574196c6f5b572edf095c6d"
+      }
+    ]
+  },
+  {
+    "sha": "e5a0d5ddf2106984c574196c6f5b572edf095c6d",
+    "node_id": "C_kwDORU_ilNoAKGU1YTBkNWRkZjIxMDY5ODRjNTc0MTk2YzZmNWI1NzJlZGYwOTVjNmQ",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:06:07Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T19:06:07Z"
+      },
+      "message": "Octava actualizacion: Implementacion de PWA (Progressive Web App), iconos institucionales y mejoras en la vista de asistencia estudiantil",
+      "tree": {
+        "sha": "380a828fafdc5b86eadf288aefb57456df759c30",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/380a828fafdc5b86eadf288aefb57456df759c30"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/e5a0d5ddf2106984c574196c6f5b572edf095c6d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/e5a0d5ddf2106984c574196c6f5b572edf095c6d",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/e5a0d5ddf2106984c574196c6f5b572edf095c6d",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/e5a0d5ddf2106984c574196c6f5b572edf095c6d/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d3bc7ba475cae5db4b3f86766d83657d6a59c653",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d3bc7ba475cae5db4b3f86766d83657d6a59c653",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/d3bc7ba475cae5db4b3f86766d83657d6a59c653"
+      }
+    ]
+  },
+  {
+    "sha": "d3bc7ba475cae5db4b3f86766d83657d6a59c653",
+    "node_id": "C_kwDORU_ilNoAKGQzYmM3YmE0NzVjYWU1ZGI0YjNmODY3NjZkODM2NTdkNmE1OWM2NTM",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T15:11:59Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-04-04T15:11:59Z"
+      },
+      "message": "Septima actualizacion: Modulo de disciplina, dashboard para padres, centro de documentos, limpieza masiva de scripts temporales y optimizaciones generales",
+      "tree": {
+        "sha": "72e3012a69c2019e5c42718784914212e64810b5",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/72e3012a69c2019e5c42718784914212e64810b5"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/d3bc7ba475cae5db4b3f86766d83657d6a59c653",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d3bc7ba475cae5db4b3f86766d83657d6a59c653",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/d3bc7ba475cae5db4b3f86766d83657d6a59c653",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d3bc7ba475cae5db4b3f86766d83657d6a59c653/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "dd192843a2e6801f668a6764ac93ae1963755e57",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/dd192843a2e6801f668a6764ac93ae1963755e57",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/dd192843a2e6801f668a6764ac93ae1963755e57"
+      }
+    ]
+  },
+  {
+    "sha": "dd192843a2e6801f668a6764ac93ae1963755e57",
+    "node_id": "C_kwDORU_ilNoAKGRkMTkyODQzYTJlNjgwMWY2NjhhNjc2NGFjOTNhZTE5NjM3NTVlNTc",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-03-13T03:33:06Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-03-13T03:33:06Z"
+      },
+      "message": "Sexta actualizacion: Multi-sucursal, logs de auditoria, anuncios, gestion de recursos y mejoras de seguridad",
+      "tree": {
+        "sha": "71079756aa0874a9e29effc55cd92aea2bd79235",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/71079756aa0874a9e29effc55cd92aea2bd79235"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/dd192843a2e6801f668a6764ac93ae1963755e57",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/dd192843a2e6801f668a6764ac93ae1963755e57",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/dd192843a2e6801f668a6764ac93ae1963755e57",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/dd192843a2e6801f668a6764ac93ae1963755e57/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d1e23bf67154fe3309f9845cf45d652979f70df3",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d1e23bf67154fe3309f9845cf45d652979f70df3",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/d1e23bf67154fe3309f9845cf45d652979f70df3"
+      }
+    ]
+  },
+  {
+    "sha": "d1e23bf67154fe3309f9845cf45d652979f70df3",
+    "node_id": "C_kwDORU_ilNoAKGQxZTIzYmY2NzE1NGZlMzMwOWY5ODQ1Y2Y0NWQ2NTI5NzlmNzBkZjM",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-03-06T23:44:59Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-03-06T23:44:59Z"
+      },
+      "message": "Update repository: unified payments, schedules, reports enhancements and various system fixes",
+      "tree": {
+        "sha": "9e89d6e71025493a2618c6ca3d061fa6638eaf49",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/9e89d6e71025493a2618c6ca3d061fa6638eaf49"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/d1e23bf67154fe3309f9845cf45d652979f70df3",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d1e23bf67154fe3309f9845cf45d652979f70df3",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/d1e23bf67154fe3309f9845cf45d652979f70df3",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d1e23bf67154fe3309f9845cf45d652979f70df3/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "7601a09bfaa57afe2b85fbce03e670f30f32f17d",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/7601a09bfaa57afe2b85fbce03e670f30f32f17d",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/7601a09bfaa57afe2b85fbce03e670f30f32f17d"
+      }
+    ]
+  },
+  {
+    "sha": "7601a09bfaa57afe2b85fbce03e670f30f32f17d",
+    "node_id": "C_kwDORU_ilNoAKDc2MDFhMDliZmFhNTdhZmUyYjg1ZmJjZTAzZTY3MGYzMGYzMmYxN2Q",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-03-03T19:52:30Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-03-03T19:52:30Z"
+      },
+      "message": "Implement Assignments module, middleware for uploads, and various system optimizations",
+      "tree": {
+        "sha": "d0815aadacb106c967d9564a6e4b2df0ed94cb43",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/d0815aadacb106c967d9564a6e4b2df0ed94cb43"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/7601a09bfaa57afe2b85fbce03e670f30f32f17d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/7601a09bfaa57afe2b85fbce03e670f30f32f17d",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/7601a09bfaa57afe2b85fbce03e670f30f32f17d",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/7601a09bfaa57afe2b85fbce03e670f30f32f17d/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d884efaa7ec9324d16deba4f09e9bfbdd973989d",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d884efaa7ec9324d16deba4f09e9bfbdd973989d",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/d884efaa7ec9324d16deba4f09e9bfbdd973989d"
+      }
+    ]
+  },
+  {
+    "sha": "d884efaa7ec9324d16deba4f09e9bfbdd973989d",
+    "node_id": "C_kwDORU_ilNoAKGQ4ODRlZmFhN2VjOTMyNGQxNmRlYmE0ZjA5ZTliZmJkZDk3Mzk4OWQ",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-27T19:52:53Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-27T19:52:53Z"
+      },
+      "message": "Implement notifications, user profiles, and UI improvements",
+      "tree": {
+        "sha": "17d0004d9551f36505814b88391911dcceb1a80d",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/17d0004d9551f36505814b88391911dcceb1a80d"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/d884efaa7ec9324d16deba4f09e9bfbdd973989d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d884efaa7ec9324d16deba4f09e9bfbdd973989d",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/d884efaa7ec9324d16deba4f09e9bfbdd973989d",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/d884efaa7ec9324d16deba4f09e9bfbdd973989d/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "3a58c7f34f548cf2c2c6167a694cf596f67ce5bc",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/3a58c7f34f548cf2c2c6167a694cf596f67ce5bc",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/3a58c7f34f548cf2c2c6167a694cf596f67ce5bc"
+      }
+    ]
+  },
+  {
+    "sha": "3a58c7f34f548cf2c2c6167a694cf596f67ce5bc",
+    "node_id": "C_kwDORU_ilNoAKDNhNThjN2YzNGY1NDhjZjJjMmM2MTY3YTY5NGNmNTk2ZjY3Y2U1YmM",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-24T18:38:57Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-24T18:38:57Z"
+      },
+      "message": "Implement SubGrades module, flexible payments, and financial report enhancements",
+      "tree": {
+        "sha": "3056371a2efab85c00089528402d8cc6e00dd0f5",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/3056371a2efab85c00089528402d8cc6e00dd0f5"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/3a58c7f34f548cf2c2c6167a694cf596f67ce5bc",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/3a58c7f34f548cf2c2c6167a694cf596f67ce5bc",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/3a58c7f34f548cf2c2c6167a694cf596f67ce5bc",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/3a58c7f34f548cf2c2c6167a694cf596f67ce5bc/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "a35997ab6a8b8071ad9b1804bf29be2277b297ad",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/a35997ab6a8b8071ad9b1804bf29be2277b297ad",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/a35997ab6a8b8071ad9b1804bf29be2277b297ad"
+      }
+    ]
+  },
+  {
+    "sha": "a35997ab6a8b8071ad9b1804bf29be2277b297ad",
+    "node_id": "C_kwDORU_ilNoAKGEzNTk5N2FiNmE4YjgwNzFhZDliMTgwNGJmMjliZTIyNzdiMjk3YWQ",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-22T02:31:05Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-22T02:31:05Z"
+      },
+      "message": "Update repository with recent changes to backend and frontend",
+      "tree": {
+        "sha": "a5be92182300fd93b4f193c990ef971727ecfee0",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/a5be92182300fd93b4f193c990ef971727ecfee0"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/a35997ab6a8b8071ad9b1804bf29be2277b297ad",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/a35997ab6a8b8071ad9b1804bf29be2277b297ad",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/a35997ab6a8b8071ad9b1804bf29be2277b297ad",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/a35997ab6a8b8071ad9b1804bf29be2277b297ad/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e2740310299f1b5d2906c702d64567409b0ecd4c",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/e2740310299f1b5d2906c702d64567409b0ecd4c",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/e2740310299f1b5d2906c702d64567409b0ecd4c"
+      }
+    ]
+  },
+  {
+    "sha": "e2740310299f1b5d2906c702d64567409b0ecd4c",
+    "node_id": "C_kwDORU_ilNoAKGUyNzQwMzEwMjk5ZjFiNWQyOTA2YzcwMmQ2NDU2NzQwOWIwZWNkNGM",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-20T19:43:35Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-20T19:43:35Z"
+      },
+      "message": "Include .agent directory with project documentation and workflows",
+      "tree": {
+        "sha": "a1fbbc7f473e46b9a81ce07ecc2152567f745254",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/a1fbbc7f473e46b9a81ce07ecc2152567f745254"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/e2740310299f1b5d2906c702d64567409b0ecd4c",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/e2740310299f1b5d2906c702d64567409b0ecd4c",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/e2740310299f1b5d2906c702d64567409b0ecd4c",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/e2740310299f1b5d2906c702d64567409b0ecd4c/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f26e151283877fecdccb2858f7b0cf1e32dd2973",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/f26e151283877fecdccb2858f7b0cf1e32dd2973",
+        "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/f26e151283877fecdccb2858f7b0cf1e32dd2973"
+      }
+    ]
+  },
+  {
+    "sha": "f26e151283877fecdccb2858f7b0cf1e32dd2973",
+    "node_id": "C_kwDORU_ilNoAKGYyNmUxNTEyODM4NzdmZWNkY2NiMjg1OGY3YjBjZjFlMzJkZDI5NzM",
+    "commit": {
+      "author": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-20T19:41:16Z"
+      },
+      "committer": {
+        "name": "sdark12",
+        "email": "50645580+sdark12@users.noreply.github.com",
+        "date": "2026-02-20T19:41:16Z"
+      },
+      "message": "Initial commit: Plataforma ULTEC fullstack",
+      "tree": {
+        "sha": "e62856567c52be253c7223c585baff770089172e",
+        "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/trees/e62856567c52be253c7223c585baff770089172e"
+      },
+      "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/git/commits/f26e151283877fecdccb2858f7b0cf1e32dd2973",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/f26e151283877fecdccb2858f7b0cf1e32dd2973",
+    "html_url": "https://github.com/sdark12/PlataformaULTEC/commit/f26e151283877fecdccb2858f7b0cf1e32dd2973",
+    "comments_url": "https://api.github.com/repos/sdark12/PlataformaULTEC/commits/f26e151283877fecdccb2858f7b0cf1e32dd2973/comments",
+    "author": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "sdark12",
+      "id": 50645580,
+      "node_id": "MDQ6VXNlcjUwNjQ1NTgw",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50645580?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/sdark12",
+      "html_url": "https://github.com/sdark12",
+      "followers_url": "https://api.github.com/users/sdark12/followers",
+      "following_url": "https://api.github.com/users/sdark12/following{/other_user}",
+      "gists_url": "https://api.github.com/users/sdark12/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/sdark12/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/sdark12/subscriptions",
+      "organizations_url": "https://api.github.com/users/sdark12/orgs",
+      "repos_url": "https://api.github.com/users/sdark12/repos",
+      "events_url": "https://api.github.com/users/sdark12/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/sdark12/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+
+    ]
+  }
+]
