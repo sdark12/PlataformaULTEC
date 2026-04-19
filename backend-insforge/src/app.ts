@@ -30,6 +30,9 @@ import settingsRoutes from './routes/settings.routes';
 
 const app = express();
 
+// Trust proxy - required for Render/Vercel reverse proxy
+app.set('trust proxy', 1);
+
 // Security & Parsing
 app.use(helmet());
 
@@ -75,10 +78,14 @@ app.use('/api/parents', parentsRoutes);
 app.use('/api/discipline', disciplineRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Root route
+app.get('/', (_req, res) => {
+    res.status(200).json({ status: 'ok', service: 'PlataformaULTEC Backend', timestamp: new Date().toISOString() });
+});
+
 // Health Check
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 export default app;
-
