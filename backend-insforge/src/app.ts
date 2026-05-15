@@ -33,17 +33,21 @@ const app = express();
 // Trust proxy - required for Render/Vercel reverse proxy
 app.set('trust proxy', 1);
 
-// Security & Parsing
-app.use(helmet());
-
-// Dynamic CORS configuration allows any origin while still permitting credentials
+// CORS must be configured BEFORE helmet to avoid header conflicts
 app.use(cors({
     origin: function(origin, callback) {
         callback(null, true); // Allow all origins dynamically
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With']
+}));
+
+// Security - configure helmet to not interfere with CORS
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+    crossOriginEmbedderPolicy: false
 }));
 
 app.use(express.json());
