@@ -4,7 +4,7 @@ export const createCourseSchema = z.object({
   body: z.object({
     name: z.string().min(3, "El nombre del curso debe tener al menos 3 caracteres."),
     description: z.string().optional().nullable(),
-    monthly_fee: z.number().min(0, "La mensualidad no puede ser negativa."),
+    monthly_fee: z.coerce.number().min(0, "La mensualidad no puede ser negativa."),
     start_date: z.string().optional().nullable(),
     end_date: z.string().optional().nullable(),
     branch_id: z.string().uuid("ID de sede inválido").optional().nullable(),
@@ -15,7 +15,7 @@ export const updateCourseSchema = z.object({
   body: z.object({
     name: z.string().min(3, "El nombre del curso debe tener al menos 3 caracteres.").optional(),
     description: z.string().optional().nullable(),
-    monthly_fee: z.number().min(0, "La mensualidad no puede ser negativa.").optional(),
+    monthly_fee: z.coerce.number().min(0, "La mensualidad no puede ser negativa.").optional(),
     is_active: z.boolean().optional(),
     start_date: z.string().optional().nullable(),
     end_date: z.string().optional().nullable(),
