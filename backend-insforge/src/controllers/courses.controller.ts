@@ -40,7 +40,13 @@ export const getCourses = async (req: Request, res: Response) => {
 
 export const createCourse = async (req: Request, res: Response) => {
     const { name, description, monthly_fee, start_date, end_date, branch_id } = req.body;
-    const finalBranchId = branch_id || req.currentUser?.branch_id;
+    
+    // Clean up empty strings to null for database compatibility
+    const finalBranchId = (branch_id === '' ? null : branch_id) || req.currentUser?.branch_id;
+    const finalStartDate = start_date === '' ? null : start_date;
+    const finalEndDate = end_date === '' ? null : end_date;
+    const finalDescription = description === '' ? null : description;
+
     const db = req.dbUserClient || client;
 
     console.log('createCourse:', { branchId: finalBranchId, bodyName: name });
@@ -48,7 +54,7 @@ export const createCourse = async (req: Request, res: Response) => {
     try {
         const { data, error } = await db.database
             .from('courses')
-            .insert([{ branch_id: finalBranchId, name, description, monthly_fee, start_date, end_date }])
+            .insert([{ branch_id: finalBranchId, name, description: finalDescription, monthly_fee, start_date: finalStartDate, end_date: finalEndDate }])
             .select()
             .single();
 
@@ -64,6 +70,12 @@ export const createCourse = async (req: Request, res: Response) => {
 export const updateCourse = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, description, monthly_fee, is_active, start_date, end_date } = req.body;
+    
+    // Clean up empty strings to null for database compatibility
+    const finalStartDate = start_date === '' ? null : start_date;
+    const finalEndDate = end_date === '' ? null : end_date;
+    const finalDescription = description === '' ? null : description;
+
     const db = req.dbUserClient ? req.dbUserClient.database : client.database;
 
     const branchId = req.currentUser?.branch_id;
@@ -71,7 +83,7 @@ export const updateCourse = async (req: Request, res: Response) => {
     try {
         let query = db
             .from('courses')
-            .update({ name, description, monthly_fee, is_active, start_date, end_date })
+            .update({ name, description: finalDescription, monthly_fee, is_active, start_date: finalStartDate, end_date: finalEndDate })
             .eq('id', id);
 
         if (branchId) {

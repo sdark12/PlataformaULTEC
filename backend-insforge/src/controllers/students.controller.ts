@@ -157,11 +157,12 @@ export const createStudent = async (req: Request, res: Response) => {
         branch_id // Front-end passed branch_id
     } = req.body;
 
-    const finalBranchId = branch_id || req.currentUser?.branch_id;
-    const db = req.dbUserClient || client;
-
-    // Convert empty string to null for UUID
+    // Clean up empty strings to null for database compatibility
+    const finalBranchId = (branch_id === '' ? null : branch_id) || req.currentUser?.branch_id;
+    const finalBirthDate = birth_date === '' ? null : birth_date;
     const finalUserId = user_id === '' ? null : user_id;
+
+    const db = req.dbUserClient || client;
 
     console.log('createStudent:', { branchId: finalBranchId, bodyName: full_name });
 
@@ -171,7 +172,7 @@ export const createStudent = async (req: Request, res: Response) => {
             .insert([{
                 branch_id: finalBranchId,
                 full_name,
-                birth_date,
+                birth_date: finalBirthDate,
                 gender,
                 identification_document,
                 nationality,
@@ -209,9 +210,15 @@ export const updateStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updates = req.body;
 
-    // Convert empty string to null for UUID columns
+    // Convert empty string to null for UUID and Date columns
     if (updates.user_id === '') {
         updates.user_id = null;
+    }
+    if (updates.branch_id === '') {
+        updates.branch_id = null;
+    }
+    if (updates.birth_date === '') {
+        updates.birth_date = null;
     }
 
     const branchId = req.currentUser?.branch_id;

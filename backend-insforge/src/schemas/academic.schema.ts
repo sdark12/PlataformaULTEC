@@ -7,7 +7,7 @@ export const createCourseSchema = z.object({
     monthly_fee: z.coerce.number().min(0, "La mensualidad no puede ser negativa."),
     start_date: z.string().optional().nullable(),
     end_date: z.string().optional().nullable(),
-    branch_id: z.string().uuid("ID de sede inválido").optional().nullable(),
+    branch_id: z.string().uuid("ID de sede inválido").optional().nullable().or(z.literal('')),
   }),
 });
 
@@ -50,7 +50,7 @@ export const createStudentSchema = z.object({
     previous_school: z.string().optional().nullable(),
     personal_code: z.string().optional().nullable(),
     user_id: z.string().uuid("ID de usuario inválido").optional().nullable().or(z.literal('')),
-    branch_id: z.string().uuid("ID de sede inválido").optional().nullable(),
+    branch_id: z.string().uuid("ID de sede inválido").optional().nullable().or(z.literal('')),
   }),
 });
 

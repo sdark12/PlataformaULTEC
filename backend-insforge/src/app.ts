@@ -92,4 +92,14 @@ app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Unhandled Server Error:', err);
+    res.status(err.status || err.statusCode || 500).json({
+        status: 'error',
+        message: err.message || 'Internal server error',
+        errors: err.errors || undefined
+    });
+});
+
 export default app;
