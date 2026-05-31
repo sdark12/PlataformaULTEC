@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
+import { getSettingBool, getSettingNumber } from './settings.controller';
 
 // Get Attendance (merged with enrolled students)
 export const getAttendance = async (req: Request, res: Response) => {
@@ -79,6 +80,43 @@ export const getAttendance = async (req: Request, res: Response) => {
     }
 };
 
+// Helper: Handle automatic merit allocation for attendance
+const handleAttendanceMerits = async (records: any[], creatorUserId: string | undefined) => {
+    try {
+        const autoEnabled = await getSettingBool('merit_enable_auto_attendance');
+        if (!autoEnabled) return;
+
+        const pointsPresent = await getSettingNumber('merit_points_attendance_present');
+        if (pointsPresent <= 0) return;
+
+        for (const r of records) {
+            if (r.status === 'PRESENT') {
+                // Upsert merit transaction (preventing duplicates using DB constraint)
+                await adminClient.database
+                    .from('merit_transactions')
+                    .upsert({
+                        student_id: r.student_id,
+                        points: pointsPresent,
+                        transaction_type: 'attendance',
+                        description: `Asistencia Presente - Fecha: ${r.date}`,
+                        reference_id: r.id,
+                        created_by: creatorUserId || null
+                    }, { onConflict: 'student_id, reference_id, transaction_type' });
+            } else {
+                // If not PRESENT, delete transaction if any existed
+                await adminClient.database
+                    .from('merit_transactions')
+                    .delete()
+                    .eq('student_id', r.student_id)
+                    .eq('reference_id', r.id)
+                    .eq('transaction_type', 'attendance');
+            }
+        }
+    } catch (err) {
+        console.error('Error handling attendance merits:', err);
+    }
+};
+
 // Mark Attendance (Bulk or Single)
 export const markAttendance = async (req: Request, res: Response) => {
     const { course_id, date, students } = req.body; // students: [{ student_id, status, remarks }]
@@ -97,11 +135,19 @@ export const markAttendance = async (req: Request, res: Response) => {
 
         // Perform Bulk Upsert
         // Requires a unique constraint on (course_id, student_id, date) in the database
-        const { error } = await adminClient.database
+        const { data, error } = await adminClient.database
             .from('attendance')
-            .upsert(upsertData, { onConflict: 'student_id, course_id, date' });
+            .upsert(upsertData, { onConflict: 'student_id, course_id, date' })
+            .select('id, student_id, status, date');
 
         if (error) throw error;
+
+        // Process automatic merits in background
+        if (data && data.length > 0) {
+            handleAttendanceMerits(data, userId).catch(err => 
+                console.error('Failed to trigger background merits:', err)
+            );
+        }
 
         res.json({ message: 'Attendance marked successfully' });
     } catch (error) {

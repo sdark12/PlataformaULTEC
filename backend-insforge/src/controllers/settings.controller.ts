@@ -34,6 +34,13 @@ const DEFAULTS: Record<string, string> = {
     allow_student_portal: 'true',
     allow_parent_portal: 'true',
     default_currency_symbol: 'Q',
+
+    // Gamificación / Méritos
+    merit_points_attendance_present: '2',
+    merit_points_grade_excellent: '10',
+    merit_points_grade_good: '5',
+    merit_enable_auto_attendance: 'true',
+    merit_enable_auto_grades: 'true',
 };
 
 /**

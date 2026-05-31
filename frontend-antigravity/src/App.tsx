@@ -29,6 +29,8 @@ import ParentDashboard from './pages/ParentDashboard';
 import DashboardHome from './pages/DashboardHome';
 import DisciplineModule from './features/academic/DisciplineModule';
 import SettingsPage from './features/settings/SettingsPage';
+import MeritsAdmin from './features/merits/MeritsAdmin';
+import MyMerits from './features/merits/MyMerits';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 function App() {
@@ -74,6 +76,7 @@ function App() {
                 <Route path="/course-gradebook" element={<CourseGradebook />} />
                 <Route path="/assignments" element={<AssignmentsModule />} />
                 <Route path="/discipline" element={<DisciplineModule />} />
+                <Route path="/merits" element={<MeritsAdmin />} />
               </Route>
 
               {/* Shared between Instructors, Students, Admins */}
@@ -92,6 +95,7 @@ function App() {
                 <Route path="/student-assignments" element={<StudentAssignments />} />
                 <Route path="/my-attendance" element={<StudentAttendance />} />
                 <Route path="/my-schedule" element={<StudentSchedule />} />
+                <Route path="/my-merits" element={<MyMerits />} />
               </Route>
 
               {/* Parent Only */}

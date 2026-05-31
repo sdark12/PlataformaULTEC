@@ -27,6 +27,7 @@ import announcementsRoutes from './routes/announcements.routes';
 import parentsRoutes from './routes/parents.routes';
 import disciplineRoutes from './routes/discipline.routes';
 import settingsRoutes from './routes/settings.routes';
+import meritsRoutes from './routes/merits.routes';
 
 const app = express();
 
@@ -81,6 +82,8 @@ app.use('/api/announcements', announcementsRoutes);
 app.use('/api/parents', parentsRoutes);
 app.use('/api/discipline', disciplineRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/merits', meritsRoutes);
+
 
 // Root route
 app.get('/', (_req, res) => {

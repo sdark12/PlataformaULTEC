@@ -137,6 +137,7 @@ const DashboardLayout = () => {
                                 <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" />
                                 <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" />
                                 <SidebarItem to="/discipline" icon={ShieldAlert} label="Disciplina" />
+                                <SidebarItem to="/merits" icon={Award} label="Méritos y Premios" />
                             </>
                         )}
 
@@ -149,6 +150,7 @@ const DashboardLayout = () => {
                                 <SidebarItem to="/student-assignments" icon={ClipboardCheck} label="Mis Tareas" />
                                 <SidebarItem to="/my-attendance" icon={Calendar} label="Mi Asistencia" />
                                 <SidebarItem to="/my-schedule" icon={Calendar} label="Mi Horario" />
+                                <SidebarItem to="/my-merits" icon={Award} label="Mis Méritos" />
                             </>
                         )}
 

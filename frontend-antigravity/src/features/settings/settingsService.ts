@@ -18,6 +18,13 @@ export interface SystemSettings {
     allow_student_portal: string;
     allow_parent_portal: string;
     default_currency_symbol: string;
+
+    // Gamificación / Méritos
+    merit_points_attendance_present: string;
+    merit_points_grade_excellent: string;
+    merit_points_grade_good: string;
+    merit_enable_auto_attendance: string;
+    merit_enable_auto_grades: string;
 }
 
 export const getSettings = async (): Promise<SystemSettings> => {

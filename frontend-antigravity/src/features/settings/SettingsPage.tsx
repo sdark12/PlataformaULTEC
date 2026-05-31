@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getSettings, updateSettings } from './settingsService';
 import type { SystemSettings } from './settingsService';
-import { Settings, Save, Loader2, Building2, GraduationCap, DollarSign, ToggleLeft } from 'lucide-react';
+import { Settings, Save, Loader2, Building2, GraduationCap, DollarSign, ToggleLeft, Award } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
     const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -376,6 +376,99 @@ const SettingsPage: React.FC = () => {
                             
                             <div className="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 text-xs text-blue-700 dark:text-blue-300">
                                 <span className="font-bold">Nota:</span> Si desactivas el acceso a un portal, los usuarios no podrán entrar al sistema hasta que lo reactives (útil para mantenimiento).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── GAMIFICACIÓN y MÉRITOS ─── */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 overflow-hidden relative col-span-1 lg:col-span-2">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <Award className="w-32 h-32" />
+                    </div>
+                    <div className="relative z-10">
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6 pb-4 border-b border-slate-100 dark:border-slate-700">
+                            <Award className="w-5 h-5 text-brand-teal" />
+                            Gamificación y Puntos de Mérito
+                        </h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Toggles */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Automatización de Méritos</h3>
+                                
+                                <label className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 dark:text-white text-sm">Puntos por Asistencia</h4>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Asignar puntos de forma automática al registrar asistencias PRESENT</p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        name="merit_enable_auto_attendance"
+                                        checked={settings.merit_enable_auto_attendance === 'true'}
+                                        onChange={handleChange}
+                                        className="w-5 h-5 text-brand-blue rounded border-slate-300 focus:ring-brand-blue"
+                                    />
+                                </label>
+
+                                <label className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 dark:text-white text-sm">Puntos por Calificaciones</h4>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Asignar puntos de forma automática al registrar notas sobresalientes (>=80)</p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        name="merit_enable_auto_grades"
+                                        checked={settings.merit_enable_auto_grades === 'true'}
+                                        onChange={handleChange}
+                                        className="w-5 h-5 text-brand-blue rounded border-slate-300 focus:ring-brand-blue"
+                                    />
+                                </label>
+                            </div>
+
+                            {/* Point Configuration values */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Poder de Puntos</h3>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Por Asistencia</label>
+                                        <input
+                                            type="number"
+                                            name="merit_points_attendance_present"
+                                            value={settings.merit_points_attendance_present}
+                                            onChange={handleChange}
+                                            min="0"
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-brand-blue/20 text-sm dark:bg-slate-700 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota Excelente (>=90)</label>
+                                        <input
+                                            type="number"
+                                            name="merit_points_grade_excellent"
+                                            value={settings.merit_points_grade_excellent}
+                                            onChange={handleChange}
+                                            min="0"
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-brand-blue/20 text-sm dark:bg-slate-700 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota Buena (>=80)</label>
+                                        <input
+                                            type="number"
+                                            name="merit_points_grade_good"
+                                            value={settings.merit_points_grade_good}
+                                            onChange={handleChange}
+                                            min="0"
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-brand-blue/20 text-sm dark:bg-slate-700 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="p-4 rounded-xl bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800/50 text-xs text-teal-700 dark:text-teal-300 mt-2">
+                                    <span className="font-bold">¡Gamificación Activa!</span> Los alumnos se sentirán recompensados y motivados de inmediato al ver cómo su esfuerzo diario se traduce en premios tangibles.
+                                </div>
                             </div>
                         </div>
                     </div>

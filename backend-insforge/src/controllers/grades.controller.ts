@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
-import { getSettingBool, getSetting } from './settings.controller';
+import { getSettingBool, getSetting, getSettingNumber } from './settings.controller';
 
 export const getGrades = async (req: Request, res: Response) => {
     const { course_id, unit_name, schedule_id } = req.query;
@@ -79,6 +79,55 @@ export const getGrades = async (req: Request, res: Response) => {
     }
 };
 
+// Helper: Handle automatic merit allocation for excellent/good grades
+const handleGradeMerits = async (records: any[], creatorUserId: string | undefined) => {
+    try {
+        const autoEnabled = await getSettingBool('merit_enable_auto_grades');
+        if (!autoEnabled) return;
+
+        const pointsExcellent = await getSettingNumber('merit_points_grade_excellent');
+        const pointsGood = await getSettingNumber('merit_points_grade_good');
+
+        for (const r of records) {
+            const score = Number(r.score);
+            let pointsAwarded = 0;
+            let levelLabel = '';
+
+            if (score >= 90) {
+                pointsAwarded = pointsExcellent;
+                levelLabel = 'Excelente';
+            } else if (score >= 80) {
+                pointsAwarded = pointsGood;
+                levelLabel = 'Bueno';
+            }
+
+            if (pointsAwarded > 0) {
+                // Upsert merit transaction
+                await adminClient.database
+                    .from('merit_transactions')
+                    .upsert({
+                        student_id: r.student_id,
+                        points: pointsAwarded,
+                        transaction_type: 'grade',
+                        description: `Nota Sobresaliente (${levelLabel}: ${score} pts) - Unidad: ${r.unit_name}`,
+                        reference_id: r.id,
+                        created_by: creatorUserId || null
+                    }, { onConflict: 'student_id, reference_id, transaction_type' });
+            } else {
+                // Delete transaction if score is below 80 but previously got points
+                await adminClient.database
+                    .from('merit_transactions')
+                    .delete()
+                    .eq('student_id', r.student_id)
+                    .eq('reference_id', r.id)
+                    .eq('transaction_type', 'grade');
+            }
+        }
+    } catch (err) {
+        console.error('Error handling grade merits:', err);
+    }
+};
+
 export const saveGrades = async (req: Request, res: Response) => {
     const { course_id, unit_name, students } = req.body;
     const userId = req.currentUser?.id;
@@ -97,11 +146,19 @@ export const saveGrades = async (req: Request, res: Response) => {
             created_by: userId
         }));
 
-        const { error } = await client.database
+        const { data, error } = await client.database
             .from('grades')
-            .upsert(upsertData, { onConflict: 'course_id, student_id, unit_name' });
+            .upsert(upsertData, { onConflict: 'course_id, student_id, unit_name' })
+            .select('id, student_id, score, unit_name');
 
         if (error) throw error;
+
+        // Process automatic grade merits in background
+        if (data && data.length > 0) {
+            handleGradeMerits(data, userId).catch(err =>
+                console.error('Failed to trigger background grade merits:', err)
+            );
+        }
 
         res.json({ message: 'Grades saved successfully' });
     } catch (error) {
