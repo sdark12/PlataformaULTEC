@@ -19,7 +19,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
         } else {
              const tempClient = createClient({
                 baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-                anonKey: process.env.INSFORGE_API_KEY || 'ik_065cc96706290cd59a1103c714006c96'
+                anonKey: process.env.INSFORGE_API_KEY || process.env.INSFORGE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTQ2NTJ9.LsB4ffiFE5H7qEfhgnM0NuPTX_It2aYd4iEmVUOHmh4'
             });
             
             const password = 'Padre' + Math.floor(1000 + Math.random() * 9000) + '!';

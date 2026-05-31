@@ -58,7 +58,7 @@ export const createUser = async (req: Request, res: Response) => {
         // Use a temporary client for signup to avoid overriding the backend's global session
         const tempClient = createClient({
             baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-            anonKey: process.env.INSFORGE_API_KEY || 'ik_065cc96706290cd59a1103c714006c96'
+            anonKey: process.env.INSFORGE_API_KEY || process.env.INSFORGE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTQ2NTJ9.LsB4ffiFE5H7qEfhgnM0NuPTX_It2aYd4iEmVUOHmh4'
         });
 
         let userId: string;
