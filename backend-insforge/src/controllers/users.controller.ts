@@ -231,7 +231,30 @@ export const getUserById = async (req: Request, res: Response) => {
         if (error) throw error;
         if (!data) return res.status(404).json({ message: 'User not found' });
 
-        res.json(data);
+        let userPhone = (data as any).phone || null;
+
+        if (data.role === 'student') {
+            const { data: st } = await client.from('students').select('phone').eq('user_id', id).maybeSingle();
+            if (st?.phone) userPhone = st.phone;
+        } else if (data.role === 'instructor') {
+            const { data: inst } = await client.from('instructors').select('phone').eq('user_id', id).maybeSingle();
+            if (inst?.phone) userPhone = inst.phone;
+        } else if (data.role === 'parent') {
+            const { data: links } = await client
+                .from('parent_student_links')
+                .select('students(guardian_phone, phone)')
+                .eq('parent_user_id', id);
+
+            if (links && links.length > 0) {
+                const stData = (links[0] as any)?.students;
+                const linkedPhone = stData?.guardian_phone || stData?.phone;
+                if (linkedPhone && !userPhone) {
+                    userPhone = linkedPhone;
+                }
+            }
+        }
+
+        res.json({ ...data, phone: userPhone });
     } catch (error) {
         console.error('Error fetching user:', error);
         res.status(500).json({ message: 'Error fetching user' });
@@ -243,12 +266,10 @@ export const updateUser = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { full_name, email, role, phone, active, branch_id } = req.body;
 
-        const updatePayload: any = {
-            full_name,
-            email,
-            role
-        };
-
+        const updatePayload: any = {};
+        if (full_name !== undefined) updatePayload.full_name = full_name;
+        if (email !== undefined) updatePayload.email = email;
+        if (role !== undefined) updatePayload.role = role;
         if (branch_id !== undefined) updatePayload.branch_id = branch_id === '' ? null : branch_id;
 
         const { data, error } = await client
@@ -259,30 +280,36 @@ export const updateUser = async (req: Request, res: Response) => {
             .single();
 
         if (error) throw error;
+        if (!data) return res.status(404).json({ message: 'User not found' });
 
         // Update phone in specific role tables if provided
         if (phone !== undefined) {
-            if (role === 'student') {
+            const currentRole = role || data.role;
+            if (currentRole === 'student') {
                 await client.from('students').update({ phone }).eq('user_id', id);
-            } else if (role === 'parent') {
-                await client.from('parents').update({ phone }).eq('user_id', id);
-            } else if (role === 'instructor') {
+            } else if (currentRole === 'parent') {
+                const { data: links } = await client
+                    .from('parent_student_links')
+                    .select('student_id')
+                    .eq('parent_user_id', id);
+
+                if (links && links.length > 0) {
+                    const studentIds = links.map((l: any) => l.student_id);
+                    await client.from('students').update({ guardian_phone: phone }).in('id', studentIds);
+                }
+            } else if (currentRole === 'instructor') {
                 await client.from('instructors').update({ phone }).eq('user_id', id);
             }
         }
 
-        if (!data) return res.status(404).json({ message: 'User not found' });
-
         // Handle student linking if role is student and student_id is provided
         const { student_id } = req.body;
         if (role === 'student' && student_id) {
-            // Unlink any existing student for this user first
             await client
                 .from('students')
                 .update({ user_id: null })
                 .eq('user_id', id);
 
-            // Link the new student
             const { error: studentLinkError } = await client
                 .from('students')
                 .update({ user_id: id })
@@ -291,15 +318,14 @@ export const updateUser = async (req: Request, res: Response) => {
             if (studentLinkError) {
                 console.error('Student linking error during update:', studentLinkError);
             }
-        } else if (role !== 'student') {
-            // If role is changed from student to something else, optionally unlink
+        } else if (role && role !== 'student') {
             await client
                 .from('students')
                 .update({ user_id: null })
                 .eq('user_id', id);
         }
 
-        res.json(data);
+        res.json({ ...data, phone: phone !== undefined ? phone : undefined });
     } catch (error) {
         console.error('Error updating user:', error);
         res.status(500).json({ message: 'Error updating user' });
