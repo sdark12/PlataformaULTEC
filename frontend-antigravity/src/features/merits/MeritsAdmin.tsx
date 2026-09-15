@@ -7,9 +7,9 @@ import {
     updateReward, 
     deleteReward, 
     getStudentBalance,
-    LeaderboardEntry, 
-    Reward,
-    MeritTransaction
+    type LeaderboardEntry, 
+    type Reward,
+    type MeritTransaction
 } from './meritsService';
 import { 
     Award, 
@@ -25,8 +25,6 @@ import {
     MinusCircle, 
     Loader2, 
     X,
-    TrendingUp,
-    ShieldAlert,
     Save
 } from 'lucide-react';
 

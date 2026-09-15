@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 
 interface UserPayload {
     id: string;
@@ -27,10 +27,8 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     const token = authHeader.split(' ')[1];
 
     try {
-        const verifyClient = createClient({
-            baseUrl: process.env.INSFORGE_URL!,
-            anonKey: process.env.INSFORGE_API_KEY!,
-            edgeFunctionToken: token
+        const verifyClient = createClient(process.env.INSFORGE_URL!, process.env.INSFORGE_API_KEY!, {
+            global: { headers: { Authorization: `Bearer ${token}` } }
         });
 
         // Decode JWT to get the user's ID
@@ -44,7 +42,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
         }
 
         // Validate token by fetching user profile
-        const { data: profile, error: profileError } = await verifyClient.database
+        const { data: profile, error: profileError } = await verifyClient
             .from('profiles')
             .select('*')
             .eq('id', authUserId)

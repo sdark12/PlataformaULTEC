@@ -414,7 +414,7 @@ const SettingsPage: React.FC = () => {
                                 <label className="flex items-center justify-between cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                     <div>
                                         <h4 className="font-bold text-slate-800 dark:text-white text-sm">Puntos por Calificaciones</h4>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Asignar puntos de forma automática al registrar notas sobresalientes (>=80)</p>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Asignar puntos de forma automática al registrar notas sobresalientes (&gt;=80)</p>
                                     </div>
                                     <input
                                         type="checkbox"
@@ -443,7 +443,7 @@ const SettingsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota Excelente (>=90)</label>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota Excelente (&gt;=90)</label>
                                         <input
                                             type="number"
                                             name="merit_points_grade_excellent"
@@ -454,7 +454,7 @@ const SettingsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota Buena (>=80)</label>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nota Buena (&gt;=80)</label>
                                         <input
                                             type="number"
                                             name="merit_points_grade_good"

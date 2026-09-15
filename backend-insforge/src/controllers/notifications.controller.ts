@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import client from '../config/insforge';
 
 export const getNotifications = async (req: Request, res: Response) => {
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
     const userId = req.currentUser?.id;
 
     if (!userId) {
@@ -26,7 +26,7 @@ export const getNotifications = async (req: Request, res: Response) => {
 };
 
 export const markAsRead = async (req: Request, res: Response) => {
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
     const { id } = req.params;
     const userId = req.currentUser?.id;
 
@@ -48,7 +48,7 @@ export const markAsRead = async (req: Request, res: Response) => {
 };
 
 export const markAllAsRead = async (req: Request, res: Response) => {
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
     const userId = req.currentUser?.id;
 
     try {

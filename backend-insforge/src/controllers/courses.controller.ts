@@ -7,7 +7,7 @@ export const getCourses = async (req: Request, res: Response) => {
     const db = req.dbUserClient || client;
 
     try {
-        let query = db.database
+        let query = db
             .from('courses')
             .select('*')
             .eq('is_active', true)
@@ -52,7 +52,7 @@ export const createCourse = async (req: Request, res: Response) => {
     console.log('createCourse:', { branchId: finalBranchId, bodyName: name });
 
     try {
-        const { data, error } = await db.database
+        const { data, error } = await db
             .from('courses')
             .insert([{ branch_id: finalBranchId, name, description: finalDescription, monthly_fee, start_date: finalStartDate, end_date: finalEndDate }])
             .select()
@@ -76,7 +76,7 @@ export const updateCourse = async (req: Request, res: Response) => {
     const finalEndDate = end_date === '' ? null : end_date;
     const finalDescription = description === '' ? null : description;
 
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     const branchId = req.currentUser?.branch_id;
 
@@ -103,7 +103,7 @@ export const updateCourse = async (req: Request, res: Response) => {
 
 export const deleteCourse = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     const branchId = req.currentUser?.branch_id;
 
@@ -140,7 +140,7 @@ export const deleteCourse = async (req: Request, res: Response) => {
 
 export const getCourseSchedules = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         const { data, error } = await db
@@ -160,7 +160,7 @@ export const getCourseSchedules = async (req: Request, res: Response) => {
 export const createCourseSchedule = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { grade, day_of_week, start_time, end_time } = req.body;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         const { data, error } = await db
@@ -179,7 +179,7 @@ export const createCourseSchedule = async (req: Request, res: Response) => {
 
 export const deleteCourseSchedule = async (req: Request, res: Response) => {
     const { scheduleId } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         const { error } = await db

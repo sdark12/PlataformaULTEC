@@ -12,7 +12,7 @@ const calculateAllowedUnitsForParent = async (studentId: string, courseIds: numb
 
     if (courseIds.length === 0) return allowedMap;
 
-    const { data: enrollments } = await adminClient.database
+    const { data: enrollments } = await adminClient
         .from('enrollments')
         .select('id, course_id, enrollment_date, courses (monthly_fee, duration_months, start_date)')
         .eq('student_id', studentId)
@@ -26,7 +26,7 @@ const calculateAllowedUnitsForParent = async (studentId: string, courseIds: numb
 
     const enrollmentIds = enrollments.map((e: any) => e.id);
 
-    const { data: payments } = await adminClient.database
+    const { data: payments } = await adminClient
         .from('payments')
         .select('enrollment_id, amount, discount')
         .in('enrollment_id', enrollmentIds)
@@ -96,7 +96,7 @@ const calculateAllowedUnitsForParent = async (studentId: string, courseIds: numb
 // Admin: Get all parent-student links
 export const getParentLinks = async (req: Request, res: Response) => {
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('parent_student_links')
             .select(`
                 id,
@@ -126,7 +126,7 @@ export const createParentLink = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('parent_student_links')
             .insert({
                 parent_user_id,
@@ -152,7 +152,7 @@ export const createParentLink = async (req: Request, res: Response) => {
 export const deleteParentLink = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-        const { error } = await adminClient.database
+        const { error } = await adminClient
             .from('parent_student_links')
             .delete()
             .eq('id', id);
@@ -171,7 +171,7 @@ export const getMyStudents = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('parent_student_links')
             .select(`
                 student_id,
@@ -201,7 +201,7 @@ export const getChildDashboard = async (req: Request, res: Response) => {
 
     try {
         // Verify parent has access to this student
-        const { data: link } = await adminClient.database
+        const { data: link } = await adminClient
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', userId)
@@ -213,7 +213,7 @@ export const getChildDashboard = async (req: Request, res: Response) => {
         }
 
         // Attendance — full records for calendar
-        const { data: attendance } = await adminClient.database
+        const { data: attendance } = await adminClient
             .from('attendance')
             .select('id, status, created_at, date')
             .eq('student_id', studentId)
@@ -235,7 +235,7 @@ export const getChildDashboard = async (req: Request, res: Response) => {
         })) || [];
 
         // Grades
-        const { data: grades } = await adminClient.database
+        const { data: grades } = await adminClient
             .from('grades')
             .select('score')
             .eq('student_id', studentId);
@@ -247,7 +247,7 @@ export const getChildDashboard = async (req: Request, res: Response) => {
         }
 
         // Enrollments with full course details for debt calculation
-        const { data: enrollments } = await adminClient.database
+        const { data: enrollments } = await adminClient
             .from('enrollments')
             .select('id, course_id, enrollment_date, courses (name, monthly_fee, duration_months, start_date, end_date)')
             .eq('student_id', studentId)
@@ -262,7 +262,7 @@ export const getChildDashboard = async (req: Request, res: Response) => {
         let allPayments: any[] = [];
 
         if (enrollmentIds.length > 0) {
-            const { data: payments } = await adminClient.database
+            const { data: payments } = await adminClient
                 .from('payments')
                 .select('id, enrollment_id, amount, discount, payment_date, payment_type, method, tuition_month, description, enrollments (courses (name))')
                 .in('enrollment_id', enrollmentIds)
@@ -365,7 +365,7 @@ export const getChildPayments = async (req: Request, res: Response) => {
 
     try {
         // Verify parent has access
-        const { data: link } = await adminClient.database
+        const { data: link } = await adminClient
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', userId)
@@ -377,7 +377,7 @@ export const getChildPayments = async (req: Request, res: Response) => {
         }
 
         // Get student's enrollment IDs
-        const { data: enrollments } = await adminClient.database
+        const { data: enrollments } = await adminClient
             .from('enrollments')
             .select('id')
             .eq('student_id', studentId);
@@ -388,7 +388,7 @@ export const getChildPayments = async (req: Request, res: Response) => {
             return res.json([]);
         }
 
-        const { data: payments, error } = await adminClient.database
+        const { data: payments, error } = await adminClient
             .from('payments')
             .select('id, amount, discount, payment_date, payment_type, method, tuition_month, description, enrollments (courses (name))')
             .in('enrollment_id', enrollmentIds)
@@ -425,7 +425,7 @@ export const getChildGrades = async (req: Request, res: Response) => {
 
     try {
         // Verify parent access
-        const { data: link } = await adminClient.database
+        const { data: link } = await adminClient
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', userId)
@@ -437,7 +437,7 @@ export const getChildGrades = async (req: Request, res: Response) => {
         }
 
         // Get all grades across courses
-        const { data: gradesData, error: gradesError } = await adminClient.database
+        const { data: gradesData, error: gradesError } = await adminClient
             .from('grades')
             .select(`
                 score,
@@ -548,7 +548,7 @@ export const getChildAssignments = async (req: Request, res: Response) => {
 
     try {
         // Verify parent access
-        const { data: link } = await adminClient.database
+        const { data: link } = await adminClient
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', userId)
@@ -560,7 +560,7 @@ export const getChildAssignments = async (req: Request, res: Response) => {
         }
 
         // Get active enrollments
-        const { data: enrollments, error: enrollError } = await adminClient.database
+        const { data: enrollments, error: enrollError } = await adminClient
             .from('enrollments')
             .select('id, course_id, schedule_id, courses(name)')
             .eq('student_id', studentId)
@@ -572,7 +572,7 @@ export const getChildAssignments = async (req: Request, res: Response) => {
         const courseIds = enrollments.map((e: any) => e.course_id);
 
         // Get all assignments for those courses
-        const { data: assignments, error: assignError } = await adminClient.database
+        const { data: assignments, error: assignError } = await adminClient
             .from('assignments')
             .select('*')
             .in('course_id', courseIds)
@@ -581,7 +581,7 @@ export const getChildAssignments = async (req: Request, res: Response) => {
         if (assignError) throw assignError;
 
         // Get all submissions for this student
-        const { data: submissions, error: subError } = await adminClient.database
+        const { data: submissions, error: subError } = await adminClient
             .from('assignment_submissions')
             .select('*')
             .eq('student_id', studentId);
@@ -628,7 +628,7 @@ export const getChildDiscipline = async (req: Request, res: Response) => {
 
     try {
         // Verify parent access
-        const { data: link } = await adminClient.database
+        const { data: link } = await adminClient
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', userId)
@@ -639,7 +639,7 @@ export const getChildDiscipline = async (req: Request, res: Response) => {
             return res.status(403).json({ message: 'No tiene acceso a este estudiante' });
         }
 
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('discipline_incidents')
             .select(`
                 id,

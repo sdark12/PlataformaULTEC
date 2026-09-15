@@ -7,7 +7,7 @@ export const getIncidents = async (req: Request, res: Response) => {
     const { student_id, incident_type, resolved } = req.query;
 
     try {
-        let query = adminClient.database
+        let query = adminClient
             .from('discipline_incidents')
             .select(`
                 *,
@@ -65,7 +65,7 @@ export const createIncident = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('discipline_incidents')
             .insert([{
                 student_id,
@@ -121,7 +121,7 @@ export const updateIncident = async (req: Request, res: Response) => {
         if (parent_notified !== undefined) updateData.parent_notified = parent_notified;
         if (course_id !== undefined) updateData.course_id = course_id || null;
 
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('discipline_incidents')
             .update(updateData)
             .eq('id', id)
@@ -149,7 +149,7 @@ export const resolveIncident = async (req: Request, res: Response) => {
     const { resolution_notes } = req.body;
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('discipline_incidents')
             .update({
                 resolved: true,
@@ -175,7 +175,7 @@ export const deleteIncident = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
-        const { error } = await adminClient.database
+        const { error } = await adminClient
             .from('discipline_incidents')
             .delete()
             .eq('id', id);

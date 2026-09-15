@@ -53,7 +53,7 @@ const loadSettings = async (): Promise<Record<string, string>> => {
     }
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('system_settings')
             .select('key, value');
 
@@ -132,7 +132,7 @@ export const updateSettings = async (req: Request, res: Response) => {
         // Upsert each setting
         const entries = Object.entries(updates);
         for (const [key, value] of entries) {
-            const { error } = await adminClient.database
+            const { error } = await adminClient
                 .from('system_settings')
                 .upsert(
                     { key, value: String(value), updated_at: new Date().toISOString() },

@@ -31,6 +31,7 @@ import DisciplineModule from './features/academic/DisciplineModule';
 import SettingsPage from './features/settings/SettingsPage';
 import MeritsAdmin from './features/merits/MeritsAdmin';
 import MyMerits from './features/merits/MyMerits';
+import UserProfile from './pages/UserProfile';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 function App() {
@@ -79,10 +80,11 @@ function App() {
                 <Route path="/merits" element={<MeritsAdmin />} />
               </Route>
 
-              {/* Shared between Instructors, Students, Admins */}
+              {/* Shared between Instructors, Students, Admins, Parents, Secs */}
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor', 'student', 'secretary', 'parent']} />}>
                 <Route path="/resources" element={<CourseResources />} />
                 <Route path="/announcements" element={<Announcements />} />
+                <Route path="/profile" element={<UserProfile />} />
               </Route>
 
               {/* Shared Documents Center (Students, Admins, Secs) */}

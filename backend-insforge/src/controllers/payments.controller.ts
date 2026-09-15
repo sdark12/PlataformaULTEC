@@ -8,7 +8,7 @@ export const getPayments = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
         // Resource embedding for joins. Now payment is linked to student_id
-        let query = client.database
+        let query = client
             .from('payments')
             .select(`
                 id,
@@ -86,7 +86,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
         // 1 & 2. Insertar Pago y Actualizar Estado Financiero por CADA curso
         for (const course of targetCourses) {
-            const { data: payment, error: paymentError } = await client.database
+            const { data: payment, error: paymentError } = await client
                 .from('payments')
                 .insert([{
                     student_id,
@@ -108,7 +108,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
             // Update Financial Status
             if (payment_type === 'TUITION') {
-                const { data: pendingList, error: pendingError } = await client.database
+                const { data: pendingList, error: pendingError } = await client
                     .from('financial_status')
                     .select('id, amount_due, amount_paid')
                     .eq('enrollment_id', course.enrollment_id)
@@ -121,7 +121,7 @@ export const createPayment = async (req: Request, res: Response) => {
                     const newPaid = Number(fs.amount_due);
                     const newStatus = 'PAID';
 
-                    await client.database
+                    await client
                         .from('financial_status')
                         .update({ amount_paid: newPaid, status: newStatus })
                         .eq('id', fs.id);
@@ -131,7 +131,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
         // Si no se pasaron cursos pero sí un monto global (pago general)
         if (targetCourses.length === 0) {
-            const { data: payment, error: paymentError } = await client.database
+            const { data: payment, error: paymentError } = await client
                 .from('payments')
                 .insert([{
                     student_id,
@@ -159,7 +159,7 @@ export const createPayment = async (req: Request, res: Response) => {
         try {
             // Generate Invoice Number
             let invoiceNumber = `REC-${Date.now()}`;
-            const { data: seqData } = await client.database
+            const { data: seqData } = await client
                 .from('invoice_sequences')
                 .select('series, current_number')
                 .eq('branch_id', finalBranchId)
@@ -167,7 +167,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
             if (seqData) {
                 const nextNum = seqData.current_number + 1;
-                await client.database
+                await client
                     .from('invoice_sequences')
                     .update({ current_number: nextNum })
                     .eq('branch_id', finalBranchId);
@@ -178,7 +178,7 @@ export const createPayment = async (req: Request, res: Response) => {
             console.log('Creating invoice for student_id:', student_id, 'Total:', actTotal);
 
             // Create Invoice attached to student
-            const { data: invoice, error: invoiceError } = await client.database
+            const { data: invoice, error: invoiceError } = await client
                 .from('invoices')
                 .insert([{
                     branch_id: finalBranchId,
@@ -225,7 +225,7 @@ export const createPayment = async (req: Request, res: Response) => {
                 }
 
                 if (itemsToInsert.length > 0) {
-                    const { error: invoiceItemError } = await client.database
+                    const { error: invoiceItemError } = await client
                         .from('invoice_items')
                         .insert(itemsToInsert);
 
@@ -246,7 +246,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
         // Retrieve Student Email to auto-send the receipt
         try {
-            const { data: studentInfo } = await client.database
+            const { data: studentInfo } = await client
                 .from('students')
                 .select('full_name, guardian_email, user_id')
                 .eq('id', student_id)
@@ -255,7 +255,7 @@ export const createPayment = async (req: Request, res: Response) => {
             if (studentInfo) {
                 let targetEmail = studentInfo.guardian_email;
                 if (studentInfo.user_id) {
-                    const { data: profileInfo } = await client.database
+                    const { data: profileInfo } = await client
                         .from('profiles')
                         .select('email')
                         .eq('id', studentInfo.user_id)
@@ -296,7 +296,7 @@ export const createPayment = async (req: Request, res: Response) => {
 export const updatePayment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { amount, method, reference_number, description, tuition_month, payment_type, discount } = req.body;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
     const branchId = req.currentUser?.branch_id;
 
     try {
@@ -333,7 +333,7 @@ export const updatePayment = async (req: Request, res: Response) => {
 
 export const deletePayment = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
     const branchId = req.currentUser?.branch_id;
 
     try {

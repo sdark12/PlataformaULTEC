@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../services/email.service';
 
 const linkOrCreateParent = async (studentId: string, email: string, fullName: string, relationship: string, createdBy: string | undefined) => {
     try {
-        const { data: existingProfile } = await client.database
+        const { data: existingProfile } = await client
             .from('profiles')
             .select('id')
             .eq('email', email)
@@ -17,10 +17,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
         if (existingProfile) {
             parentUserId = existingProfile.id;
         } else {
-             const tempClient = createClient({
-                baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-                anonKey: process.env.INSFORGE_API_KEY || process.env.INSFORGE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTQ2NTJ9.LsB4ffiFE5H7qEfhgnM0NuPTX_It2aYd4iEmVUOHmh4'
-            });
+             const tempClient = createClient(process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app', process.env.INSFORGE_API_KEY || process.env.INSFORGE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTQ2NTJ9.LsB4ffiFE5H7qEfhgnM0NuPTX_It2aYd4iEmVUOHmh4');
             
             const password = 'Padre' + Math.floor(1000 + Math.random() * 9000) + '!';
             const { data: authData, error: authError } = await tempClient.auth.signUp({ email, password });
@@ -32,7 +29,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
 
             parentUserId = authData.user.id;
             
-            const { error: profileError } = await client.database
+            const { error: profileError } = await client
                 .from('profiles')
                 .upsert({
                     id: parentUserId,
@@ -49,7 +46,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
             sendWelcomeEmail(email, fullName || 'Encargado', 'parent', password);
         }
 
-        const { data: existingLink } = await client.database
+        const { data: existingLink } = await client
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', parentUserId)
@@ -57,7 +54,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
             .maybeSingle();
 
         if (!existingLink) {
-            await client.database
+            await client
                 .from('parent_student_links')
                 .insert({
                     parent_user_id: parentUserId,
@@ -76,7 +73,7 @@ export const getStudents = async (req: Request, res: Response) => {
     const db = req.dbUserClient || client;
 
     try {
-        let query = db.database
+        let query = db
             .from('students')
             .select('*', { count: 'exact' })
             .order('full_name');
@@ -167,7 +164,7 @@ export const createStudent = async (req: Request, res: Response) => {
     console.log('createStudent:', { branchId: finalBranchId, bodyName: full_name });
 
     try {
-        const { data, error } = await db.database
+        const { data, error } = await db
             .from('students')
             .insert([{
                 branch_id: finalBranchId,
@@ -222,7 +219,7 @@ export const updateStudent = async (req: Request, res: Response) => {
     }
 
     const branchId = req.currentUser?.branch_id;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         let query = db
@@ -253,7 +250,7 @@ export const updateStudent = async (req: Request, res: Response) => {
 export const deleteStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
     const branchId = req.currentUser?.branch_id;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         let query = db

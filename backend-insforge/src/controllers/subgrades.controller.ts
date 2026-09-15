@@ -9,7 +9,7 @@ export const getSubgradeCategories = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data: categories, error } = await client.database
+        const { data: categories, error } = await client
             .from('subgrade_categories')
             .select('*')
             .eq('course_id', course_id)
@@ -38,7 +38,7 @@ export const saveSubgradeCategories = async (req: Request, res: Response) => {
         for (const c of categories) {
             if (c.id) {
                 // UPDATE existing category
-                const { data, error } = await client.database
+                const { data, error } = await client
                     .from('subgrade_categories')
                     .update({
                         name: c.name,
@@ -52,7 +52,7 @@ export const saveSubgradeCategories = async (req: Request, res: Response) => {
                 results.push(data);
             } else {
                 // INSERT new category
-                const { data, error } = await client.database
+                const { data, error } = await client
                     .from('subgrade_categories')
                     .insert({
                         course_id,
@@ -80,7 +80,7 @@ export const deleteSubgradeCategory = async (req: Request, res: Response) => {
     const { category_id } = req.params;
 
     try {
-        const { error } = await client.database
+        const { error } = await client
             .from('subgrade_categories')
             .delete()
             .eq('id', category_id);
@@ -103,7 +103,7 @@ export const getSubgrades = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch Categories
-        const { data: categories, error: catError } = await client.database
+        const { data: categories, error: catError } = await client
             .from('subgrade_categories')
             .select('id, name, max_score')
             .eq('course_id', course_id)
@@ -112,7 +112,7 @@ export const getSubgrades = async (req: Request, res: Response) => {
         if (catError) throw catError;
 
         // 2. Fetch Enrolled Students
-        let enrollmentsQuery = client.database
+        let enrollmentsQuery = client
             .from('enrollments')
             .select(`
                 student_id,
@@ -137,7 +137,7 @@ export const getSubgrades = async (req: Request, res: Response) => {
         let subgradesData: any[] = [];
         if (categories && categories.length > 0) {
             const categoryIds = categories.map((c: any) => c.id);
-            const { data: sgData, error: sgError } = await client.database
+            const { data: sgData, error: sgError } = await client
                 .from('subgrades')
                 .select('category_id, student_id, score, remarks')
                 .in('category_id', categoryIds);
@@ -198,7 +198,7 @@ export const saveSubgrades = async (req: Request, res: Response) => {
             created_by: userId
         }));
 
-        const { error } = await client.database
+        const { error } = await client
             .from('subgrades')
             .upsert(payload, { onConflict: 'category_id, student_id' });
 

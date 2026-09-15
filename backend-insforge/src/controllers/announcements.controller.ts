@@ -5,7 +5,7 @@ export const getAnnouncements = async (req: Request, res: Response) => {
     const role = req.currentUser?.role;
 
     try {
-        let query = client.database
+        let query = client
             .from('announcements')
             .select(`
                 id,
@@ -53,7 +53,7 @@ export const createAnnouncement = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data, error } = await client.database
+        const { data, error } = await client
             .from('announcements')
             .insert([{
                 title,
@@ -77,7 +77,7 @@ export const deleteAnnouncement = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
-        const { error } = await client.database
+        const { error } = await client
             .from('announcements')
             .delete()
             .eq('id', id);

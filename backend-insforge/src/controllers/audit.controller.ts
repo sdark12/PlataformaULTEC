@@ -6,7 +6,7 @@ export const getAuditLogs = async (req: Request, res: Response) => {
     const db = req.dbUserClient || client;
 
     try {
-        let query = db.database
+        let query = db
             .from('audit_logs')
             .select(`
                 *,

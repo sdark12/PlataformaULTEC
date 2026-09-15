@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -14,8 +14,8 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Get Profile
-        const { data: profileList, error: profileError } = await client.database
+        // Get Profile using adminClient to bypass RLS during auth
+        const { data: profileList, error: profileError } = await adminClient
             .from('profiles')
             .select('*')
             .eq('id', data.user.id);
@@ -34,7 +34,7 @@ export const login = async (req: Request, res: Response) => {
         // I added `role_id` and `branch_id`.
 
         res.json({
-            token: data.accessToken,
+            token: data.session?.access_token,
             user: {
                 id: data.user.id,
                 email: data.user.email,
@@ -58,15 +58,12 @@ export const adminResetPassword = async (req: Request, res: Response) => {
 
     try {
         // We need the SERVICE ROLE KEY to update another user's password
-        const { createClient } = require('@insforge/sdk');
-        const adminClient = createClient({
-            baseUrl: process.env.INSFORGE_URL,
-            anonKey: process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_API_KEY
-        });
+        const { createClient } = require('@supabase/supabase-js');
+        const adminClient = createClient(process.env.INSFORGE_URL, process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_API_KEY);
 
         // Given that Insforge SDK doesn't expose auth.admin, we call a trusted Postgres RPC 
         // to update the password securely via the database.
-        const { data, error } = await adminClient.database.rpc('admin_change_user_password', {
+        const { data, error } = await adminClient.rpc('admin_change_user_password', {
             target_user_id: userId,
             new_password: newPassword
         });
@@ -99,7 +96,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
         // simularemos el envío del correo generando un token propio.
         
         // 1. Verificamos si existe el perfil y obtenemos su user id
-        const { data: profileList } = await client.database
+        const { data: profileList } = await client
             .from('profiles')
             .select('id, email, full_name')
             .eq('email', email);

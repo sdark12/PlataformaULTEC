@@ -64,10 +64,14 @@ const AssignmentCard = ({ assignment, onOpenSubmitModal }: { assignment: Student
                         {hasFile ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <AlertCircle className="w-3 h-3 mr-1" />}
                         {hasFile ? 'Entregado con comprobante' : 'Entregado (Sin archivo)'}
                     </span>
+                ) : isOverdue ? (
+                    <span className="flex items-center text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        Expirada
+                    </span>
                 ) : (
                     <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider
-                        ${isOverdue ? 'bg-brand-danger/20 text-brand-danger' :
-                            isUrgent ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-brand-blue/20 text-brand-blue'}`}>
+                        ${isUrgent ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-brand-blue/20 text-brand-blue'}`}>
                         {assignment.assignment_type}
                     </span>
                 )}
@@ -92,9 +96,9 @@ const AssignmentCard = ({ assignment, onOpenSubmitModal }: { assignment: Student
             <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 space-y-4">
                 {/* Time Left Indicator */}
                 <div className="flex items-center justify-between">
-                    <div className={`flex items-center text-sm font-medium ${isOverdue && !isSubmitted ? 'text-brand-danger' : isUrgent && !isSubmitted ? 'text-amber-500' : 'text-slate-600 dark:text-slate-300'}`}>
+                    <div className={`flex items-center text-sm font-medium ${isOverdue && !isSubmitted ? 'text-rose-500 font-bold' : isUrgent && !isSubmitted ? 'text-amber-500' : 'text-slate-600 dark:text-slate-300'}`}>
                         <Clock className="w-4 h-4 mr-2" />
-                        <span>{isSubmitted ? 'Completado a tiempo' : timeLeft}</span>
+                        <span>{isSubmitted ? 'Completado a tiempo' : isOverdue ? 'Plazo Vencido' : timeLeft}</span>
                     </div>
                 </div>
 
@@ -115,12 +119,21 @@ const AssignmentCard = ({ assignment, onOpenSubmitModal }: { assignment: Student
                     <button
                         onClick={() => onOpenSubmitModal(assignment)}
                         className={`w-full mt-2 py-2.5 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all active:scale-95
-                            ${isOverdue ? 'bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-slate-800' :
+                            ${isOverdue ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20 cursor-not-allowed dark:bg-rose-950/20' :
                                 'bg-brand-blue hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20'}`}
                         disabled={isOverdue}
                     >
-                        <Send className="w-4 h-4" />
-                        <span>Realizar Entrega</span>
+                        {isOverdue ? (
+                            <>
+                                <Clock className="w-4 h-4 text-rose-500" />
+                                <span>Plazo de Entrega Cerrado</span>
+                            </>
+                        ) : (
+                            <>
+                                <Send className="w-4 h-4" />
+                                <span>Realizar Entrega</span>
+                            </>
+                        )}
                     </button>
                 ) : assignment.attachment_url ? (
                     <a
@@ -286,21 +299,36 @@ const StudentAssignments = () => {
         );
     }
 
-    const pendingTasks = assignments?.filter(a => a.status !== 'SUBMITTED' && a.status !== 'GRADED') || [];
-    const completedTasks = assignments?.filter(a => a.status === 'SUBMITTED' || a.status === 'GRADED') || [];
+    const now = Date.now();
+    const activePendingTasks = assignments?.filter(a =>
+        a.status !== 'SUBMITTED' && a.status !== 'GRADED' && (!a.due_date || new Date(a.due_date).getTime() >= now)
+    ) || [];
+
+    const expiredTasks = assignments?.filter(a =>
+        a.status !== 'SUBMITTED' && a.status !== 'GRADED' && a.due_date && new Date(a.due_date).getTime() < now
+    ) || [];
+
+    const completedTasks = assignments?.filter(a =>
+        a.status === 'SUBMITTED' || a.status === 'GRADED'
+    ) || [];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Mis Tareas</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Revisa tus actividades pendientes y tiempo límite para entrega.</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Revisa tus actividades activas, tareas vencidas y entregas anteriores.</p>
                 </div>
 
                 <div className="bg-white dark:bg-slate-800 px-6 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex space-x-6 shadow-sm">
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-slate-900 dark:text-white">{pendingTasks.length}</div>
+                        <div className="text-2xl font-bold text-brand-blue dark:text-teal-400">{activePendingTasks.length}</div>
                         <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Pendientes</div>
+                    </div>
+                    <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
+                    <div className="text-center">
+                        <div className="text-2xl font-bold text-rose-500">{expiredTasks.length}</div>
+                        <div className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Expiradas</div>
                     </div>
                     <div className="w-px bg-slate-200 dark:bg-slate-700"></div>
                     <div className="text-center">
@@ -310,14 +338,15 @@ const StudentAssignments = () => {
                 </div>
             </div>
 
-            {pendingTasks.length > 0 && (
+            {/* Active pending tasks */}
+            {activePendingTasks.length > 0 && (
                 <div className="space-y-4">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center">
                         <AlertCircle className="w-5 h-5 mr-2 text-brand-blue" />
-                        Próximas Entregas
+                        Próximas Entregas ({activePendingTasks.length})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {pendingTasks.map(assignment => (
+                        {activePendingTasks.map(assignment => (
                             <AssignmentCard
                                 key={assignment.assignment_id}
                                 assignment={assignment}
@@ -328,11 +357,36 @@ const StudentAssignments = () => {
                 </div>
             )}
 
+            {/* Expired overdue tasks */}
+            {expiredTasks.length > 0 && (
+                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <div>
+                        <h3 className="text-lg font-bold text-rose-600 dark:text-rose-400 flex items-center">
+                            <Clock className="w-5 h-5 mr-2 text-rose-500" />
+                            Tareas Expiradas / Fuera de Plazo ({expiredTasks.length})
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            El plazo establecido para la entrega de estas actividades ya concluyó. Contacta con tu profesor si requieres solicitar una entrega extemporánea.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {expiredTasks.map(assignment => (
+                            <AssignmentCard
+                                key={assignment.assignment_id}
+                                assignment={assignment}
+                                onOpenSubmitModal={openSubmitModal}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Completed tasks */}
             {completedTasks.length > 0 && (
                 <div className="space-y-4 pt-8 border-t border-slate-200 dark:border-slate-800">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center opacity-80">
                         <CheckCircle2 className="w-5 h-5 mr-2 text-brand-success" />
-                        Entregas Anteriores
+                        Entregas Anteriores ({completedTasks.length})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-75 grayscale-[20%] transition-all hover:grayscale-0 hover:opacity-100">
                         {completedTasks.map(assignment => (

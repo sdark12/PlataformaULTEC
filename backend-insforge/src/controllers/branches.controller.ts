@@ -5,7 +5,7 @@ export const getBranches = async (req: Request, res: Response) => {
     const db = req.dbUserClient || client;
 
     try {
-        const { data, error } = await db.database
+        const { data, error } = await db
             .from('branches')
             .select('*')
             .order('name');
@@ -27,7 +27,7 @@ export const createBranch = async (req: Request, res: Response) => {
     const db = req.dbUserClient || client;
 
     try {
-        const { data, error } = await db.database
+        const { data, error } = await db
             .from('branches')
             .insert([{ name, address, phone, email }])
             .select()
@@ -51,7 +51,7 @@ export const createBranch = async (req: Request, res: Response) => {
 export const updateBranch = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, address, phone, email } = req.body;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         const { data, error } = await db
@@ -77,7 +77,7 @@ export const updateBranch = async (req: Request, res: Response) => {
 
 export const deleteBranch = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     try {
         const { error } = await db

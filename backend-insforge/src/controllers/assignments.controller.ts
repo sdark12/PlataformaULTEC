@@ -11,7 +11,7 @@ export const assignmentsController = {
             const created_by = req.currentUser?.id;
             const db = adminClient; // Use service role to bypass RLS since we verify manually
 
-            const { data, error } = await db.database
+            const { data, error } = await db
                 .from('assignments')
                 .insert([{ course_id, title, description, assignment_type, due_date, weight_points, max_score, schedule_id, created_by }])
                 .select()
@@ -32,7 +32,7 @@ export const assignmentsController = {
             const { schedule_id } = req.query;
             const db = adminClient;
 
-            let query = db.database
+            let query = db
                 .from('assignments')
                 .select('*')
                 .eq('course_id', courseId);
@@ -58,7 +58,7 @@ export const assignmentsController = {
             const db = adminClient;
 
             // 1. Get assignment to find course_id
-            const { data: assignment, error: assignError } = await db.database
+            const { data: assignment, error: assignError } = await db
                 .from('assignments')
                 .select('course_id')
                 .eq('id', assignmentId)
@@ -66,7 +66,7 @@ export const assignmentsController = {
             if (assignError) throw assignError;
 
             // 2. Get active enrollments for that course
-            const { data: enrollments, error: enrollError } = await db.database
+            const { data: enrollments, error: enrollError } = await db
                 .from('enrollments')
                 .select('id, student_id, students(full_name)')
                 .eq('course_id', assignment.course_id)
@@ -74,7 +74,7 @@ export const assignmentsController = {
             if (enrollError) throw enrollError;
 
             // 3. Get existing submissions
-            const { data: submissions, error: subError } = await db.database
+            const { data: submissions, error: subError } = await db
                 .from('assignment_submissions')
                 .select('*')
                 .eq('assignment_id', assignmentId);
@@ -110,7 +110,7 @@ export const assignmentsController = {
             const { score, feedback } = req.body;
             const db = adminClient;
 
-            const { data, error } = await db.database
+            const { data, error } = await db
                 .from('assignment_submissions')
                 .update({ score, feedback, status: 'GRADED' })
                 .eq('id', submissionId)
@@ -133,7 +133,7 @@ export const assignmentsController = {
             const db = adminClient;
 
             // 1. Get active enrollments for the course (students)
-            let enrollmentsQuery = db.database
+            let enrollmentsQuery = db
                 .from('enrollments')
                 .select('student_id, schedule_id, students(full_name)')
                 .eq('course_id', courseId)
@@ -149,7 +149,7 @@ export const assignmentsController = {
             if (!enrollments || enrollments.length === 0) return res.json({ assignments: [], students: [] });
 
             // 2. Get all assignments for this course
-            let assignmentsQuery = db.database
+            let assignmentsQuery = db
                 .from('assignments')
                 .select('id, title, max_score, weight_points, schedule_id')
                 .eq('course_id', courseId);
@@ -167,7 +167,7 @@ export const assignmentsController = {
             let submissions: any[] = [];
 
             if (assignmentIds.length > 0) {
-                const { data: subs, error: subError } = await db.database
+                const { data: subs, error: subError } = await db
                     .from('assignment_submissions')
                     .select('student_id, assignment_id, score, status')
                     .in('assignment_id', assignmentIds);
@@ -239,7 +239,7 @@ export const assignmentsController = {
 
                 console.log(`[Student Assignments] Attempting to find student for user_id: ${userId}`);
 
-                const { data: studentData, error: studentError } = await db.database
+                const { data: studentData, error: studentError } = await db
                     .from('students')
                     .select('id, user_id, full_name')
                     .eq('user_id', userId)
@@ -255,7 +255,7 @@ export const assignmentsController = {
             }
 
             // Fetch active enrollments for student
-            const { data: enrollments, error: enrollError } = await db.database
+            const { data: enrollments, error: enrollError } = await db
                 .from('enrollments')
                 .select('id, course_id, schedule_id, courses(name)')
                 .eq('student_id', studentId)
@@ -267,7 +267,7 @@ export const assignmentsController = {
             const courseIds = enrollments.map((e: any) => e.course_id);
 
             // Fetch all assignments for those courses
-            const { data: assignments, error: assignError } = await db.database
+            const { data: assignments, error: assignError } = await db
                 .from('assignments')
                 .select('*')
                 .in('course_id', courseIds)
@@ -276,7 +276,7 @@ export const assignmentsController = {
             if (assignError) throw assignError;
 
             // Fetch all submissions for this student
-            const { data: submissions, error: subError } = await db.database
+            const { data: submissions, error: subError } = await db
                 .from('assignment_submissions')
                 .select('*')
                 .eq('student_id', studentId);
@@ -329,7 +329,7 @@ export const assignmentsController = {
 
                 console.log(`[Submit Assignment] Attempting to find student for user_id: ${userId}`);
 
-                const { data: studentData, error: studentError } = await db.database
+                const { data: studentData, error: studentError } = await db
                     .from('students')
                     .select('id, user_id, full_name')
                     .eq('user_id', userId)
@@ -345,14 +345,14 @@ export const assignmentsController = {
             }
 
             // Find enrollment
-            const { data: assignment, error: assignError } = await db.database
+            const { data: assignment, error: assignError } = await db
                 .from('assignments')
                 .select('course_id')
                 .eq('id', assignmentId)
                 .single();
             if (assignError) throw assignError;
 
-            const { data: enrollment, error: enrollError } = await db.database
+            const { data: enrollment, error: enrollError } = await db
                 .from('enrollments')
                 .select('id')
                 .eq('course_id', assignment.course_id)
@@ -366,7 +366,7 @@ export const assignmentsController = {
 
             // Upsert submission manually since Insforge/Supabase upsert needs primary keys
             // First check if exists
-            const { data: existing, error: existError } = await db.database
+            const { data: existing, error: existError } = await db
                 .from('assignment_submissions')
                 .select('id, attachment_url')
                 .eq('assignment_id', assignmentId)
@@ -376,7 +376,7 @@ export const assignmentsController = {
             let result;
             if (existing) {
                 // Update
-                const { data, error } = await db.database
+                const { data, error } = await db
                     .from('assignment_submissions')
                     .update({
                         submission_date: new Date().toISOString(),
@@ -390,7 +390,7 @@ export const assignmentsController = {
                 result = data;
             } else {
                 // Insert
-                const { data, error } = await db.database
+                const { data, error } = await db
                     .from('assignment_submissions')
                     .insert([{
                         assignment_id: assignmentId,

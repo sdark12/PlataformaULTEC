@@ -8,7 +8,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
 
     try {
         // Use the authenticated client attached by middleware
-        const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+        const db = req.dbUserClient ? req.dbUserClient : client;
 
         // 1. Check if subscription already exists
         const { data: existing, error: checkError } = await db
@@ -89,7 +89,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
     try {
         // Using PostgREST resource embedding for joins
         // Note: This relies on foreign keys existing in the schema
-        const query = client.database
+        const query = client
             .from('enrollments')
             .select(`
                 id,
@@ -134,7 +134,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
 export const updateEnrollment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { is_active, schedule_id } = req.body;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
 
     const updates: any = {};
     if (is_active !== undefined) updates.is_active = is_active;
@@ -165,7 +165,7 @@ export const updateEnrollment = async (req: Request, res: Response) => {
 
 export const deleteEnrollment = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient.database : client.database;
+    const db = req.dbUserClient ? req.dbUserClient : client;
     const branchId = req.currentUser?.branch_id;
 
     try {

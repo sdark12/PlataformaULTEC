@@ -17,7 +17,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     try {
         // 1. Active Students
-        let studentsQuery = client.database
+        let studentsQuery = client
             .from('students')
             .select('*', { count: 'exact', head: true });
         if (branchId) studentsQuery = studentsQuery.eq('branch_id', branchId);
@@ -26,7 +26,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         if (studentsError) console.error('Stats Students Error:', studentsError);
 
         // 2. Active Courses
-        let coursesQuery = client.database
+        let coursesQuery = client
             .from('courses')
             .select('*', { count: 'exact', head: true })
             .eq('is_active', true);
@@ -40,7 +40,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         currentMonthStart.setDate(1);
         currentMonthStart.setHours(0, 0, 0, 0);
 
-        let paymentsQuery = client.database
+        let paymentsQuery = client
             .from('payments')
             .select(`
                 amount,
@@ -61,7 +61,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         }
 
         // 4. Pending Payments Count
-        let pendingQuery = client.database
+        let pendingQuery = client
             .from('financial_status')
             .select(`
                 *,
@@ -97,7 +97,7 @@ export const getFinancialReport = async (req: Request, res: Response) => {
     const { start_date, end_date, method } = req.query;
 
     try {
-        let query = client.database
+        let query = client
             .from('payments')
             .select(`
                 payment_date,
@@ -152,7 +152,7 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch active enrollments with their courses and student details
-        let enrollQuery = client.database
+        let enrollQuery = client
             .from('enrollments')
             .select(`
                 id,
@@ -169,7 +169,7 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
         if (enrollError) throw enrollError;
 
         // 2. Fetch all successful TUITION payments for this branch
-        let paymentsQuery = client.database
+        let paymentsQuery = client
             .from('payments')
             .select(`
                 enrollment_id,
@@ -254,7 +254,7 @@ export const getStudentReports = async (req: Request, res: Response) => {
     const db = req.dbUserClient || client;
 
     try {
-        let query = db.database
+        let query = db
             .from('students')
             .select(`
                 *,
@@ -314,7 +314,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
 
     try {
         // 1. Find student record
-        const { data: studentRecord } = await adminClient.database
+        const { data: studentRecord } = await adminClient
             .from('students')
             .select('id')
             .or(`id.eq.${userId},user_id.eq.${userId}`)
@@ -334,7 +334,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
         const studentId = studentRecord.id;
 
         // 2. Get enrollments to find courses
-        const { data: enrollments } = await adminClient.database
+        const { data: enrollments } = await adminClient
             .from('enrollments')
             .select('course_id, courses (id, name)')
             .eq('student_id', studentId)
@@ -346,13 +346,13 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
         // 3. Pending assignments (not submitted by this student)
         let pendingAssignments = 0;
         if (courseIds.length > 0) {
-            const { data: allAssignments } = await adminClient.database
+            const { data: allAssignments } = await adminClient
                 .from('assignments')
                 .select('id')
                 .in('course_id', courseIds)
                 .gte('due_date', new Date().toISOString());
 
-            const { data: submissions } = await adminClient.database
+            const { data: submissions } = await adminClient
                 .from('assignment_submissions')
                 .select('assignment_id')
                 .eq('student_id', studentId);
@@ -362,7 +362,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
         }
 
         // 4. Attendance percentage
-        const { data: attendanceRecords } = await adminClient.database
+        const { data: attendanceRecords } = await adminClient
             .from('attendance')
             .select('status')
             .eq('student_id', studentId);
@@ -375,7 +375,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
         }
 
         // 5. Average grade
-        const { data: grades } = await adminClient.database
+        const { data: grades } = await adminClient
             .from('grades')
             .select('score')
             .eq('student_id', studentId);
@@ -389,7 +389,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
         // 6. Recent resources from enrolled courses
         let recentResources: any[] = [];
         if (courseIds.length > 0) {
-            const { data: resources } = await adminClient.database
+            const { data: resources } = await adminClient
                 .from('course_resources')
                 .select('id, title, resource_type, created_at, course_id, courses (name)')
                 .in('course_id', courseIds)
@@ -399,7 +399,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
         }
 
         // 7. Latest announcement
-        const { data: announcements } = await adminClient.database
+        const { data: announcements } = await adminClient
             .from('announcements')
             .select('id, title, content, created_at')
             .or('target_role.eq.all,target_role.eq.student')
@@ -434,7 +434,7 @@ export const getAdminDashboardExtended = async (req: Request, res: Response) => 
         currentMonthStart.setDate(1);
         currentMonthStart.setHours(0, 0, 0, 0);
 
-        let enrollThisMonthQuery = db.database
+        let enrollThisMonthQuery = db
             .from('enrollments')
             .select('*', { count: 'exact', head: true })
             .gte('created_at', currentMonthStart.toISOString());
@@ -443,7 +443,7 @@ export const getAdminDashboardExtended = async (req: Request, res: Response) => 
         const { count: enrollmentsThisMonth } = await enrollThisMonthQuery;
 
         // 2. Top delinquent students (with pending payments)
-        let pendingQuery = db.database
+        let pendingQuery = db
             .from('financial_status')
             .select(`
                 amount_due,
@@ -482,7 +482,7 @@ export const getAdminDashboardExtended = async (req: Request, res: Response) => 
             .slice(0, 5);
 
         // 3. Recent enrollments (last 5)
-        let recentEnrollQuery = db.database
+        let recentEnrollQuery = db
             .from('enrollments')
             .select('created_at, students (full_name), courses (name)')
             .order('created_at', { ascending: false })

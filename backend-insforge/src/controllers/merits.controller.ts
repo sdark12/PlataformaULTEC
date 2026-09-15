@@ -10,7 +10,7 @@ export const getStudentBalance = async (req: Request, res: Response) => {
     
     try {
         // Resolve student_id if it's user_id or already student_id
-        const { data: student, error: studentError } = await adminClient.database
+        const { data: student, error: studentError } = await adminClient
             .from('students')
             .select('id, full_name, personal_code')
             .or(`id.eq.${student_id},user_id.eq.${student_id}`)
@@ -24,7 +24,7 @@ export const getStudentBalance = async (req: Request, res: Response) => {
         const actualStudentId = student.id;
 
         // Fetch transactions
-        const { data: transactions, error: txError } = await adminClient.database
+        const { data: transactions, error: txError } = await adminClient
             .from('merit_transactions')
             .select('*')
             .eq('student_id', actualStudentId)
@@ -53,7 +53,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
         // Fetch all active students (filtered by branch if applicable)
-        let studentsQuery = adminClient.database
+        let studentsQuery = adminClient
             .from('students')
             .select('id, full_name, personal_code, branch_id');
 
@@ -65,7 +65,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
         if (studentError) throw studentError;
 
         // Fetch all transactions
-        const { data: transactions, error: txError } = await adminClient.database
+        const { data: transactions, error: txError } = await adminClient
             .from('merit_transactions')
             .select('student_id, points');
 
@@ -108,7 +108,7 @@ export const awardPoints = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('merit_transactions')
             .insert([{
                 student_id,
@@ -135,7 +135,7 @@ export const awardPoints = async (req: Request, res: Response) => {
 export const getRewards = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
-        let query = adminClient.database
+        let query = adminClient
             .from('rewards')
             .select('*')
             .eq('is_active', true)
@@ -168,7 +168,7 @@ export const createReward = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('rewards')
             .insert([{
                 title,
@@ -206,7 +206,7 @@ export const updateReward = async (req: Request, res: Response) => {
         if (image_url !== undefined) updateData.image_url = image_url;
         if (is_active !== undefined) updateData.is_active = is_active;
 
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('rewards')
             .update(updateData)
             .eq('id', id)
@@ -228,7 +228,7 @@ export const updateReward = async (req: Request, res: Response) => {
 export const deleteReward = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-        const { error } = await adminClient.database
+        const { error } = await adminClient
             .from('rewards')
             .delete()
             .eq('id', id);
@@ -251,7 +251,7 @@ export const claimReward = async (req: Request, res: Response) => {
 
     try {
         // 1. Resolve student record linked to current user
-        const { data: student, error: studentError } = await adminClient.database
+        const { data: student, error: studentError } = await adminClient
             .from('students')
             .select('id, full_name')
             .eq('user_id', userId)
@@ -265,7 +265,7 @@ export const claimReward = async (req: Request, res: Response) => {
         const studentId = student.id;
 
         // 2. Fetch reward details
-        const { data: reward, error: rewardError } = await adminClient.database
+        const { data: reward, error: rewardError } = await adminClient
             .from('rewards')
             .select('*')
             .eq('id', id)
@@ -285,7 +285,7 @@ export const claimReward = async (req: Request, res: Response) => {
         }
 
         // 3. Verify student has enough points
-        const { data: txs, error: txsError } = await adminClient.database
+        const { data: txs, error: txsError } = await adminClient
             .from('merit_transactions')
             .select('points')
             .eq('student_id', studentId);
@@ -301,7 +301,7 @@ export const claimReward = async (req: Request, res: Response) => {
         }
 
         // 4. Create merit transaction for points deduction (negative points)
-        const { error: insertError } = await adminClient.database
+        const { error: insertError } = await adminClient
             .from('merit_transactions')
             .insert([{
                 student_id: studentId,
@@ -316,7 +316,7 @@ export const claimReward = async (req: Request, res: Response) => {
 
         // 5. Decrement reward stock if not unlimited
         if (reward.stock !== null) {
-            const { error: stockError } = await adminClient.database
+            const { error: stockError } = await adminClient
                 .from('rewards')
                 .update({ stock: reward.stock - 1, updated_at: new Date().toISOString() })
                 .eq('id', reward.id);

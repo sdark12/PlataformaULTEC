@@ -36,7 +36,7 @@ export const auditLogger = async (req: Request, res: Response, next: NextFunctio
             const db = req.dbUserClient || client;
 
             try {
-                await db.database.from('audit_logs').insert([{
+                await db.from('audit_logs').insert([{
                     user_id: userId || null,
                     branch_id: branchId || null,
                     action: action,

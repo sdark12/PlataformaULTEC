@@ -16,7 +16,7 @@ export const createNotification = async (
     type: 'PAYMENT' | 'ENROLLMENT' | 'DELETE' | 'SYSTEM'
 ) => {
     try {
-        const { error } = await dbClient.database
+        const { error } = await dbClient
             .from('notifications')
             .insert([{
                 user_id: userId,
@@ -48,7 +48,7 @@ export const broadcastNotification = async (
 ) => {
     try {
         // Find all admins in the branch
-        const { data: profiles, error: profileError } = await dbClient.database
+        const { data: profiles, error: profileError } = await dbClient
             .from('profiles')
             .select('id')
             .eq('branch_id', branchId)
@@ -69,7 +69,7 @@ export const broadcastNotification = async (
         }));
 
         if (notificationsToInsert.length > 0) {
-            const { error: insertError } = await dbClient.database
+            const { error: insertError } = await dbClient
                 .from('notifications')
                 .insert(notificationsToInsert);
 

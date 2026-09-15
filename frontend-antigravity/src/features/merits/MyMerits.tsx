@@ -3,11 +3,10 @@ import {
     getStudentBalance, 
     getRewards, 
     claimReward, 
-    StudentBalanceResponse, 
-    Reward 
+    type StudentBalanceResponse, 
+    type Reward 
 } from './meritsService';
 import { 
-    Award, 
     Trophy, 
     Sparkles, 
     ShoppingBag, 
@@ -16,7 +15,6 @@ import {
     Loader2, 
     Coins, 
     Flame,
-    ArrowUpRight,
     Gift,
     AlertCircle
 } from 'lucide-react';

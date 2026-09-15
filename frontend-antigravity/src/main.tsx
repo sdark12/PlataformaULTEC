@@ -7,7 +7,7 @@ import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 registerSW({ immediate: true })
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+window.addEventListener('error', (e) => { document.body.innerHTML = '<div style="padding: 20px; color: red;"><h1>Error:</h1><pre>' + e.error.stack + '</pre></div>'; }); ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,

@@ -5,7 +5,7 @@ import PDFDocument from 'pdfkit';
 export const getInvoices = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
     try {
-        let invQuery = client.database
+        let invQuery = client
             .from('invoices')
             .select(`
                 id,
@@ -53,7 +53,7 @@ export const createInvoice = async (req: Request, res: Response) => {
         // Try to use sequence table, fallback to simpler logic if missing
         let invoiceNumber = `INV-${Date.now()}`;
 
-        const { data: seqData, error: seqError } = await client.database
+        const { data: seqData, error: seqError } = await client
             .from('invoice_sequences')
             .select('series, current_number')
             .eq('branch_id', branchId)
@@ -61,7 +61,7 @@ export const createInvoice = async (req: Request, res: Response) => {
 
         if (seqData) {
             const nextNum = seqData.current_number + 1;
-            await client.database
+            await client
                 .from('invoice_sequences')
                 .update({ current_number: nextNum })
                 .eq('branch_id', branchId);
@@ -79,7 +79,7 @@ export const createInvoice = async (req: Request, res: Response) => {
         }
 
         // 3. Create Invoice Record
-        const { data: invoice, error: invoiceError } = await client.database
+        const { data: invoice, error: invoiceError } = await client
             .from('invoices')
             .insert([{
                 branch_id: branchId,
@@ -103,7 +103,7 @@ export const createInvoice = async (req: Request, res: Response) => {
             total_price: item.quantity * item.unit_price
         }));
 
-        const { error: itemsError } = await client.database
+        const { error: itemsError } = await client
             .from('invoice_items')
             .insert(invoiceItems);
 
@@ -125,7 +125,7 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
 
     try {
         // Fetch Invoice Data
-        const { data: invoice, error: invoiceError } = await client.database
+        const { data: invoice, error: invoiceError } = await client
             .from('invoices')
             .select(`
                 *,
@@ -152,13 +152,13 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
             // Relaxed for now
         }
 
-        const { data: items } = await client.database
+        const { data: items } = await client
             .from('invoice_items')
             .select('*')
             .eq('invoice_id', invoiceId);
 
         // Fetch past payments for sidebar history
-        const { data: studentPayments } = await client.database
+        const { data: studentPayments } = await client
             .from('payments')
             .select('created_at, tuition_month, payment_type')
             .eq('student_id', invoice.student_id);
@@ -192,7 +192,7 @@ export const downloadInvoicePdf = async (req: Request, res: Response) => {
         }
 
         let classSchedule = 'Sin horario asignado';
-        const { data: schedCheck } = await client.database
+        const { data: schedCheck } = await client
             .from('enrollments')
             .select(`course_schedules!inner(day_of_week, start_time, end_time)`)
             .eq('student_id', invoice.student_id)

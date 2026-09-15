@@ -12,7 +12,7 @@ export const getGrades = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch all active enrolled students
-        let enrollmentsQuery = client.database
+        let enrollmentsQuery = client
             .from('enrollments')
             .select(`
                 student_id,
@@ -39,7 +39,7 @@ export const getGrades = async (req: Request, res: Response) => {
         if (enrollError) throw enrollError;
 
         // 2. Fetch existing grades
-        const { data: gradesData, error: gradesError } = await client.database
+        const { data: gradesData, error: gradesError } = await client
             .from('grades')
             .select('student_id, score, remarks')
             .eq('course_id', course_id)
@@ -103,7 +103,7 @@ const handleGradeMerits = async (records: any[], creatorUserId: string | undefin
 
             if (pointsAwarded > 0) {
                 // Upsert merit transaction
-                await adminClient.database
+                await adminClient
                     .from('merit_transactions')
                     .upsert({
                         student_id: r.student_id,
@@ -115,7 +115,7 @@ const handleGradeMerits = async (records: any[], creatorUserId: string | undefin
                     }, { onConflict: 'student_id, reference_id, transaction_type' });
             } else {
                 // Delete transaction if score is below 80 but previously got points
-                await adminClient.database
+                await adminClient
                     .from('merit_transactions')
                     .delete()
                     .eq('student_id', r.student_id)
@@ -146,7 +146,7 @@ export const saveGrades = async (req: Request, res: Response) => {
             created_by: userId
         }));
 
-        const { data, error } = await client.database
+        const { data, error } = await client
             .from('grades')
             .upsert(upsertData, { onConflict: 'course_id, student_id, unit_name' })
             .select('id, student_id, score, unit_name');
@@ -186,7 +186,7 @@ const calculateAllowedUnits = async (studentId: string, courseIds: number[]): Pr
     if (courseIds.length === 0) return allowedMap;
 
     // Get enrollments for these courses
-    const { data: enrollments } = await adminClient.database
+    const { data: enrollments } = await adminClient
         .from('enrollments')
         .select('id, course_id, enrollment_date, courses (monthly_fee, duration_months, start_date)')
         .eq('student_id', studentId)
@@ -202,7 +202,7 @@ const calculateAllowedUnits = async (studentId: string, courseIds: number[]): Pr
     const enrollmentIds = enrollments.map((e: any) => e.id);
 
     // Get TUITION payments for these enrollments
-    const { data: payments } = await adminClient.database
+    const { data: payments } = await adminClient
         .from('payments')
         .select('enrollment_id, amount, discount')
         .in('enrollment_id', enrollmentIds)
@@ -277,7 +277,7 @@ export const getStudentReportCard = async (req: Request, res: Response) => {
     const callerRole = req.currentUser?.role;
 
     try {
-        let studentQuery = adminClient.database
+        let studentQuery = adminClient
             .from('students')
             .select('full_name, id, user_id');
 
@@ -294,7 +294,7 @@ export const getStudentReportCard = async (req: Request, res: Response) => {
         const actualStudentId = studentRecord.id;
 
         // Get all grades across courses
-        const { data: gradesData, error: gradesError } = await adminClient.database
+        const { data: gradesData, error: gradesError } = await adminClient
             .from('grades')
             .select(`
                  score,
@@ -410,7 +410,7 @@ export const getCourseGradebook = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch course details
-        const { data: course, error: courseError } = await client.database
+        const { data: course, error: courseError } = await client
             .from('courses')
             .select('name')
             .eq('id', course_id)
@@ -419,7 +419,7 @@ export const getCourseGradebook = async (req: Request, res: Response) => {
         if (courseError) throw courseError;
 
         // 2. Fetch all enrolled students
-        let enrollmentsQuery = client.database
+        let enrollmentsQuery = client
             .from('enrollments')
             .select(`
                 student_id,
@@ -446,7 +446,7 @@ export const getCourseGradebook = async (req: Request, res: Response) => {
         if (enrollError) throw enrollError;
 
         // 3. Fetch all grades for this course
-        const { data: gradesData, error: gradesError } = await client.database
+        const { data: gradesData, error: gradesError } = await client
             .from('grades')
             .select('student_id, unit_name, score, remarks')
             .eq('course_id', course_id);

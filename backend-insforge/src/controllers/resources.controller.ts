@@ -14,7 +14,7 @@ export const getStudentEnrolledCourses = async (req: Request, res: Response) => 
         let studentIds: string[] = [];
 
         if (userRole === 'parent') {
-            const { data: parentLinks, error: linksError } = await adminClient.database
+            const { data: parentLinks, error: linksError } = await adminClient
                 .from('parent_student_links')
                 .select('student_id')
                 .eq('parent_user_id', userId);
@@ -25,7 +25,7 @@ export const getStudentEnrolledCourses = async (req: Request, res: Response) => 
             }
         } else {
             // Map profile user_id to student record
-            const { data: studentRecord, error: findError } = await adminClient.database
+            const { data: studentRecord, error: findError } = await adminClient
                 .from('students')
                 .select('id')
                 .or(`id.eq.${userId},user_id.eq.${userId}`)
@@ -43,7 +43,7 @@ export const getStudentEnrolledCourses = async (req: Request, res: Response) => 
         }
 
         // Get enrollments with course details
-        const { data: enrollments, error: enrollError } = await adminClient.database
+        const { data: enrollments, error: enrollError } = await adminClient
             .from('enrollments')
             .select(`
                 course_id,
@@ -73,7 +73,7 @@ export const getCourseResources = async (req: Request, res: Response) => {
     const { courseId } = req.params;
 
     try {
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('course_resources')
             .select(`
                 id,
@@ -106,7 +106,7 @@ export const createCourseResource = async (req: Request, res: Response) => {
     }
 
     try {
-        const { data, error } = await client.database
+        const { data, error } = await client
             .from('course_resources')
             .insert([{
                 course_id: courseId,
@@ -131,7 +131,7 @@ export const deleteCourseResource = async (req: Request, res: Response) => {
     const { resourceId } = req.params;
 
     try {
-        const { error } = await client.database
+        const { error } = await client
             .from('course_resources')
             .delete()
             .eq('id', resourceId);
@@ -156,7 +156,7 @@ export const getStudentSchedule = async (req: Request, res: Response) => {
 
     try {
         // Find student record
-        const { data: studentRecord } = await adminClient.database
+        const { data: studentRecord } = await adminClient
             .from('students')
             .select('id')
             .or(`id.eq.${userId},user_id.eq.${userId}`)
@@ -167,7 +167,7 @@ export const getStudentSchedule = async (req: Request, res: Response) => {
         }
 
         // Get enrollments with course + schedule info
-        const { data: enrollments, error } = await adminClient.database
+        const { data: enrollments, error } = await adminClient
             .from('enrollments')
             .select(`
                 course_id,

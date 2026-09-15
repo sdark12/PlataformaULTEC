@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import client from '../config/insforge';
-import { createClient } from '@insforge/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../services/email.service';
 
 export const getUsers = async (req: Request, res: Response) => {
     try {
-        let query = client.database
+        let query = client
             .from('profiles')
             .select('*', { count: 'exact' })
             .order('full_name', { ascending: true });
@@ -56,10 +56,7 @@ export const createUser = async (req: Request, res: Response) => {
         const { email, password, full_name, role, phone, student_id, branch_id } = req.body;
 
         // Use a temporary client for signup to avoid overriding the backend's global session
-        const tempClient = createClient({
-            baseUrl: process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app',
-            anonKey: process.env.INSFORGE_API_KEY || process.env.INSFORGE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTQ2NTJ9.LsB4ffiFE5H7qEfhgnM0NuPTX_It2aYd4iEmVUOHmh4'
-        });
+        const tempClient = createClient(process.env.INSFORGE_URL || 'https://w6x267sp.us-east.insforge.app', process.env.INSFORGE_API_KEY || process.env.INSFORGE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTQ2NTJ9.LsB4ffiFE5H7qEfhgnM0NuPTX_It2aYd4iEmVUOHmh4');
 
         let userId: string;
 
@@ -79,7 +76,7 @@ export const createUser = async (req: Request, res: Response) => {
                     console.log(`User ${email} already exists in auth. Looking up existing profile...`);
                     
                     // Look up user by email in profiles
-                    const { data: existingByEmail } = await client.database
+                    const { data: existingByEmail } = await client
                         .from('profiles')
                         .select('id')
                         .eq('email', email)
@@ -128,7 +125,7 @@ export const createUser = async (req: Request, res: Response) => {
             const errMsg = signUpErr?.message || '';
             if (errMsg.includes('already exists') || errMsg.includes('ALREADY_EXISTS')) {
                 // Same handling as above
-                const { data: existingByEmail } = await client.database
+                const { data: existingByEmail } = await client
                     .from('profiles')
                     .select('id')
                     .eq('email', email)
@@ -164,7 +161,7 @@ export const createUser = async (req: Request, res: Response) => {
         }
 
         // Update or Insert Profile
-        const { data: existingProfile } = await client.database
+        const { data: existingProfile } = await client
             .from('profiles')
             .select('id')
             .eq('id', userId)
@@ -177,20 +174,18 @@ export const createUser = async (req: Request, res: Response) => {
             role
         };
 
-        if (phone !== undefined) profilePayload.phone = phone;
         if (branch_id !== undefined) profilePayload.branch_id = branch_id === '' ? null : branch_id;
-        profilePayload.active = true;
 
         let profileResult;
         if (existingProfile) {
-            profileResult = await client.database
+            profileResult = await client
                 .from('profiles')
                 .update(profilePayload)
                 .eq('id', userId)
                 .select()
                 .single();
         } else {
-            profileResult = await client.database
+            profileResult = await client
                 .from('profiles')
                 .insert([profilePayload])
                 .select()
@@ -204,7 +199,7 @@ export const createUser = async (req: Request, res: Response) => {
 
         // Link to student if provided
         if (role === 'student' && student_id) {
-            const { error: studentLinkError } = await client.database
+            const { error: studentLinkError } = await client
                 .from('students')
                 .update({ user_id: userId })
                 .eq('id', student_id);
@@ -227,7 +222,7 @@ export const createUser = async (req: Request, res: Response) => {
 export const getUserById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { data, error } = await client.database
+        const { data, error } = await client
             .from('profiles')
             .select('*')
             .eq('id', id)
@@ -254,11 +249,9 @@ export const updateUser = async (req: Request, res: Response) => {
             role
         };
 
-        if (phone !== undefined) updatePayload.phone = phone;
-        if (active !== undefined) updatePayload.active = active;
         if (branch_id !== undefined) updatePayload.branch_id = branch_id === '' ? null : branch_id;
 
-        const { data, error } = await client.database
+        const { data, error } = await client
             .from('profiles')
             .update(updatePayload)
             .eq('id', id)
@@ -266,19 +259,31 @@ export const updateUser = async (req: Request, res: Response) => {
             .single();
 
         if (error) throw error;
+
+        // Update phone in specific role tables if provided
+        if (phone !== undefined) {
+            if (role === 'student') {
+                await client.from('students').update({ phone }).eq('user_id', id);
+            } else if (role === 'parent') {
+                await client.from('parents').update({ phone }).eq('user_id', id);
+            } else if (role === 'instructor') {
+                await client.from('instructors').update({ phone }).eq('user_id', id);
+            }
+        }
+
         if (!data) return res.status(404).json({ message: 'User not found' });
 
         // Handle student linking if role is student and student_id is provided
         const { student_id } = req.body;
         if (role === 'student' && student_id) {
             // Unlink any existing student for this user first
-            await client.database
+            await client
                 .from('students')
                 .update({ user_id: null })
                 .eq('user_id', id);
 
             // Link the new student
-            const { error: studentLinkError } = await client.database
+            const { error: studentLinkError } = await client
                 .from('students')
                 .update({ user_id: id })
                 .eq('id', student_id);
@@ -288,7 +293,7 @@ export const updateUser = async (req: Request, res: Response) => {
             }
         } else if (role !== 'student') {
             // If role is changed from student to something else, optionally unlink
-            await client.database
+            await client
                 .from('students')
                 .update({ user_id: null })
                 .eq('user_id', id);
@@ -307,7 +312,7 @@ export const deleteUser = async (req: Request, res: Response) => {
         const { id } = req.params;
 
         // Let's assume we do a soft delete or just delete the profile record
-        const { data, error } = await client.database
+        const { data, error } = await client
             .from('profiles')
             .delete()
             .eq('id', id)

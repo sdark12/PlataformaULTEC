@@ -13,7 +13,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     try {
         // 1. Fetch all active students enrolled in this course
-        let enrollmentsQuery = adminClient.database
+        let enrollmentsQuery = adminClient
             .from('enrollments')
             .select(`
                 student_id,
@@ -40,7 +40,7 @@ export const getAttendance = async (req: Request, res: Response) => {
         if (enrollError) throw enrollError;
 
         // 2. Fetch existing attendance records for the given course and date
-        const { data: attendanceData, error: attError } = await adminClient.database
+        const { data: attendanceData, error: attError } = await adminClient
             .from('attendance')
             .select('student_id, status, remarks')
             .eq('course_id', course_id)
@@ -92,7 +92,7 @@ const handleAttendanceMerits = async (records: any[], creatorUserId: string | un
         for (const r of records) {
             if (r.status === 'PRESENT') {
                 // Upsert merit transaction (preventing duplicates using DB constraint)
-                await adminClient.database
+                await adminClient
                     .from('merit_transactions')
                     .upsert({
                         student_id: r.student_id,
@@ -104,7 +104,7 @@ const handleAttendanceMerits = async (records: any[], creatorUserId: string | un
                     }, { onConflict: 'student_id, reference_id, transaction_type' });
             } else {
                 // If not PRESENT, delete transaction if any existed
-                await adminClient.database
+                await adminClient
                     .from('merit_transactions')
                     .delete()
                     .eq('student_id', r.student_id)
@@ -135,7 +135,7 @@ export const markAttendance = async (req: Request, res: Response) => {
 
         // Perform Bulk Upsert
         // Requires a unique constraint on (course_id, student_id, date) in the database
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('attendance')
             .upsert(upsertData, { onConflict: 'student_id, course_id, date' })
             .select('id, student_id, status, date');
@@ -167,7 +167,7 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
 
     try {
         // Map user_id to actual student_id avoiding RLS
-        const { data: studentRecord, error: findError } = await adminClient.database
+        const { data: studentRecord, error: findError } = await adminClient
             .from('students')
             .select('id, user_id')
             .or(`id.eq.${studentId},user_id.eq.${studentId}`)
@@ -182,7 +182,7 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
             return res.json([]);
         }
 
-        const { data, error } = await adminClient.database
+        const { data, error } = await adminClient
             .from('attendance')
             .select(`
                 id,

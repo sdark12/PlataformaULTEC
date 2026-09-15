@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Users, CalendarCheck, BookOpen, AlertCircle, ChevronDown, ChevronUp, Receipt, CreditCard, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Clock, ClipboardCheck, GraduationCap, FileCheck, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Loader2, Users, CalendarCheck, BookOpen, AlertCircle, ChevronDown, ChevronUp, Receipt, CreditCard, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Clock, ClipboardCheck, GraduationCap, FileCheck, ShieldAlert, AlertTriangle, Phone, ShieldCheck } from 'lucide-react';
 import api from '../services/apiClient';
 
 interface StudentLink {
@@ -98,18 +98,17 @@ const AttendanceCalendar = ({ records }: { records: AttendanceRecord[] }) => {
                     const status = recordMap[dateStr];
                     const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
                     return (
-                <div key={dateStr} className={`relative flex flex-col items-center justify-center py-2 rounded-lg transition-colors ${isToday ? 'ring-2 ring-brand-blue/50' : ''} ${status ? 'cursor-default' : 'opacity-60'}`} title={status ? statusLabel[status.toLowerCase()] || status : ''}>
-                            <span className={`text-xs font-medium ${isToday ? 'text-brand-blue font-bold' : 'text-slate-600 dark:text-slate-400'}`}>{day}</span>
-                            {status && <span className={`w-2 h-2 rounded-full mt-0.5 ${statusColor[status.toLowerCase()] || 'bg-slate-300'}`} />}
+                        <div key={dateStr} className={`h-9 flex flex-col items-center justify-center rounded-lg text-xs font-semibold relative ${isToday ? 'ring-2 ring-brand-blue' : ''} ${status ? `${statusColor[status]} text-white` : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`} title={status ? `${day} - ${statusLabel[status]}` : `${day}`}>
+                            {day}
                         </div>
                     );
                 })}
             </div>
-            <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
-                {Object.entries(statusLabel).map(([key, label]) => (
-                    <div key={key} className="flex items-center gap-1.5">
-                        <span className={`w-3 h-3 rounded-full ${statusColor[key]}`} />
-                        <span className="text-xs text-slate-500 font-medium">{label}</span>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-xs">
+                {Object.entries(statusLabel).map(([k, v]) => (
+                    <div key={k} className="flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${statusColor[k]}`} />
+                        <span className="text-slate-500">{v}</span>
                     </div>
                 ))}
             </div>
@@ -118,14 +117,14 @@ const AttendanceCalendar = ({ records }: { records: AttendanceRecord[] }) => {
 };
 
 /* ──── Tab definitions ──── */
-type TabKey = 'summary' | 'grades' | 'assignments' | 'attendance' | 'discipline' | 'payments';
+type TabKey = 'summary' | 'grades' | 'assignments' | 'attendance' | 'finance' | 'discipline';
 const TABS: { key: TabKey; label: string; icon: any }[] = [
     { key: 'summary', label: 'Resumen', icon: BookOpen },
     { key: 'grades', label: 'Calificaciones', icon: GraduationCap },
     { key: 'assignments', label: 'Tareas', icon: ClipboardCheck },
     { key: 'attendance', label: 'Asistencia', icon: CalendarCheck },
+    { key: 'finance', label: 'Finanzas', icon: DollarSign },
     { key: 'discipline', label: 'Disciplina', icon: ShieldAlert },
-    { key: 'payments', label: 'Pagos', icon: Receipt },
 ];
 
 /* ──── Child View Component ──── */
@@ -139,29 +138,94 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
     const { data: disciplineData } = useQuery({ queryKey: ['childDiscipline', student.student_id], queryFn: () => fetchChildDiscipline(student.student_id), enabled: expanded });
 
     return (
-        <div className="glass-card mb-4 overflow-hidden animate-in fade-in">
-            {/* Header */}
-            <div className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors" onClick={() => setExpanded(!expanded)}>
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                        {student.students?.full_name?.charAt(0) || 'E'}
+        <div className="glass-card mb-4 overflow-hidden animate-in fade-in rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-lg">
+            {/* Header / Student Switcher Card from Stitch */}
+            <div className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors" onClick={() => setExpanded(!expanded)}>
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <div className="relative shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                            {student.students?.full_name?.charAt(0) || 'E'}
+                        </div>
+                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900"></span>
                     </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{student.students?.full_name}</h3>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-sm text-slate-500">{student.students?.personal_code || 'Sin código'}</span>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">{student.students?.full_name}</h3>
+                            <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                                ✓ En Campus
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-mono">{student.students?.personal_code || 'UT-2026'}</span>
                             <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                            <span className="text-xs font-bold text-brand-blue capitalize px-2 py-0.5 bg-brand-blue/10 rounded-md">{student.relationship}</span>
+                            <span className="font-semibold text-brand-blue capitalize">{student.relationship}</span>
                         </div>
                     </div>
                 </div>
-                <div className="p-2 text-slate-400 hover:text-brand-blue transition-colors">
+                <div className="p-2 text-slate-400 hover:text-brand-blue transition-colors shrink-0">
                     {expanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
                 </div>
             </div>
 
             {expanded && (
                 <div className="border-t border-slate-100 dark:border-white/5">
+                    {/* Live Student Status Card (Real Data from Database) */}
+                    <div className="mx-4 my-3 relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4 text-white shadow-xl border border-white/15">
+                        <div className="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none"></div>
+                        <div className="flex flex-col gap-3 relative z-10">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] border border-emerald-500/30">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span>ESTADO ACADÉMICO EN VIVO</span>
+                                </div>
+                                <span className="text-[10px] text-brand-teal font-mono font-bold">
+                                    {student.students?.personal_code || `ID #${student.student_id.slice(0, 8).toUpperCase()}`}
+                                </span>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30">
+                                    <ShieldCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-sm font-bold text-white leading-tight">
+                                        {student.students?.full_name || 'Estudiante'}
+                                    </h2>
+                                    <p className="text-xs text-slate-300 mt-1">
+                                        {info ? (
+                                            <>Récord de asistencia: <span className="text-brand-teal font-bold">{info.attendance_percentage}%</span> • <span className="text-white font-bold">{info.total_courses}</span> curso(s) activo(s) • Promedio general: <span className="text-emerald-400 font-bold">{info.average_grade || 0} pts</span></>
+                                        ) : (
+                                            'Información académica sincronizada con el campus.'
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Summary Metrics from Database */}
+                            {info && (
+                                <div className="grid grid-cols-3 gap-2 mt-1 bg-slate-950/70 border border-white/10 rounded-xl p-2.5">
+                                    <div className="flex flex-col items-center text-center">
+                                        <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                                            {info.attendance_percentage}%
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 mt-0.5">Asistencia</span>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center">
+                                        <span className="text-[11px] font-bold text-brand-teal flex items-center gap-1">
+                                            {info.average_grade || 0} pts
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 mt-0.5">Promedio</span>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center">
+                                        <span className={`text-[11px] font-bold flex items-center gap-1 ${info.pending_payment > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                            {info.pending_payment > 0 ? `Q${info.pending_payment}` : 'Al día'}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 mt-0.5">{info.pending_payment > 0 ? 'Pendiente' : 'Pagos'}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-8">
                             <Loader2 className="w-8 h-8 animate-spin text-brand-blue/50 mb-3" />
@@ -377,7 +441,7 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
                                 )}
 
                                 {/* ── PAGOS ── */}
-                                {activeTab === 'payments' && (
+                                {activeTab === 'finance' && (
                                     <div className="space-y-5 animate-in fade-in duration-300">
                                         {/* Course Breakdown */}
                                         {info.course_breakdown && info.course_breakdown.length > 0 && (
@@ -488,16 +552,45 @@ const ParentDashboard = () => {
     );
 
     return (
-        <div className="max-w-6xl mx-auto pb-12 animate-in fade-in duration-500">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Portal de Padres</h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Supervisa el progreso académico y administrativo de tus hijos.</p>
-            </header>
+        <div className="max-w-6xl mx-auto pb-20 md:pb-12 animate-in fade-in duration-500 space-y-6">
+            {/* Warm Header with Campus Conectado and Support Calling */}
+            <div className="flex flex-col gap-2 pt-1">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <span className="text-xs font-bold text-brand-teal uppercase tracking-widest">
+                            Panel Familiar Ultra
+                        </span>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Portal de Padres
+                        </h1>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span className="text-xs font-bold">Campus Conectado</span>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Supervisa en tiempo real el ingreso a sede, notas y estado administrativo de tus hijos.
+                    </p>
+                    <a
+                        href="tel:+50223456789"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-brand-teal hover:text-white hover:bg-brand-teal font-bold text-xs transition-colors self-start sm:self-auto border border-slate-200 dark:border-white/5"
+                    >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>Secretaría: +502 2345-6789</span>
+                    </a>
+                </div>
+            </div>
+
             {!students || students.length === 0 ? (
-                <div className="text-center py-20 glass-card">
+                <div className="text-center py-20 glass-card rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
                     <Users className="mx-auto h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Aún no tienes estudiantes vinculados</h3>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">Comunícate con la administración de la academia para que vinculen tu cuenta con la de tus hijos.</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto text-xs">
+                        Comunícate con la administración de la academia para que vinculen tu cuenta con la de tus hijos.
+                    </p>
                 </div>
             ) : (
                 <div className="space-y-4">
