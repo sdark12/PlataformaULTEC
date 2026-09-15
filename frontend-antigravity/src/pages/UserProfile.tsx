@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    User, Mail, KeyRound, Save, Loader2, 
+    User, Mail, Phone, KeyRound, Save, Loader2, 
     CheckCircle2, AlertCircle, Building2, Sparkles, Lock
 } from 'lucide-react';
 import { updateUser, resetUserPassword, getUserById } from '../features/users/userService';
@@ -14,6 +14,7 @@ const UserProfile: React.FC = () => {
 
     const [fullName, setFullName] = useState(storedUser?.full_name || '');
     const [email, setEmail] = useState(storedUser?.email || '');
+    const [phone, setPhone] = useState(storedUser?.phone || '');
     const [role, setRole] = useState(storedUser?.role || 'student');
     const [studentCode, setStudentCode] = useState(storedUser?.personal_code || '');
 
@@ -36,6 +37,7 @@ const UserProfile: React.FC = () => {
                 if (data) {
                     setFullName(data.full_name || storedUser.full_name || '');
                     setEmail(data.email || storedUser.email || '');
+                    setPhone(data.phone || '');
                     setRole(data.role || storedUser.role || 'student');
                     if (data.personal_code) setStudentCode(data.personal_code);
                 }
@@ -65,13 +67,15 @@ const UserProfile: React.FC = () => {
         try {
             await updateUser(storedUser.id, {
                 full_name: fullName.trim(),
+                phone: phone.trim(),
                 email: storedUser.email
             });
 
             // Update localStorage so topbar and other components sync
             const updatedUser = {
                 ...storedUser,
-                full_name: fullName.trim()
+                full_name: fullName.trim(),
+                phone: phone.trim()
             };
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
@@ -223,6 +227,22 @@ const UserProfile: React.FC = () => {
                                         onChange={(e) => setFullName(e.target.value)}
                                         placeholder="Ej. Rosa Delia Morales"
                                         required
+                                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                    <Phone className="h-3.5 w-3.5 text-brand-blue" />
+                                    <span>Teléfono / WhatsApp</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="Ej. +502 5555-1234"
                                         className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                                     />
                                 </div>
