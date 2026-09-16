@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import { adminClient as client } from '../config/insforge';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../services/email.service';
 
