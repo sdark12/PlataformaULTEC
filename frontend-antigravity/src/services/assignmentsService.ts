@@ -8,6 +8,8 @@ export interface Assignment {
     assignment_type: 'HOMEWORK' | 'EXAM' | 'LAB' | 'ACTIVITY';
     due_date: string;
     weight_points: number;
+    merit_points?: number;
+    unit_name?: string;
     max_score: number;
     schedule_id?: string;
     created_by?: string;
@@ -21,6 +23,7 @@ export interface StudentAssignment extends Assignment {
     status?: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE';
     submission_date?: string;
     score?: number;
+    merit_points_awarded?: number;
     feedback?: string;
     attachment_url?: string;
 }
@@ -33,6 +36,7 @@ export interface AssignmentSubmissionInfo {
     submission_date: string | null;
     status: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE';
     score: number | null;
+    merit_points_awarded?: number;
     feedback: string;
     attachment_url: string | null;
 }
@@ -70,9 +74,10 @@ export const assignmentsService = {
         return response.data;
     },
 
-    getCourseAssignments: async (courseId: number | string, scheduleId?: string) => {
+    getCourseAssignments: async (courseId: number | string, scheduleId?: string, unitName?: string) => {
         const params: any = {};
         if (scheduleId) params.schedule_id = scheduleId;
+        if (unitName) params.unit_name = unitName;
         const response = await api.get(`/api/assignments/course/${courseId}`, { params });
         return response.data as Assignment[];
     },
@@ -82,8 +87,12 @@ export const assignmentsService = {
         return response.data as AssignmentSubmissionInfo[];
     },
 
-    gradeSubmission: async (submissionId: string, score: number, feedback: string) => {
-        const response = await api.put(`/api/assignments/submission/${submissionId}/grade`, { score, feedback });
+    gradeSubmission: async (submissionId: string, score: number, feedback: string, customMeritPoints?: number) => {
+        const payload: any = { score, feedback };
+        if (customMeritPoints !== undefined && customMeritPoints !== null) {
+            payload.custom_merit_points = customMeritPoints;
+        }
+        const response = await api.put(`/api/assignments/submission/${submissionId}/grade`, payload);
         return response.data;
     },
 

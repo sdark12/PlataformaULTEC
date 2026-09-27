@@ -1,18 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from '../academicService';
 import { assignmentsService, type Assignment } from '../../../services/assignmentsService';
-import { Plus, Loader2, ClipboardList, Calendar, CheckCircle, CheckCircle2, Clock, Paperclip, Printer, FileBarChart, AlertCircle } from 'lucide-react';
+import SearchableSelect, { type SearchableOption } from '../../../components/ui/SearchableSelect';
+import { 
+    Plus, Loader2, ClipboardList, Calendar, CheckCircle2, Clock, 
+    Paperclip, Printer, FileBarChart, AlertCircle, X, BookOpen, 
+    Check, ArrowRight, ExternalLink, Layers, Sparkles
+} from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { savePdfDoc } from '../../../utils/fileDownloader';
 
-const AssignmentsModule = () => {
+
+const TYPE_CONFIG: Record<string, { label: string; color: string; badge: string }> = {
+    HOMEWORK: {
+        label: 'Tarea',
+        color: 'from-blue-600 to-indigo-600',
+        badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    },
+    EXAM: {
+        label: 'Examen',
+        color: 'from-purple-600 to-pink-600',
+        badge: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    },
+    LAB: {
+        label: 'Laboratorio',
+        color: 'from-amber-600 to-orange-600',
+        badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    },
+    ACTIVITY: {
+        label: 'Actividad',
+        color: 'from-emerald-600 to-teal-600',
+        badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    },
+};
+
+const AssignmentsModule: React.FC = () => {
     const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState<number | string | null>(null);
     const [selectedSchedule, setSelectedSchedule] = useState<string>('');
+    const [selectedUnit, setSelectedUnit] = useState<string>('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [reviewAssignment, setReviewAssignment] = useState<Assignment | null>(null);
-    const [activeTab, setActiveTab] = useState<'active' | 'history' | 'report'>('active');
+    const [activeTab, setActiveTab] = useState<'all' | 'active' | 'history' | 'report'>('all');
 
     // Filters for review modal
     const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'SUBMITTED' | 'GRADED'>('ALL');
@@ -23,7 +55,10 @@ const AssignmentsModule = () => {
         assignment_type: 'HOMEWORK',
         due_date: '',
         weight_points: 1.0,
+        merit_points: 0,
+        unit_name: 'Bimestre 1',
         max_score: 100.0,
+        schedule_id: '',
     });
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -32,6 +67,22 @@ const AssignmentsModule = () => {
         queryKey: ['courses'],
         queryFn: getCourses,
     });
+
+    const courseOptions = useMemo<SearchableOption[]>(() => {
+        if (!courses) return [];
+        return courses.map((c: any) => ({
+            value: c.id,
+            label: c.name,
+            subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes` : undefined,
+        }));
+    }, [courses]);
+
+    // Auto-select first course when available
+    useEffect(() => {
+        if (courses && courses.length > 0 && !selectedCourse) {
+            setSelectedCourse(courses[0].id);
+        }
+    }, [courses, selectedCourse]);
 
     // Fetch schedules for the selected course
     const { data: schedules, isLoading: isLoadingSchedules } = useQuery({
@@ -42,8 +93,8 @@ const AssignmentsModule = () => {
 
     // Fetch assignments when a course is selected
     const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
-        queryKey: ['assignments', selectedCourse, selectedSchedule],
-        queryFn: () => assignmentsService.getCourseAssignments(selectedCourse!, selectedSchedule),
+        queryKey: ['assignments', selectedCourse, selectedSchedule, selectedUnit],
+        queryFn: () => assignmentsService.getCourseAssignments(selectedCourse!, selectedSchedule, selectedUnit === 'ALL' ? undefined : selectedUnit),
         enabled: !!selectedCourse,
     });
 
@@ -72,6 +123,8 @@ const AssignmentsModule = () => {
                 assignment_type: 'HOMEWORK',
                 due_date: '',
                 weight_points: 1.0,
+                merit_points: 0,
+                unit_name: selectedUnit !== 'ALL' ? selectedUnit : 'Bimestre 1',
                 max_score: 100.0,
             });
             setErrorMsg('');
@@ -83,8 +136,8 @@ const AssignmentsModule = () => {
     });
 
     const gradeMutation = useMutation({
-        mutationFn: ({ submissionId, score, feedback }: { submissionId: string, score: number, feedback: string }) =>
-            assignmentsService.gradeSubmission(submissionId, score, feedback),
+        mutationFn: ({ submissionId, score, feedback, customMeritPoints }: { submissionId: string, score: number, feedback: string, customMeritPoints?: number }) =>
+            assignmentsService.gradeSubmission(submissionId, score, feedback, customMeritPoints),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['submissions', reviewAssignment?.id] });
         },
@@ -108,8 +161,10 @@ const AssignmentsModule = () => {
 
         createMutation.mutate({
             ...newAssignment,
+            merit_points: Number(newAssignment.merit_points) || 0,
+            unit_name: newAssignment.unit_name || 'Bimestre 1',
             course_id: selectedCourse as string,
-            schedule_id: selectedSchedule || undefined
+            schedule_id: newAssignment.schedule_id || selectedSchedule || undefined
         });
     };
 
@@ -124,7 +179,10 @@ const AssignmentsModule = () => {
             assignment_type: 'HOMEWORK',
             due_date: '',
             weight_points: 1.0,
+            merit_points: 0,
+            unit_name: selectedUnit !== 'ALL' ? selectedUnit : 'Bimestre 1',
             max_score: 100.0,
+            schedule_id: selectedSchedule || '',
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -135,22 +193,46 @@ const AssignmentsModule = () => {
         const form = e.target as HTMLFormElement;
         const score = Number((form.elements.namedItem('score') as HTMLInputElement).value);
         const feedback = (form.elements.namedItem('feedback') as HTMLInputElement).value;
-        gradeMutation.mutate({ submissionId, score, feedback });
+        const customMeritInput = form.elements.namedItem('custom_merit') as HTMLInputElement | null;
+        const customMeritPoints = customMeritInput && customMeritInput.value !== '' ? Number(customMeritInput.value) : undefined;
+        gradeMutation.mutate({ submissionId, score, feedback, customMeritPoints });
     };
 
     const formatDate = (dateString: string) => {
+        if (!dateString) return '';
         const d = new Date(dateString);
-        return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
     };
 
     const now = new Date();
     const activeAssignments = assignments?.filter(a => new Date(a.due_date) > now) || [];
     const historyAssignments = assignments?.filter(a => new Date(a.due_date) <= now) || [];
-    const displayedAssignments = activeTab === 'active' ? activeAssignments : historyAssignments;
+    const allAssignments = assignments || [];
+    const displayedAssignments = activeTab === 'all' 
+        ? allAssignments 
+        : activeTab === 'active' 
+            ? activeAssignments 
+            : historyAssignments;
+
+    // Auto-switch to 'all' if currently on 'active' but 'active' is empty and history has items
+    useEffect(() => {
+        if (assignments && assignments.length > 0) {
+            const hasActive = assignments.some(a => new Date(a.due_date) > now);
+            if (!hasActive && activeTab === 'active') {
+                setActiveTab('all');
+            }
+        }
+    }, [assignments]);
 
     const filteredSubmissions = submissions?.filter(s => filterStatus === 'ALL' || s.status === filterStatus) || [];
 
-    const generatePDF = () => {
+    const generatePDF = async () => {
         if (!reportData) return;
 
         const courseName = courses?.find((c: any) => c.id.toString() === selectedCourse?.toString())?.name || 'Desconocido';
@@ -181,12 +263,11 @@ const AssignmentsModule = () => {
                 else row.push(`${grade.score} / ${grade.max_score}`);
             });
 
-            // Put note and percentage on same line to save height
             row.push(`${student.total_score}/${student.max_possible_score} (${student.percentage}%)`);
             return row;
         });
 
-        // Inject AutoTable with high density
+        // Inject AutoTable
         autoTable(doc, {
             startY: 40,
             head: [tableHeaders],
@@ -203,7 +284,7 @@ const AssignmentsModule = () => {
                 fontSize: 7,
                 halign: 'center',
                 textColor: [40, 40, 40],
-                cellPadding: 1 // High density padding
+                cellPadding: 1
             },
             columnStyles: {
                 0: { halign: 'left', fontStyle: 'bold', minCellWidth: 45 }
@@ -215,64 +296,125 @@ const AssignmentsModule = () => {
             },
         });
 
-        // Trigger Download
-        doc.save(`Reporte_${courseName.replace(/\s+/g, '_')}_Calificaciones.pdf`);
+        await savePdfDoc(doc, `Reporte_${courseName.replace(/\s+/g, '_')}_Calificaciones.pdf`);
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-300">
             {/* Header section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
-                <div>
-                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Gestión de Tareas</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Crea y administra tareas, exámenes y revisa entregas.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+                <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 shadow-inner">
+                        <ClipboardList className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
+                            Gestión de Tareas
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                            Crea tareas, asigna exámenes y revisa entregas de los estudiantes
+                        </p>
+                    </div>
                 </div>
 
-                {/* Course Selector */}
-                <div className="flex items-center space-x-4 w-full md:w-auto">
-                    <select
-                        className="flex-1 md:w-64 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-blue/10 outline-none text-slate-700 dark:text-slate-200"
-                        value={selectedCourse || ''}
-                        onChange={(e) => {
-                            setSelectedCourse(e.target.value);
-                            setSelectedSchedule('');
-                            setReviewAssignment(null);
-                        }}
-                    >
-                        <option value="" disabled>-- Selecciona un curso --</option>
-                        {courses?.map((c: any) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="flex-1 md:w-48 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-blue/10 outline-none text-slate-700 dark:text-slate-200 disabled:opacity-50"
-                        value={selectedSchedule}
-                        onChange={(e) => setSelectedSchedule(e.target.value)}
-                        disabled={!selectedCourse}
-                    >
-                        <option value="">Todos los Horarios</option>
-                        {schedules?.map((s: any) => (
-                            <option key={s.id} value={s.id}>{s.name || `Horario ${s.day_of_week}`}</option>
-                        ))}
-                    </select>
-
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
                     <button
                         onClick={handleNewAssignment}
-                        className="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-blue-600 transition-all shadow-[0_0_15px_rgba(13,89,242,0.4)] active:scale-95 font-semibold"
+                        className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all shadow-lg shadow-blue-600/30 active:scale-95 font-bold text-xs sm:text-sm shrink-0"
                     >
-                        <Plus className="h-5 w-5" />
-                        <span className="hidden sm:inline">Nueva Tarea</span>
+                        <Plus className="h-4 w-4" />
+                        <span>Nueva Tarea</span>
                     </button>
                     {activeTab === 'report' && (
                         <button
                             onClick={generatePDF}
-                            className="flex items-center space-x-2 px-6 py-3 bg-brand-purple text-white transition-all shadow-[0_0_15px_rgba(127,13,242,0.4)] hover:bg-purple-700 rounded-xl font-semibold whitespace-nowrap active:scale-95"
+                            className="flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-lg shadow-purple-600/30 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap active:scale-95 shrink-0"
                         >
-                            <Printer className="h-5 w-5" />
+                            <Printer className="h-4 w-4" />
                             <span className="hidden sm:inline">Exportar PDF</span>
                         </button>
                     )}
+                </div>
+            </div>
+
+            {/* Filter and Selection Card */}
+            <div className="glass-card p-4 sm:p-5 rounded-3xl border border-slate-800 bg-slate-900/60 shadow-sm print:hidden">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                    {/* Course Selector */}
+                    <div className="md:col-span-5">
+                        <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Curso / Asignatura</span>
+                        </label>
+                        <SearchableSelect
+                            options={courseOptions}
+                            value={selectedCourse as string || ''}
+                            onChange={(val) => {
+                                setSelectedCourse(val);
+                                setSelectedSchedule('');
+                                setReviewAssignment(null);
+                            }}
+                            placeholder="-- Selecciona un curso --"
+                            searchPlaceholder="Buscar curso o asignatura..."
+                            disabled={isLoadingCourses}
+                        />
+                    </div>
+
+                    {/* Schedule Selector */}
+                    <div className="md:col-span-4">
+                        <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Horario / Grado (Opcional)</span>
+                        </label>
+                        <div className="relative">
+                            <select
+                                className="w-full pl-3.5 pr-10 py-2.5 bg-slate-800/90 border border-slate-700 text-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none outline-none font-medium text-xs sm:text-sm cursor-pointer disabled:opacity-50"
+                                value={selectedSchedule}
+                                onChange={(e) => setSelectedSchedule(e.target.value)}
+                                disabled={!selectedCourse}
+                            >
+                                <option value="" className="bg-slate-900 text-slate-400">Todos los Horarios</option>
+                                {schedules?.map((s: any) => (
+                                    <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100">
+                                        {s.grade} - {s.day_of_week} {s.start_time ? `(${s.start_time.substring(0, 5)}${s.end_time ? ' - ' + s.end_time.substring(0, 5) : ''})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Unit / Bimestre Selector */}
+                    <div className="md:col-span-3">
+                        <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-purple-400" />
+                            <span>Bimestre / Unidad</span>
+                        </label>
+                        <div className="relative">
+                            <select
+                                className="w-full pl-3.5 pr-10 py-2.5 bg-slate-800/90 border border-slate-700 text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all appearance-none outline-none font-medium text-xs sm:text-sm cursor-pointer disabled:opacity-50"
+                                value={selectedUnit}
+                                onChange={(e) => setSelectedUnit(e.target.value)}
+                                disabled={!selectedCourse}
+                            >
+                                <option value="ALL" className="bg-slate-900 text-slate-400">Todos los Bimestres</option>
+                                <option value="Bimestre 1" className="bg-slate-900 text-slate-100">Bimestre 1</option>
+                                <option value="Bimestre 2" className="bg-slate-900 text-slate-100">Bimestre 2</option>
+                                <option value="Bimestre 3" className="bg-slate-900 text-slate-100">Bimestre 3</option>
+                                <option value="Bimestre 4" className="bg-slate-900 text-slate-100">Bimestre 4</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -290,451 +432,729 @@ const AssignmentsModule = () => {
                 <p className="text-slate-500 mt-1">Generado el: {new Date().toLocaleDateString('es-ES')}</p>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs (Mobile-Friendly Pill Style) */}
             {selectedCourse && (
-                <div className="flex border-b border-slate-200 dark:border-slate-700 space-x-8 print:hidden overflow-x-auto">
+                <div className="bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl flex gap-1.5 overflow-x-auto no-scrollbar print:hidden">
+                    <button
+                        onClick={() => setActiveTab('all')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                            activeTab === 'all' 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        }`}
+                    >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Todas</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                            activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                            {allAssignments.length}
+                        </span>
+                    </button>
                     <button
                         onClick={() => setActiveTab('active')}
-                        className={`pb-4 font-semibold transition-colors whitespace-nowrap ${activeTab === 'active' ? 'text-brand-blue border-b-2 border-brand-blue' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                            activeTab === 'active' 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        }`}
                     >
-                        Tareas Activas
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Tareas Activas</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                            activeTab === 'active' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                            {activeAssignments.length}
+                        </span>
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
-                        className={`pb-4 font-semibold transition-colors whitespace-nowrap ${activeTab === 'history' ? 'text-brand-blue border-b-2 border-brand-blue' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                            activeTab === 'history' 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        }`}
                     >
-                        Historial / Finalizadas
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Historial / Pasadas</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                            activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                            {historyAssignments.length}
+                        </span>
                     </button>
                     <button
                         onClick={() => setActiveTab('report')}
-                        className={`pb-4 font-semibold transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'report' ? 'text-brand-purple border-b-2 border-brand-purple' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                            activeTab === 'report' 
+                                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        }`}
                     >
-                        <FileBarChart className="w-4 h-4" /> Reporte de Calificaciones
+                        <FileBarChart className="w-3.5 h-3.5" />
+                        <span>Reporte de Notas</span>
                     </button>
                 </div>
             )}
 
             {/* Loading States */}
             {(isLoadingCourses || (selectedCourse && isLoadingSchedules) || (selectedCourse && isLoadingAssignments) || (activeTab === 'report' && isLoadingReport)) ? (
-                <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-                    <Loader2 className="animate-spin h-12 w-12 text-brand-blue/50" />
-                    <p className="text-slate-400 font-medium animate-pulse">Cargando datos...</p>
+                <div className="flex flex-col items-center justify-center min-h-[300px] space-y-4 bg-slate-900/40 border border-slate-800/60 rounded-3xl p-8">
+                    <Loader2 className="animate-spin h-10 w-10 text-blue-500" />
+                    <p className="text-slate-400 text-xs sm:text-sm font-medium animate-pulse">Cargando tareas...</p>
                 </div>
             ) : !selectedCourse ? (
                 /* Empty state when no course selected */
-                <div className="col-span-full bg-white/50 dark:bg-slate-800/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl py-20 text-center flex flex-col items-center justify-center space-y-4 backdrop-blur-sm">
-                    <div className="h-16 w-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500">
-                        <ClipboardList className="h-8 w-8" />
+                <div className="bg-slate-900/60 border-2 border-dashed border-slate-800 rounded-3xl p-8 sm:p-14 text-center flex flex-col items-center justify-center space-y-3.5">
+                    <div className="h-14 w-14 bg-slate-800/80 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-700/50">
+                        <ClipboardList className="h-7 w-7" />
                     </div>
                     <div className="max-w-xs">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Selecciona un Curso</h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Elige un curso en el menú superior para ver o crear tareas.</p>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-200">Selecciona un Curso</h3>
+                        <p className="text-slate-400 text-xs mt-1 leading-relaxed">Elige un curso en el selector superior para ver o publicar tareas.</p>
                     </div>
                 </div>
-            ) : displayedAssignments?.length === 0 ? (
-                /* Empty state for course with no assignments in current tab */
-                <div className="col-span-full bg-white/50 dark:bg-slate-800/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl py-20 text-center flex flex-col items-center justify-center space-y-4 backdrop-blur-sm">
-                    <div className="h-16 w-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500">
-                        {activeTab === 'active' ? <Clock className="h-8 w-8" /> : <CheckCircle className="h-8 w-8" />}
+            ) : displayedAssignments?.length === 0 && activeTab !== 'report' ? (
+                /* Empty state for course with no assignments */
+                <div className="bg-slate-900/60 border-2 border-dashed border-slate-800 rounded-3xl p-8 sm:p-14 text-center flex flex-col items-center justify-center space-y-3.5">
+                    <div className="h-14 w-14 bg-slate-800/80 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-700/50">
+                        {activeTab === 'active' ? <Clock className="h-7 w-7 text-blue-400" /> : <CheckCircle2 className="h-7 w-7 text-emerald-400" />}
                     </div>
                     <div className="max-w-xs">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">No hay tareas {activeTab === 'active' ? 'activas' : 'finalizadas'}</h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                            {activeTab === 'active' ? 'Aún no has asignado tareas futuras para este curso.' : 'No hay tareas pasadas en este curso.'}
+                        <h3 className="text-base sm:text-lg font-bold text-slate-200">
+                            No hay tareas {activeTab === 'active' ? 'activas' : activeTab === 'history' ? 'en el historial' : 'registradas'}
+                        </h3>
+                        <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+                            {activeTab === 'active' 
+                                ? (historyAssignments.length > 0 
+                                    ? `Hay ${historyAssignments.length} tarea(s) en el historial de este curso.` 
+                                    : 'Aún no has publicado actividades vigentes para este curso.')
+                                : activeTab === 'history'
+                                    ? 'No se encontraron tareas vencidas en este curso.'
+                                    : 'Este curso no tiene tareas registradas aún.'}
                         </p>
+                        {activeTab === 'active' && historyAssignments.length > 0 && (
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className="mt-3 px-4 py-2 bg-slate-800 hover:bg-slate-750 text-blue-400 rounded-xl text-xs font-bold transition-all border border-slate-700 active:scale-95"
+                            >
+                                Ver {historyAssignments.length} Tarea(s) del Historial
+                            </button>
+                        )}
+                        <button
+                            onClick={handleNewAssignment}
+                            className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/30 active:scale-95"
+                        >
+                            + Publicar Nueva Tarea
+                        </button>
                     </div>
                 </div>
             ) : activeTab === 'report' ? (
-                /* Report View */
-                <div className="glass-card rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 dark:bg-slate-900/50 print:overflow-visible print:border-none print:shadow-none print:bg-transparent print:!backdrop-blur-none">
-                    <div className="overflow-x-auto print:overflow-visible">
-                        <table className="w-full text-left min-w-[800px] print:min-w-0">
-                            <thead className="bg-slate-50/50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50 print:border-b-2">
-                                <tr>
-                                    <th className="px-6 py-5 text-left text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-widest sticky left-0 bg-slate-50 dark:bg-slate-800 shadow-[1px_0_0_rgba(226,232,240,1)] dark:shadow-[1px_0_0_rgba(51,65,85,1)] w-64 z-10 print:static print:shadow-none print:w-auto print:px-2 print:py-2 print:text-[10px]">
-                                        Alumno
-                                    </th>
-                                    {reportData?.assignments.map(ast => (
-                                        <th key={ast.id} className="px-6 py-5 text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-[120px] max-w-[200px] truncate print:min-w-0 print:px-1 print:py-1 print:text-[8px] print:tracking-normal" title={ast.title}>
-                                            <div className="truncate print:whitespace-normal print:leading-tight">{ast.title}</div>
-                                            <div className="text-brand-purple mt-1 flex items-center justify-center space-x-1 print:text-slate-600 print:mt-0">
-                                                <span>{ast.max_score} pts</span>
-                                                <span className="text-slate-400 print:hidden">({ast.weight_points}x)</span>
+                /* Report View: Cards on Mobile + Table on Desktop */
+                <div className="space-y-4">
+                    {/* Mobile Feed for Report (< md) */}
+                    <div className="block md:hidden space-y-3">
+                        {(!reportData?.students || reportData.students.length === 0) ? (
+                            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 text-center text-slate-400 text-xs">
+                                No hay alumnos inscritos o datos que reportar.
+                            </div>
+                        ) : (
+                            reportData.students.map((student) => (
+                                <div 
+                                    key={student.student_id} 
+                                    className="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-md space-y-3"
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="h-8 w-8 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 font-black text-xs flex items-center justify-center shrink-0">
+                                                {student.student_name.charAt(0)}
                                             </div>
-                                        </th>
-                                    ))}
-                                    <th className="px-6 py-5 text-right text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest bg-brand-blue/5 dark:bg-brand-blue/10 min-w-[120px] print:min-w-0 print:bg-transparent print:px-2 print:py-2 print:text-[10px]">
-                                        Nota Acumulada
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white/50 dark:bg-transparent print:divide-slate-300">
-                                {reportData?.students.map((student) => (
-                                    <tr key={student.student_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group print:break-inside-avoid print:border-b print:border-slate-200/50">
-                                        <td className="px-6 py-4 font-bold text-slate-900 dark:text-white sticky left-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 shadow-[1px_0_0_rgba(226,232,240,1)] dark:shadow-[1px_0_0_rgba(51,65,85,1)] z-10 print:static print:shadow-none print:bg-transparent print:px-2 print:py-1.5 print:text-[11px] print:font-semibold">
-                                            <div className="flex items-center space-x-3 print:space-x-1">
-                                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple text-white flex items-center justify-center font-bold text-xs shrink-0 print:hidden">
-                                                    {student.student_name.charAt(0)}
-                                                </div>
-                                                <span className="truncate print:whitespace-nowrap">{student.student_name}</span>
-                                            </div>
-                                        </td>
-
-                                        {student.grades.map((grade) => (
-                                            <td key={grade.assignment_id} className="px-6 py-4 text-center print:px-1 print:py-1.5 print:text-[10px]">
-                                                {grade.status === 'PENDING' ? (
-                                                    <span className="text-slate-400 font-medium">-</span>
-                                                ) : grade.status === 'SUBMITTED' ? (
-                                                    <span className="inline-flex items-center text-amber-500 font-bold text-sm bg-amber-500/10 px-2 py-1 rounded-lg print:border print:border-amber-200 print:text-[9px] print:px-1 print:py-0 print:bg-transparent">
-                                                        S/C
-                                                    </span>
-                                                ) : (
-                                                    <span className="font-bold text-slate-700 dark:text-slate-200 print:text-black">
-                                                        {grade.score} <span className="text-xs text-slate-400 font-normal print:text-[8px] print:text-slate-500">/ {grade.max_score}</span>
-                                                    </span>
-                                                )}
-                                            </td>
-                                        ))}
-
-                                        <td className="px-6 py-4 text-right bg-brand-blue/5 dark:bg-brand-blue/10 font-black text-brand-blue text-lg print:bg-transparent print:px-2 print:py-1.5 print:text-sm print:text-black">
-                                            {student.total_score} <span className="text-xs font-bold text-slate-500 print:text-[9px]">/ {student.max_possible_score}</span>
-                                            <div className={`text-[10px] uppercase font-bold tracking-widest mt-1 print:text-[8px] print:mt-0 ${student.percentage >= 60 ? 'text-brand-success print:text-black' : 'text-brand-danger print:text-black'}`}>
+                                            <span className="font-bold text-slate-100 text-sm truncate">
+                                                {student.student_name}
+                                            </span>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <span className="font-black text-blue-400 text-sm">
+                                                {student.total_score}
+                                                <span className="text-[10px] text-slate-400 font-normal"> / {student.max_possible_score}</span>
+                                            </span>
+                                            <div className={`text-[10px] font-black uppercase ${
+                                                student.percentage >= 60 ? 'text-emerald-400' : 'text-rose-400'
+                                            }`}>
                                                 {student.percentage}%
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(!reportData?.students || reportData.students.length === 0) && (
+                                        </div>
+                                    </div>
+
+                                    {/* Assignment breakdown pills */}
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+                                        {student.grades.map((grade) => {
+                                            const astMeta = reportData.assignments.find(a => a.id === grade.assignment_id);
+                                            return (
+                                                <div 
+                                                    key={grade.assignment_id}
+                                                    className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-2 flex flex-col justify-between"
+                                                >
+                                                    <span className="text-slate-400 truncate font-medium text-[10px]" title={astMeta?.title}>
+                                                        {astMeta?.title || 'Tarea'}
+                                                    </span>
+                                                    <span className="font-bold mt-1 text-slate-200">
+                                                        {grade.status === 'PENDING' ? (
+                                                            <span className="text-slate-500">- Pendiente</span>
+                                                        ) : grade.status === 'SUBMITTED' ? (
+                                                            <span className="text-amber-400">Sin calificar</span>
+                                                        ) : (
+                                                            <span className="text-blue-400">{grade.score} <span className="text-[9px] text-slate-500">/ {grade.max_score}</span></span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Desktop Matrix Table (>= md) */}
+                    <div className="hidden md:block rounded-3xl overflow-hidden border border-slate-800 bg-slate-900/90 shadow-xl print:overflow-visible print:border-none print:shadow-none print:bg-transparent">
+                        <div className="overflow-x-auto print:overflow-visible">
+                            <table className="w-full text-left min-w-[700px] print:min-w-0">
+                                <thead className="bg-slate-950/70 border-b border-slate-800 print:border-b-2">
                                     <tr>
-                                        <td colSpan={2 + (reportData?.assignments.length || 0)} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                            No hay alumnos inscritos o datos que reportar.
-                                        </td>
+                                        <th className="px-5 py-4 text-left text-xs font-bold text-slate-300 uppercase tracking-widest sticky left-0 bg-slate-950 shadow-[1px_0_0_rgba(30,41,59,1)] w-60 z-10 print:static print:shadow-none print:w-auto">
+                                            Alumno
+                                        </th>
+                                        {reportData?.assignments.map(ast => (
+                                            <th key={ast.id} className="px-4 py-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider min-w-[110px] max-w-[180px]" title={ast.title}>
+                                                <div className="truncate">{ast.title}</div>
+                                                <div className="text-purple-400 mt-0.5 flex items-center justify-center space-x-1">
+                                                    <span>{ast.max_score} pts</span>
+                                                    <span className="text-slate-500 text-[9px]">({ast.weight_points}x)</span>
+                                                </div>
+                                            </th>
+                                        ))}
+                                        <th className="px-5 py-4 text-right text-xs font-black text-slate-100 uppercase tracking-wider bg-blue-500/10 min-w-[110px]">
+                                            Acumulado
+                                        </th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                                    {reportData?.students.map((student) => (
+                                        <tr key={student.student_id} className="hover:bg-slate-800/40 transition">
+                                            <td className="px-5 py-3.5 font-bold text-slate-100 sticky left-0 bg-slate-900 shadow-[1px_0_0_rgba(30,41,59,1)] z-10 text-xs">
+                                                <div className="flex items-center space-x-2.5">
+                                                    <div className="h-7 w-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-500/30">
+                                                        {student.student_name.charAt(0)}
+                                                    </div>
+                                                    <span className="truncate">{student.student_name}</span>
+                                                </div>
+                                            </td>
+
+                                            {student.grades.map((grade) => (
+                                                <td key={grade.assignment_id} className="px-4 py-3.5 text-center text-xs">
+                                                    {grade.status === 'PENDING' ? (
+                                                        <span className="text-slate-600 font-medium">-</span>
+                                                    ) : grade.status === 'SUBMITTED' ? (
+                                                        <span className="inline-flex items-center text-amber-400 font-bold text-[11px] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
+                                                            S/C
+                                                        </span>
+                                                    ) : (
+                                                        <span className="font-bold text-slate-200">
+                                                            {grade.score} <span className="text-[10px] text-slate-500 font-normal">/ {grade.max_score}</span>
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            ))}
+
+                                            <td className="px-5 py-3.5 text-right bg-blue-500/10 font-black text-blue-400 text-sm">
+                                                {student.total_score} <span className="text-[10px] font-bold text-slate-400">/ {student.max_possible_score}</span>
+                                                <div className={`text-[10px] uppercase font-bold tracking-wider ${student.percentage >= 60 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {student.percentage}%
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {(!reportData?.students || reportData.students.length === 0) && (
+                                        <tr>
+                                            <td colSpan={2 + (reportData?.assignments.length || 0)} className="px-6 py-10 text-center text-slate-500 text-xs">
+                                                No hay alumnos inscritos o datos que reportar.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             ) : (
-                /* Assignments Grid */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {displayedAssignments?.map((assignment: any) => (
-                        <div
-                            key={assignment.id}
-                            className="group glass-card p-6 border border-slate-200 dark:border-white/10 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-300 relative overflow-hidden flex flex-col cursor-pointer"
-                            onClick={() => { setReviewAssignment(assignment); setFilterStatus('ALL'); }}
-                        >
-                            {/* Type Badge */}
-                            <div className="absolute top-0 right-0 p-4">
-                                <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider border ${activeTab === 'history' ? 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600' : 'bg-brand-purple/20 text-brand-purple border-brand-purple/30'}`}>
-                                    {assignment.assignment_type}
-                                </span>
-                            </div>
+                /* Assignments Feed Grid (Active & Past) */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+                    {displayedAssignments?.map((assignment: any) => {
+                        const typeInfo = TYPE_CONFIG[assignment.assignment_type] || TYPE_CONFIG.HOMEWORK;
+                        const isPast = new Date(assignment.due_date) <= now;
 
-                            <div className="mb-4 mt-2 flex-grow">
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-brand-purple transition-colors pr-16">{assignment.title}</h3>
-                                <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm line-clamp-2 leading-relaxed">{assignment.description || 'Sin descripción.'}</p>
-                            </div>
+                        return (
+                            <div
+                                key={assignment.id}
+                                className="group bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-3xl p-5 shadow-lg transition-all duration-200 flex flex-col justify-between"
+                            >
+                                <div>
+                                    {/* Top badges */}
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[10px] px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider border ${typeInfo.badge}`}>
+                                                {typeInfo.label}
+                                            </span>
+                                            {assignment.unit_name && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                                    {assignment.unit_name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            {Number(assignment.merit_points) > 0 && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                    <Sparkles className="w-3 h-3 text-amber-400" />
+                                                    +{assignment.merit_points} mérito
+                                                </span>
+                                            )}
+                                            <div className="text-[11px] font-bold text-slate-400 bg-slate-950/80 px-2.5 py-1 rounded-full border border-slate-800">
+                                                <strong className="text-slate-200">{assignment.max_score}</strong> pts
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700/50 mt-auto">
-                                <div className={`flex items-center text-sm ${activeTab === 'history' ? 'text-brand-danger' : 'text-brand-blue'}`}>
-                                    <Calendar className="h-4 w-4 mr-2" />
-                                    <span className="font-medium">
-                                        {activeTab === 'history' ? 'Finalizó: ' : 'Vence: '}
-                                        {formatDate(assignment.due_date)}
-                                    </span>
+                                    {/* Title & Description */}
+                                    <div className="mt-3">
+                                        <h3 className="text-base sm:text-lg font-bold text-slate-100 line-clamp-2 leading-snug group-hover:text-blue-400 transition-colors">
+                                            {assignment.title}
+                                        </h3>
+                                        <p className="text-slate-400 text-xs mt-1.5 line-clamp-2 leading-relaxed">
+                                            {assignment.description || 'Sin instrucciones adicionales.'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex items-center text-sm justify-between">
-                                    <span className="text-slate-500 dark:text-slate-400">Peso: <strong className="text-slate-800 dark:text-slate-200">{assignment.weight_points}x</strong></span>
-                                    <span className="text-brand-purple font-semibold hover:underline">Revisar Entregas &rarr;</span>
+
+                                {/* Bottom Info & Action */}
+                                <div className="mt-5 pt-3.5 border-t border-slate-800/80 space-y-3">
+                                    <div className={`flex items-center text-xs font-semibold ${isPast ? 'text-rose-400' : 'text-blue-400'}`}>
+                                        <Calendar className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                                        <span className="truncate">
+                                            {isPast ? 'Finalizó: ' : 'Vence: '}
+                                            {formatDate(assignment.due_date)}
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => { setReviewAssignment(assignment); setFilterStatus('ALL'); }}
+                                        className="w-full py-2.5 px-4 bg-slate-800 hover:bg-blue-600 active:bg-blue-700 hover:text-white text-slate-300 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer border border-slate-700/60"
+                                    >
+                                        <span>Revisar Entregas</span>
+                                        <ArrowRight className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
-            {/* Creation Modal */}
-            {
-                isModalOpen && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
-
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
-                            <div className="bg-gradient-to-r from-brand-purple to-indigo-600 p-6 text-white shrink-0">
-                                <h3 className="text-2xl font-bold">Crear Nueva Tarea</h3>
-                                <p className="text-white/80 text-sm mt-1">Configura los detalles de la actividad para los estudiantes.</p>
+            {/* Creation Modal (Rendered with createPortal at Root Level) */}
+            {isModalOpen && createPortal(
+                <div 
+                    className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setIsModalOpen(false)}
+                >
+                    <div 
+                        className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header with Close Button */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 sm:p-6 text-white shrink-0 flex items-start justify-between">
+                            <div>
+                                <h3 className="text-lg sm:text-xl font-bold">Crear Nueva Tarea</h3>
+                                <p className="text-blue-100 text-xs mt-1">Configura la actividad académica para los alumnos.</p>
                             </div>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
-                            <div className="overflow-y-auto shrink-1 p-8">
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    {errorMsg && (
-                                        <div className="bg-brand-danger/10 border border-brand-danger/30 text-brand-danger px-4 py-3 rounded-xl text-sm font-medium animate-shake">
-                                            {errorMsg}
-                                        </div>
-                                    )}
+                        {/* Form Body */}
+                        <div className="overflow-y-auto p-5 sm:p-6 custom-scrollbar">
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {errorMsg && (
+                                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 px-3.5 py-2.5 rounded-xl text-xs font-semibold">
+                                        {errorMsg}
+                                    </div>
+                                )}
 
+                                <div>
+                                    <label className="text-xs font-bold text-slate-300 ml-1">Título de la Tarea</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium transition-all"
+                                        placeholder="Ej: Ensayo sobre Historia o Proyecto Final"
+                                        value={newAssignment.title}
+                                        onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-slate-300 ml-1">Descripción / Instrucciones</label>
+                                    <textarea
+                                        rows={3}
+                                        className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium transition-all resize-none"
+                                        placeholder="Detalla qué debe hacer el alumno, criterios de evaluación..."
+                                        value={newAssignment.description}
+                                        onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                                    />
+                                </div>
+
+                                {schedules && schedules.length > 0 && (
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Título de la Tarea</label>
+                                        <label className="text-xs font-bold text-slate-300 ml-1">Horario Asignado (Opcional)</label>
+                                        <select
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                            value={newAssignment.schedule_id || ''}
+                                            onChange={(e) => setNewAssignment({ ...newAssignment, schedule_id: e.target.value })}
+                                        >
+                                            <option value="">Todos los horarios del curso</option>
+                                            {schedules.map((s: any) => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.grade ? `${s.grade} - ` : ''}{s.day_of_week} ({s.start_time?.slice(0, 5)} - {s.end_time?.slice(0, 5)})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-300 ml-1">Bimestre / Unidad</label>
+                                        <select
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                            value={newAssignment.unit_name || 'Bimestre 1'}
+                                            onChange={(e) => setNewAssignment({ ...newAssignment, unit_name: e.target.value })}
+                                        >
+                                            <option value="Bimestre 1">Bimestre 1</option>
+                                            <option value="Bimestre 2">Bimestre 2</option>
+                                            <option value="Bimestre 3">Bimestre 3</option>
+                                            <option value="Bimestre 4">Bimestre 4</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-300 ml-1">Tipo de Actividad</label>
+                                        <select
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                            value={newAssignment.assignment_type}
+                                            onChange={(e) => setNewAssignment({ ...newAssignment, assignment_type: e.target.value as any })}
+                                        >
+                                            <option value="HOMEWORK">Tarea</option>
+                                            <option value="EXAM">Examen</option>
+                                            <option value="LAB">Laboratorio</option>
+                                            <option value="ACTIVITY">Actividad</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-slate-300 ml-1">Fecha y Hora Límite</label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                        value={newAssignment.due_date}
+                                        onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
+                                            <span>Punteo Académico</span>
+                                            <span className="text-[10px] text-blue-400 font-normal">Cuadro de notas</span>
+                                        </label>
                                         <input
-                                            type="text"
+                                            type="number"
+                                            min="1"
+                                            max="100"
+                                            step="0.1"
                                             required
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-purple/50 outline-none transition-all dark:text-white"
-                                            placeholder="Ej: Ensayo sobre Historia"
-                                            value={newAssignment.title}
-                                            onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                            value={newAssignment.max_score}
+                                            onChange={(e) => setNewAssignment({ ...newAssignment, max_score: Number(e.target.value) })}
+                                            placeholder="100"
                                         />
+                                        <span className="text-[10px] text-slate-500 ml-1 mt-0.5 block">Valor en puntos para el promedio</span>
                                     </div>
-
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Descripción / Instrucciones</label>
-                                        <textarea
-                                            rows={3}
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-purple/50 outline-none transition-all resize-none dark:text-white"
-                                            placeholder="Detalles sobre lo que el alumno debe hacer..."
-                                            value={newAssignment.description}
-                                            onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                                        <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
+                                            <span className="flex items-center gap-1 text-amber-400">
+                                                <Sparkles className="w-3 h-3" />
+                                                Puntos de Mérito
+                                            </span>
+                                            <span className="text-[10px] text-amber-400/80 font-normal">Gamificación</span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-amber-500/30 rounded-xl focus:ring-2 focus:ring-amber-500/40 outline-none text-amber-300 text-xs sm:text-sm font-bold"
+                                            value={newAssignment.merit_points || 0}
+                                            onChange={(e) => setNewAssignment({ ...newAssignment, merit_points: Math.max(0, parseInt(e.target.value) || 0) })}
+                                            placeholder="0"
                                         />
+                                        <span className="text-[10px] text-slate-500 ml-1 mt-0.5 block">Puntos para la tienda escolar / canje</span>
                                     </div>
+                                </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Tipo de Actividad</label>
-                                            <select
-                                                className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-purple/50 outline-none dark:text-white"
-                                                value={newAssignment.assignment_type}
-                                                onChange={(e) => setNewAssignment({ ...newAssignment, assignment_type: e.target.value as any })}
-                                            >
-                                                <option value="HOMEWORK">Tarea</option>
-                                                <option value="EXAM">Examen</option>
-                                                <option value="LAB">Laboratorio</option>
-                                                <option value="ACTIVITY">Actividad</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Fecha Límite</label>
-                                            <input
-                                                type="datetime-local"
-                                                required
-                                                className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-purple/50 outline-none transition-all dark:text-white"
-                                                value={newAssignment.due_date}
-                                                onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Peso (Multiplicador)</label>
-                                            <input
-                                                type="number"
-                                                step="0.1"
-                                                required
-                                                className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-purple/50 outline-none dark:text-white"
-                                                value={newAssignment.weight_points}
-                                                onChange={(e) => setNewAssignment({ ...newAssignment, weight_points: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Nota Máxima</label>
-                                            <input
-                                                type="number"
-                                                required
-                                                className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-purple/50 outline-none dark:text-white"
-                                                value={newAssignment.max_score}
-                                                onChange={(e) => setNewAssignment({ ...newAssignment, max_score: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex space-x-4 pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsModalOpen(false)}
-                                            className="flex-1 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={createMutation.isPending}
-                                            className="flex-1 px-6 py-3 bg-brand-purple text-white font-bold rounded-xl hover:bg-purple-700 shadow-lg shadow-purple-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
-                                        >
-                                            {createMutation.isPending ? (
-                                                <Loader2 className="h-5 w-5 animate-spin" />
-                                            ) : (
-                                                <span>Guardar Tarea</span>
-                                            )}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                <div className="flex items-center gap-3 pt-3 border-t border-slate-800">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition-all text-center"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={createMutation.isPending}
+                                        className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all text-xs flex items-center justify-center space-x-2 disabled:opacity-50"
+                                    >
+                                        {createMutation.isPending ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Check className="h-4 w-4" />
+                                        )}
+                                        <span>Guardar Tarea</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                )
-            }
+                </div>,
+                document.body
+            )}
 
-            {/* Review / Grading Modal */}
-            {
-                reviewAssignment && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setReviewAssignment(null)} />
-
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800 flex flex-col h-[85vh]">
-                            {/* Header */}
-                            <div className="bg-slate-50 dark:bg-slate-800 p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-start shrink-0">
-                                <div>
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{reviewAssignment.title}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center">
-                                        <Calendar className="h-4 w-4 mr-1" />
-                                        Vence: {formatDate(reviewAssignment.due_date)} &bull; Max Score: {reviewAssignment.max_score} pts
+            {/* Review / Grading Modal (Rendered with createPortal at Root Level) */}
+            {reviewAssignment && createPortal(
+                <div 
+                    className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setReviewAssignment(null)}
+                >
+                    <div 
+                        className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[94vh] sm:h-[88vh] animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="bg-slate-950/90 p-4 sm:p-5 border-b border-slate-800 flex flex-col gap-3 shrink-0">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-base sm:text-lg font-bold text-slate-100 truncate">
+                                        {reviewAssignment.title}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                        <span className="flex items-center text-blue-400 font-medium">
+                                            <Calendar className="h-3 w-3 mr-1" />
+                                            Vence: {formatDate(reviewAssignment.due_date)}
+                                        </span>
+                                        <span>&bull;</span>
+                                        <span className="text-slate-300 font-bold">
+                                            Nota Máx: {reviewAssignment.max_score} pts
+                                        </span>
                                     </p>
                                 </div>
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={() => setFilterStatus('ALL')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterStatus === 'ALL' ? 'bg-brand-blue text-white' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'}`}
-                                    >
-                                        Todos
-                                    </button>
-                                    <button
-                                        onClick={() => setFilterStatus('SUBMITTED')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterStatus === 'SUBMITTED' ? 'bg-brand-purple text-white' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'}`}
-                                    >
-                                        Entregados
-                                    </button>
-                                    <button
-                                        onClick={() => setFilterStatus('PENDING')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterStatus === 'PENDING' ? 'bg-brand-danger text-white' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'}`}
-                                    >
-                                        Faltantes
-                                    </button>
-                                    <button
-                                        onClick={() => setFilterStatus('GRADED')}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterStatus === 'GRADED' ? 'bg-brand-success text-white' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'}`}
-                                    >
-                                        Calificados
-                                    </button>
-                                    <button
-                                        onClick={() => setReviewAssignment(null)}
-                                        className="px-3 py-1.5 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition ml-4 font-bold"
-                                    >
-                                        Cerrar
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => setReviewAssignment(null)}
+                                    className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
 
-                            {/* Submissions List */}
-                            <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-900">
-                                {isLoadingSubmissions ? (
-                                    <div className="flex flex-col items-center justify-center h-full space-y-4">
-                                        <Loader2 className="animate-spin h-10 w-10 text-brand-purple/50" />
-                                        <p className="text-slate-500">Cargando entregas...</p>
-                                    </div>
-                                ) : filteredSubmissions.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full space-y-4">
-                                        <ClipboardList className="h-12 w-12 text-slate-300 dark:text-slate-600" />
-                                        <p className="text-slate-500 dark:text-slate-400">No hay estudiantes en esta categoría.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {filteredSubmissions.map((sub) => (
-                                            <div key={sub.student_id} className="p-5 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col lg:flex-row gap-6 items-start lg:items-center bg-slate-50/50 dark:bg-slate-800/30">
+                            {/* Filter Status Pills (Horizontal scroll on mobile) */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
+                                {[
+                                    { id: 'ALL', label: 'Todos' },
+                                    { id: 'SUBMITTED', label: 'Entregados' },
+                                    { id: 'PENDING', label: 'Faltantes' },
+                                    { id: 'GRADED', label: 'Calificados' },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setFilterStatus(tab.id as any)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                            filterStatus === tab.id 
+                                                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                                                : 'bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                                                {/* Student Info */}
-                                                <div className="w-full lg:w-1/3">
-                                                    <h4 className="font-bold text-slate-900 dark:text-white text-lg">{sub.student_name}</h4>
-                                                    <div className="flex items-center mt-2 space-x-2">
-                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider 
-                                                        ${sub.status === 'GRADED' ? 'bg-brand-success/20 text-brand-success' :
-                                                                sub.status === 'SUBMITTED' ? 'bg-brand-purple/20 text-brand-purple' :
-                                                                    'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400'}`}>
+                        {/* Submissions List */}
+                        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-3.5 bg-slate-900/60 custom-scrollbar">
+                            {isLoadingSubmissions ? (
+                                <div className="flex flex-col items-center justify-center h-full space-y-3 py-16">
+                                    <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+                                    <p className="text-slate-400 text-xs font-medium">Cargando entregas de los estudiantes...</p>
+                                </div>
+                            ) : filteredSubmissions.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full space-y-3 py-16 text-center">
+                                    <ClipboardList className="h-10 w-10 text-slate-600" />
+                                    <p className="text-slate-400 text-xs font-medium">No hay entregas para mostrar en este filtro.</p>
+                                </div>
+                            ) : (
+                                filteredSubmissions.map((sub) => (
+                                    <div 
+                                        key={sub.student_id} 
+                                        className="p-4 sm:p-5 bg-slate-950/70 border border-slate-800/90 rounded-2xl flex flex-col lg:flex-row gap-4 lg:gap-6 items-start lg:items-center justify-between"
+                                    >
+                                        {/* Student Info */}
+                                        <div className="w-full lg:w-5/12 space-y-2">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 font-black text-xs flex items-center justify-center shrink-0">
+                                                    {sub.student_name.charAt(0)}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <h4 className="font-bold text-slate-100 text-sm truncate">
+                                                        {sub.student_name}
+                                                    </h4>
+                                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider border ${
+                                                            sub.status === 'GRADED' 
+                                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                                                : sub.status === 'SUBMITTED' 
+                                                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
+                                                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                                                        }`}>
                                                             {sub.status === 'GRADED' ? 'Calificado' : sub.status === 'SUBMITTED' ? 'Entregado' : 'Pendiente'}
                                                         </span>
                                                         {sub.submission_date && (
-                                                            <span className="text-xs text-slate-500">
-                                                                el {new Date(sub.submission_date).toLocaleDateString()}
+                                                            <span className="text-[10px] text-slate-400">
+                                                                {new Date(sub.submission_date).toLocaleDateString()}
+                                                            </span>
+                                                        )}
+                                                        {Number(sub.merit_points_awarded) > 0 && (
+                                                            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                                <Sparkles className="w-3 h-3 text-amber-400" />
+                                                                +{sub.merit_points_awarded} mérito
                                                             </span>
                                                         )}
                                                     </div>
-                                                    
-                                                    {/* File Proof Section */}
-                                                    <div className="mt-4">
-                                                        {sub.attachment_url ? (
-                                                            <div className="flex flex-col space-y-2">
-                                                                <div className="flex items-center text-xs text-brand-success font-bold uppercase tracking-tighter">
-                                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                                                                    El alumno subió un archivo
-                                                                </div>
-                                                                <a 
-                                                                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${sub.attachment_url}`} 
-                                                                    target="_blank" 
-                                                                    rel="noopener noreferrer" 
-                                                                    className="flex items-center text-sm text-white bg-brand-blue hover:bg-blue-600 transition-all w-max px-4 py-2 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95"
-                                                                >
-                                                                    <Paperclip className="h-4 w-4 mr-2" />
-                                                                    Visualizar Tarea / Comprobante
-                                                                </a>
-                                                            </div>
-                                                        ) : sub.status !== 'PENDING' ? (
-                                                            <div className="flex items-center text-xs text-amber-600 font-bold uppercase tracking-tighter bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 w-max">
-                                                                <AlertCircle className="w-3 h-3 mr-1" />
-                                                                Entregado manual (Sin archivo adjunto)
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* File Evidence Button */}
+                                            {sub.attachment_url ? (
+                                                <a 
+                                                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${sub.attachment_url}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs font-bold transition-all active:scale-95"
+                                                >
+                                                    <Paperclip className="h-3.5 w-3.5" />
+                                                    <span>Ver Evidencia / Comprobante</span>
+                                                    <ExternalLink className="h-3 w-3 opacity-70" />
+                                                </a>
+                                            ) : sub.status !== 'PENDING' ? (
+                                                <span className="inline-flex items-center gap-1.5 text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    Entregado sin archivo
+                                                </span>
+                                            ) : (
+                                                <p className="text-[11px] text-slate-500 italic">
+                                                    El alumno aún no ha entregado esta tarea.
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Grading Form */}
+                                        {(sub.status === 'SUBMITTED' || sub.status === 'GRADED') && (
+                                            <form 
+                                                onSubmit={(e) => handleGradeSubmit(sub.submission_id!, e)} 
+                                                className="w-full lg:w-7/12 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-end pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800/80"
+                                            >
+                                                <div className="w-full sm:w-28 shrink-0">
+                                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                                                        Nota (/{reviewAssignment.max_score})
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        name="score"
+                                                        step="0.1"
+                                                        max={reviewAssignment.max_score}
+                                                        required
+                                                        defaultValue={sub.score || ''}
+                                                        placeholder="0"
+                                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 text-xs font-bold text-center"
+                                                    />
                                                 </div>
 
-                                                {/* Grading Form */}
-                                                {(sub.status === 'SUBMITTED' || sub.status === 'GRADED') ? (
-                                                    <form onSubmit={(e) => handleGradeSubmit(sub.submission_id!, e)} className="w-full lg:w-2/3 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                                                        <div className="flex flex-col w-full sm:w-1/4">
-                                                            <label className="text-xs font-semibold text-slate-500 mb-1">Nota (/{reviewAssignment.max_score})</label>
-                                                            <input
-                                                                type="number"
-                                                                name="score"
-                                                                step="0.1"
-                                                                max={reviewAssignment.max_score}
-                                                                required
-                                                                defaultValue={sub.score || ''}
-                                                                className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-brand-purple dark:text-white"
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col w-full sm:w-2/4">
-                                                            <label className="text-xs font-semibold text-slate-500 mb-1">Comentario / Feedback</label>
-                                                            <input
-                                                                type="text"
-                                                                name="feedback"
-                                                                defaultValue={sub.feedback || ''}
-                                                                placeholder="Buen trabajo..."
-                                                                className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-brand-purple dark:text-white"
-                                                            />
-                                                        </div>
-                                                        <div className="w-full sm:w-1/4 flex justify-end mt-4 sm:mt-5">
-                                                            <button
-                                                                type="submit"
-                                                                disabled={gradeMutation.isPending}
-                                                                className="w-full px-4 py-2 bg-brand-success text-white font-bold rounded-lg hover:bg-green-600 transition disabled:opacity-50"
-                                                            >
-                                                                {sub.status === 'GRADED' ? 'Actualizar' : 'Calificar'}
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                ) : (
-                                                    <div className="w-full lg:w-2/3 flex items-center justify-start text-sm text-slate-500 italic">
-                                                        El alumno aún no ha marcado esta tarea como entregada en su portal.
+                                                {Number(reviewAssignment.merit_points) > 0 && (
+                                                    <div className="w-full sm:w-24 shrink-0">
+                                                        <label className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block mb-1 flex items-center gap-1">
+                                                            <Sparkles className="w-2.5 h-2.5" />
+                                                            <span>Mérito</span>
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            name="custom_merit"
+                                                            min="0"
+                                                            defaultValue={sub.merit_points_awarded !== undefined ? sub.merit_points_awarded : ''}
+                                                            placeholder="Auto"
+                                                            className="w-full px-3 py-2 bg-slate-900 border border-amber-500/40 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 text-amber-300 text-xs font-bold text-center"
+                                                            title="Dejar en blanco para cálculo automático (>=60% otorga méritos)"
+                                                        />
                                                     </div>
                                                 )}
 
-                                            </div>
-                                        ))}
+                                                <div className="flex-1">
+                                                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                                                        Comentario / Feedback
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="feedback"
+                                                        defaultValue={sub.feedback || ''}
+                                                        placeholder="Observaciones para el alumno..."
+                                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 text-xs font-medium"
+                                                    />
+                                                </div>
+
+                                                <div className="shrink-0">
+                                                    <button
+                                                        type="submit"
+                                                        disabled={gradeMutation.isPending}
+                                                        className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                                    >
+                                                        {gradeMutation.isPending ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Check className="w-3.5 h-3.5" />
+                                                        )}
+                                                        <span>{sub.status === 'GRADED' ? 'Actualizar' : 'Calificar'}</span>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                ))
+                            )}
                         </div>
                     </div>
-                )
-            }
+                </div>,
+                document.body
+            )}
 
             {/* Print Styles */}
             <style dangerouslySetInnerHTML={{

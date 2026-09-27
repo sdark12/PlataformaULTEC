@@ -7,13 +7,36 @@ export const assignmentsController = {
     /** Create a new assignment for a course */
     async createAssignment(req: Request, res: Response) {
         try {
-            const { course_id, title, description, assignment_type, due_date, weight_points, max_score, schedule_id } = req.body;
+            const { 
+                course_id, 
+                title, 
+                description, 
+                assignment_type, 
+                due_date, 
+                weight_points = 1.0, 
+                max_score, 
+                schedule_id,
+                merit_points = 0,
+                unit_name = 'Bimestre 1'
+            } = req.body;
             const created_by = req.currentUser?.id;
             const db = adminClient; // Use service role to bypass RLS since we verify manually
 
             const { data, error } = await db
                 .from('assignments')
-                .insert([{ course_id, title, description, assignment_type, due_date, weight_points, max_score, schedule_id, created_by }])
+                .insert([{ 
+                    course_id, 
+                    title, 
+                    description, 
+                    assignment_type, 
+                    due_date, 
+                    weight_points: Number(weight_points) || 1.0, 
+                    max_score: Number(max_score) || 100, 
+                    schedule_id: schedule_id || null, 
+                    merit_points: Number(merit_points) || 0,
+                    unit_name: unit_name || 'Bimestre 1',
+                    created_by 
+                }])
                 .select()
                 .single();
 
@@ -29,7 +52,7 @@ export const assignmentsController = {
     async getCourseAssignments(req: Request, res: Response) {
         try {
             const { courseId } = req.params;
-            const { schedule_id } = req.query;
+            const { schedule_id, unit_name } = req.query;
             const db = adminClient;
 
             let query = db
@@ -39,6 +62,10 @@ export const assignmentsController = {
 
             if (schedule_id) {
                 query = query.or(`schedule_id.eq.${schedule_id},schedule_id.is.null`);
+            }
+
+            if (unit_name) {
+                query = query.eq('unit_name', unit_name);
             }
 
             const { data, error } = await query.order('due_date', { ascending: true });
@@ -60,7 +87,7 @@ export const assignmentsController = {
             // 1. Get assignment to find course_id
             const { data: assignment, error: assignError } = await db
                 .from('assignments')
-                .select('course_id')
+                .select('course_id, max_score, merit_points')
                 .eq('id', assignmentId)
                 .single();
             if (assignError) throw assignError;
@@ -80,6 +107,20 @@ export const assignmentsController = {
                 .eq('assignment_id', assignmentId);
             if (subError) throw subError;
 
+            // 3b. Get merit transactions for these submissions
+            const submissionIds = (submissions || []).map((s: any) => s.id).filter(Boolean);
+            const meritMap = new Map<string, number>();
+            if (submissionIds.length > 0) {
+                const { data: merits } = await db
+                    .from('merit_transactions')
+                    .select('reference_id, points')
+                    .in('reference_id', submissionIds)
+                    .eq('transaction_type', 'assignment');
+                merits?.forEach((m: any) => {
+                    meritMap.set(m.reference_id, m.points);
+                });
+            }
+
             // 4. Merge
             const result = enrollments.map((enr: any) => {
                 const sub = submissions?.find((s: any) => s.student_id === enr.student_id);
@@ -92,7 +133,8 @@ export const assignmentsController = {
                     status: sub?.status || 'PENDING',
                     score: sub?.score || null,
                     feedback: sub?.feedback || '',
-                    attachment_url: sub?.attachment_url || null
+                    attachment_url: sub?.attachment_url || null,
+                    merit_points_awarded: sub?.id ? (meritMap.get(sub.id) || 0) : 0
                 };
             });
 
@@ -107,17 +149,66 @@ export const assignmentsController = {
     async gradeSubmission(req: Request, res: Response) {
         try {
             const { submissionId } = req.params;
-            const { score, feedback } = req.body;
+            const { score, feedback, custom_merit_points } = req.body;
             const db = adminClient;
+            const userId = req.currentUser?.id;
 
             const { data, error } = await db
                 .from('assignment_submissions')
-                .update({ score, feedback, status: 'GRADED' })
+                .update({ score: Number(score), feedback, status: 'GRADED' })
                 .eq('id', submissionId)
-                .select()
+                .select('*, assignments(id, title, max_score, merit_points, course_id, courses(name))')
                 .single();
 
             if (error) throw error;
+
+            // Handle Merit Points
+            const assignment = data?.assignments;
+            const studentId = data?.student_id;
+
+            if (assignment && studentId) {
+                const maxScore = Number(assignment.max_score) || 100;
+                const earnedScore = Number(score) || 0;
+                const baseMeritPoints = Number(assignment.merit_points) || 0;
+
+                let meritPointsToAward = 0;
+
+                if (custom_merit_points !== undefined && custom_merit_points !== null) {
+                    meritPointsToAward = Math.max(0, Number(custom_merit_points));
+                } else if (baseMeritPoints > 0 && maxScore > 0) {
+                    const scoreRatio = earnedScore / maxScore;
+                    if (scoreRatio >= 0.6) {
+                        if (scoreRatio >= 0.8) {
+                            meritPointsToAward = baseMeritPoints;
+                        } else {
+                            meritPointsToAward = Math.round(baseMeritPoints * scoreRatio);
+                        }
+                    }
+                }
+
+                const courseName = assignment.courses?.name || 'Curso';
+
+                if (meritPointsToAward > 0) {
+                    await db
+                        .from('merit_transactions')
+                        .upsert({
+                            student_id: studentId,
+                            points: meritPointsToAward,
+                            transaction_type: 'assignment',
+                            description: `Mérito por Tarea: ${assignment.title} (Nota: ${earnedScore}/${maxScore} pts) - ${courseName}`,
+                            reference_id: submissionId,
+                            created_by: userId || null
+                        }, { onConflict: 'student_id, reference_id, transaction_type' });
+                } else {
+                    await db
+                        .from('merit_transactions')
+                        .delete()
+                        .eq('student_id', studentId)
+                        .eq('reference_id', submissionId)
+                        .eq('transaction_type', 'assignment');
+                }
+            }
+
             res.json(data);
         } catch (error: any) {
             console.error('Error grading submission:', error);
@@ -283,6 +374,22 @@ export const assignmentsController = {
 
             if (subError) throw subError;
 
+            // Fetch merit transactions for this student for assignments
+            const subIds = (submissions || []).map((s: any) => s.id).filter(Boolean);
+            const meritMap = new Map<string, number>();
+            if (subIds.length > 0) {
+                const { data: merits } = await db
+                    .from('merit_transactions')
+                    .select('reference_id, points')
+                    .eq('student_id', studentId)
+                    .eq('transaction_type', 'assignment')
+                    .in('reference_id', subIds);
+
+                merits?.forEach((m: any) => {
+                    meritMap.set(m.reference_id, m.points);
+                });
+            }
+
             // Merge everything and filter by schedule_id if assignment has one
             const merged = assignments
                 .filter((a: any) => {
@@ -299,12 +406,15 @@ export const assignmentsController = {
                         assignment_type: a.assignment_type,
                         due_date: a.due_date,
                         weight_points: a.weight_points,
+                        merit_points: a.merit_points ?? 0,
+                        unit_name: a.unit_name || 'Bimestre 1',
                         max_score: a.max_score,
                         course_name: Array.isArray(enr?.courses) ? enr?.courses[0]?.name : (enr?.courses as any)?.name || '',
                         submission_id: sub?.id,
                         status: sub?.status || 'PENDING',
                         submission_date: sub?.submission_date,
                         score: sub?.score,
+                        merit_points_awarded: sub?.id ? (meritMap.get(sub.id) || 0) : 0,
                         feedback: sub?.feedback || '',
                         attachment_url: sub?.attachment_url
                     };
