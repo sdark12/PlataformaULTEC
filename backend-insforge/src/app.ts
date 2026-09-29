@@ -29,7 +29,9 @@ import disciplineRoutes from './routes/discipline.routes';
 import settingsRoutes from './routes/settings.routes';
 import meritsRoutes from './routes/merits.routes';
 import promotionsRoutes from './routes/promotions.routes';
+import devopsRoutes from './routes/devops.routes';
 import { verifyInvoicePublic } from './controllers/invoices.controller';
+
 import { verifyStudentPublic } from './controllers/students.controller';
 import { getLatestAppVersion, downloadLatestApk } from './controllers/appVersion.controller';
 
@@ -97,6 +99,8 @@ app.use('/api/discipline', disciplineRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/merits', meritsRoutes);
 app.use('/api', promotionsRoutes);
+app.use('/api/devops', devopsRoutes);
+
 
 
 // Root route

@@ -4,18 +4,18 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.15",
-    versionCode: 25,
+    version: "1.1.16",
+    versionCode: 26,
     minVersion: "1.0.0",
     releaseDate: "2026-09-28",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.15 - Identidad Institucional, Diagnóstico SMTP y Sincronización de Sesión",
+    title: "Actualización v1.1.16 - Panel DevOps y Telemetría en Vivo de Infraestructura",
     releaseNotes: [
-        "Sincronización automática de perfil y sesión: Actualización en vivo de roles de usuario desde la base de datos sin requerir cerrar sesión.",
-        "Gestión de Marca e Identidad Institucional: Subida y previsualización de Logo Oficial y Sello / Firma Digital de Dirección.",
-        "Herramienta de Diagnóstico SMTP en vivo: Verificación de estado del servidor de correos y envío de correos de prueba institucionales."
+        "Panel DevOps y Telemetría de Servidor: Monitorización en tiempo real de CPU, RAM, Disco del VPS y estado de Node.js.",
+        "Métricas de Base de Datos PostgreSQL: Conexiones activas, tamaño físico de base de datos y tiempo de actividad (uptime) en vivo.",
+        "Inventario Operativo en Tiempo Real: Contadores consolidados de alumnos, pagos, calificaciones y eventos auditados para SuperAdmin."
     ],
     isCritical: false
 };

@@ -18,20 +18,27 @@ import {
     MapPin, CheckCircle2, AlertCircle, Shield, Sparkles,
     Smartphone, Download, RefreshCw, CheckCircle,
     Lock, ShieldAlert, ShieldCheck, Wrench, History, Clock, ArrowRight,
-    Upload, Image as ImageIcon, Send, ExternalLink, FileCheck
+    Upload, Image as ImageIcon, Send, ExternalLink, FileCheck, Activity
 } from 'lucide-react';
 
 import UserProfile from '../../pages/UserProfile';
 import { useAppUpdate } from '../../context/UpdateContext';
 import { getCurrentUser, fetchCurrentUser } from '../auth/authService';
+import DevOpsDashboard from '../devops/DevOpsDashboard';
 
 const SettingsPage: React.FC = () => {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const tabParam = searchParams.get('tab');
-    const activeTab = tabParam === 'profile' ? 'profile' : tabParam === 'updates' ? 'updates' : 'system';
-    
     const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
     const isSuperAdmin = currentUser?.role === 'superadmin';
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabParam = searchParams.get('tab');
+    const activeTab = tabParam === 'profile' 
+        ? 'profile' 
+        : tabParam === 'updates' 
+        ? 'updates' 
+        : (tabParam === 'devops' && isSuperAdmin) 
+        ? 'devops' 
+        : 'system';
 
     const { 
         hasUpdate, 
@@ -247,6 +254,8 @@ const SettingsPage: React.FC = () => {
                             <User className="w-6 h-6" />
                         ) : activeTab === 'updates' ? (
                             <Smartphone className="w-6 h-6" />
+                        ) : activeTab === 'devops' ? (
+                            <Activity className="w-6 h-6" />
                         ) : (
                             <Settings className="w-6 h-6" />
                         )}
@@ -254,9 +263,15 @@ const SettingsPage: React.FC = () => {
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                                {activeTab === 'profile' ? 'Mi Perfil y Cuenta' : activeTab === 'updates' ? 'Actualizaciones de la App' : 'Configuración del Sistema'}
+                                {activeTab === 'profile' 
+                                    ? 'Mi Perfil y Cuenta' 
+                                    : activeTab === 'updates' 
+                                    ? 'Actualizaciones de la App' 
+                                    : activeTab === 'devops' 
+                                    ? 'DevOps & Salud del Servidor' 
+                                    : 'Configuración del Sistema'}
                             </h1>
-                            {activeTab === 'system' && (
+                            {(activeTab === 'system' || activeTab === 'devops') && (
                                 <span className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
                                     isSuperAdmin 
                                         ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' 
@@ -272,6 +287,8 @@ const SettingsPage: React.FC = () => {
                                 ? 'Administre sus datos personales y credenciales de acceso como administrador.'
                                 : activeTab === 'updates'
                                 ? 'Verifique y descargue las versiones más recientes de la aplicación móvil y el sistema.'
+                                : activeTab === 'devops'
+                                ? 'Monitorización en tiempo real del hardware VPS, contenedores Docker, base de datos PostgreSQL y carga del sistema.'
                                 : 'Ajuste la configuración institucional, reglas académicas, finanzas, gobernanza y accesos.'}
                         </p>
                     </div>
@@ -290,7 +307,7 @@ const SettingsPage: React.FC = () => {
             </div>
 
             {/* Segmented Control Tabs */}
-            <div className="grid grid-cols-3 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 border border-slate-200/80 dark:border-slate-700/60 shadow-inner gap-1">
+            <div className={`grid ${isSuperAdmin ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 border border-slate-200/80 dark:border-slate-700/60 shadow-inner gap-1`}>
                 <button
                     onClick={() => setSearchParams({ tab: 'system' })}
                     className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${
@@ -327,6 +344,19 @@ const SettingsPage: React.FC = () => {
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping absolute top-2 right-2" />
                     )}
                 </button>
+                {isSuperAdmin && (
+                    <button
+                        onClick={() => setSearchParams({ tab: 'devops' })}
+                        className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                            activeTab === 'devops'
+                                ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-md'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                        <Activity className="w-4 h-4 shrink-0" />
+                        <span className="truncate">DevOps & Salud</span>
+                    </button>
+                )}
             </div>
 
             {activeTab === 'profile' ? (
@@ -440,6 +470,8 @@ const SettingsPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            ) : activeTab === 'devops' && isSuperAdmin ? (
+                <DevOpsDashboard />
             ) : (
                 <>
                     {/* Role Guard Warning Banner for Standard Admins */}
