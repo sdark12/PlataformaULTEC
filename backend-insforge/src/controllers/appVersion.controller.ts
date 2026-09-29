@@ -4,19 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.19",
-    versionCode: 29,
+    version: "1.1.20",
+    versionCode: 30,
     minVersion: "1.0.0",
     releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.19 - Módulo de Caja Chica y Arqueo Diario por Sede",
+    title: "Actualización v1.1.20 - Centro de Notificaciones Push Nativas y Alertas Escolares",
     releaseNotes: [
-        "Caja Chica y Arqueo de Turnos: Apertura de caja con fondo base, seguimiento de efectivo en gaveta y arqueo de cierre con cálculo automático de diferencias.",
-        "Control de Egresos Menores: Registro categorizado de gastos operativos de sede con soporte de número de factura o comprobante físico.",
-        "Comprobantes Oficiales de Corte: Generación e impresión de actas de conciliación de turno con firmas de secretaría y dirección.",
-        "Auditoría Multisede: Supervisión e historial permanente de arqueos con visado administrativo para directores y SuperAdmin."
+        "Notificaciones Push en Tiempo Real: Entrega instantánea de alertas a celulares y computadoras mediante el estándar W3C Web Push y VAPID.",
+        "Alertas Escolares Automáticas: Despacho push automático al registrarse o aprobarse pagos de colegiatura, emisión de boletas y avisos institucionales.",
+        "Gestión de Dispositivos: Activación de alertas con un clic desde el menú de notificaciones y sección de preferencias en el perfil de usuario.",
+        "Pruebas de Dispositivo y Alertas Masivas: Herramienta de testeo con sonido/vibración y módulo administrativo de alertas institucionales urgentes."
     ],
     isCritical: false
 };

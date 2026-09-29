@@ -1,12 +1,18 @@
 import client, { adminClient } from '../config/insforge';
+import { sendPushToUser, sendPushToUsers } from './push.service';
+
+const getTargetUrlForType = (type: string): string => {
+    switch (type) {
+        case 'PAYMENT': return '/payments';
+        case 'ENROLLMENT': return '/enrollments';
+        case 'SYSTEM': return '/';
+        case 'DELETE': return '/payments';
+        default: return '/';
+    }
+};
 
 /**
- * Creates a notification for a specific user.
- * @param dbClient The InsForge SDK client (usually req.dbUserClient or general client)
- * @param userId The recipient's profile UUID
- * @param title The notification title
- * @param message The notification message
- * @param type The type of the notification
+ * Creates an in-app notification for a specific user and dispatches a Web Push alert.
  */
 export const createNotification = async (
     dbClient: any,
@@ -30,14 +36,23 @@ export const createNotification = async (
         if (error) {
             console.error('Failed to insert notification into DB:', error);
         }
+
+        // Despachar Push Notification en segundo plano sin bloquear
+        sendPushToUser(userId, {
+            title,
+            body: message,
+            url: getTargetUrlForType(type),
+            type
+        }).catch(pushErr => console.error('[PUSH] Error in background push delivery:', pushErr));
+
     } catch (err) {
         console.error('Error creating notification:', err);
     }
 };
 
 /**
- * Broadcasts a notification to all users in a specific branch with a specific role.
- * By default, broadcasts to all 'admin' users in the branch.
+ * Broadcasts a notification to all users in a specific branch with a specific role,
+ * inserting in-app records and triggering push alerts.
  */
 export const broadcastNotification = async (
     dbClient: any,
@@ -49,15 +64,14 @@ export const broadcastNotification = async (
 ) => {
     const effectiveDb = (dbClient === client || !dbClient) ? (adminClient || client) : dbClient;
     try {
-        // Find all admins in the branch
+        // Find all users in the branch with specified role
         const { data: profiles, error: profileError } = await effectiveDb
             .from('profiles')
             .select('id')
             .eq('branch_id', branchId)
             .eq('role', role);
 
-        if (profileError || !profiles) {
-            console.error('Failed to fetch profiles for broadcast:', profileError);
+        if (profileError || !profiles || profiles.length === 0) {
             return;
         }
 
@@ -70,15 +84,23 @@ export const broadcastNotification = async (
             is_read: false
         }));
 
-        if (notificationsToInsert.length > 0) {
-            const { error: insertError } = await effectiveDb
-                .from('notifications')
-                .insert(notificationsToInsert);
+        const { error: insertError } = await effectiveDb
+            .from('notifications')
+            .insert(notificationsToInsert);
 
-            if (insertError) {
-                console.error('Failed to broadcast notifications:', insertError);
-            }
+        if (insertError) {
+            console.error('Failed to broadcast notifications:', insertError);
         }
+
+        // Despacho Push Masivo en segundo plano
+        const userIds = profiles.map((p: any) => p.id);
+        sendPushToUsers(userIds, {
+            title,
+            body: message,
+            url: getTargetUrlForType(type),
+            type
+        }).catch(pushErr => console.error('[PUSH] Error in background broadcast delivery:', pushErr));
+
     } catch (err) {
         console.error('Error broadcasting notification:', err);
     }

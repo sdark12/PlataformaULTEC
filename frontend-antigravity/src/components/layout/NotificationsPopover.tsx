@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Check, DollarSign, GraduationCap, Info, Trash2 } from 'lucide-react';
+import { Bell, Check, DollarSign, GraduationCap, Info, Trash2, BellRing, Loader2 } from 'lucide-react';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '../../hooks/useNotifications';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 const getIconForType = (type: string) => {
     switch (type) {
@@ -38,6 +39,14 @@ const NotificationsPopover = () => {
     const markAllAsReadMutation = useMarkAllNotificationsAsRead();
 
     const unreadCount = notifications.filter(n => !n.is_read).length;
+
+    const {
+        isSupported: isPushSupported,
+        isSubscribed: isPushSubscribed,
+        isActionPending: isPushPending,
+        subscribe: subscribePush,
+        sendTest: sendTestPush
+    } = usePushNotifications();
 
     // Handle clicking outside to close
     useEffect(() => {
@@ -86,6 +95,51 @@ const NotificationsPopover = () => {
                             </button>
                         )}
                     </div>
+
+                    {/* Banner de Notificaciones Push Nativas */}
+                    {isPushSupported && (
+                        <div className="px-3.5 py-2.5 bg-gradient-to-r from-brand-blue/10 via-indigo-500/10 to-teal-500/10 border-b border-slate-200 dark:border-white/5 flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                                <BellRing className={`h-4 w-4 shrink-0 ${isPushSubscribed ? 'text-emerald-500' : 'text-brand-blue'}`} />
+                                <div>
+                                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-[11px]">
+                                        {isPushSubscribed ? 'Alertas Push Activas' : 'Activar Alertas en este Dispositivo'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500">
+                                        {isPushSubscribed ? 'Recibes avisos en tu pantalla de bloqueo' : 'Entérate al instante de pagos y boletas'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                {isPushSubscribed ? (
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const res = await sendTestPush();
+                                            alert(res.message);
+                                        }}
+                                        disabled={isPushPending}
+                                        title="Probar sonido y alerta"
+                                        className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                                    >
+                                        {isPushPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Probar'}
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const res = await subscribePush();
+                                            if (!res.success) alert(res.message);
+                                        }}
+                                        disabled={isPushPending}
+                                        className="px-2.5 py-1 rounded-lg bg-brand-blue hover:bg-blue-600 text-white font-bold text-[10px] shadow-sm transition flex items-center gap-1 cursor-pointer"
+                                    >
+                                        {isPushPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Activar'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="max-h-[28rem] overflow-y-auto custom-scrollbar">
                         {isLoading ? (

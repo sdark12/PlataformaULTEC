@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.19` (Build 29)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.1.20` (Build 30)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -237,7 +237,30 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 
 ---
 
-## 11. Hoja de Ruta de Fases y Estado
+## 11. Centro de Notificaciones Push Nativas y Alertas Escolares (v1.1.20)
+
+- **Arquitectura Web Push Nativa W3C:**
+  - Despacho directo a celulares Android, navegadores de escritorio (Chrome, Edge, Firefox) y PWA sin depender de servicios de terceros de pago.
+  - Generación de claves VAPID (`BN8wAlZKsX8...`) criptográficamente seguras (`mailto:soporte@plataformaultec.duckdns.org`).
+- **Persistencia de Suscripciones (`push_subscriptions`):**
+  - Tabla relacional con `user_id`, `endpoint`, `p256dh`, `auth`, `user_agent`.
+  - Integridad referencial con eliminación en cascada (`ON DELETE CASCADE`) al eliminarse usuarios.
+  - Políticas RLS: Cada usuario puede gestionar exclusivamente sus terminales y suscripciones; SuperAdmin con visibilidad global.
+- **Depuración Automática de Endpoints Caducados (410 Gone / 404):**
+  - Al detectar rechazo por desinstalación de la app o revocación de permisos en el navegador, el backend elimina automáticamente el registro huérfano para evitar colas de reintentos innecesarias.
+- **Despacho Automático de Alertas Escolares:**
+  - Enlazado con `notification.service.ts`: Toda notificación de sistema (aprobación de pagos de colegiatura, emisión de boletas, avisos institucionales) desencadena automáticamente un push en segundo plano a los dispositivos suscritos del alumno o tutor.
+- **Service Worker Integrado:**
+  - Archivo `custom-sw.js` precargado mediante `importScripts` en `sw.js` de Vite PWA.
+  - Soporte de eventos `push` con payload estructurado (título, cuerpo, icono institucional, vibración) y `notificationclick` para enfocar la pestaña activa o navegar a la ruta relevante (`/dashboard/finance`, `/dashboard/grades`, etc.).
+- **Experiencia de Usuario en Frontend:**
+  - Banner interactivo de activación en un solo clic dentro del desplegable de notificaciones (`NotificationsPopover.tsx`).
+  - Sección de gestión de notificaciones y alertas en el perfil del usuario (`UserProfile.tsx`), con botón de prueba con sonido y vibración.
+  - Diálogos de advertencia si las notificaciones están bloqueadas en el navegador, indicando cómo habilitarlas.
+
+---
+
+## 12. Hoja de Ruta de Fases y Estado
 
 - [x] **Fase 1: Panel DevOps y Telemetría en Vivo de Infraestructura** (v1.1.16)
   - Métricas en tiempo real de CPU, RAM, disco y base de datos PostgreSQL.
@@ -256,9 +279,13 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Control de efectivo en gaveta vs pagos electrónicos y transferencias bancarias.
   - Registro de egresos y gastos operativos menores de sede con comprobante.
   - Corte diario consolidado con acta imprimible y visado de auditoría.
-- [ ] **Fase 3.3: Centro de Notificaciones Push Nativas y Alertas Escolares** (FCM / Web Push)
-  - Alertas automáticas para pagos aprobados, boletas listas para entrega física y avisos de asistencia.
+- [x] **Fase 3.3: Centro de Notificaciones Push Nativas y Alertas Escolares** (v1.1.20)
+  - Despacho push nativo W3C Web Push con VAPID para celulares Android, PWA y escritorio.
+  - Persistencia de suscripciones de dispositivos en tabla `push_subscriptions` con RLS.
+  - Despacho automático de alertas para pagos aprobados, avisos de boletas y comunicados.
+  - Controles de activación rápida y pruebas en `NotificationsPopover` y `UserProfile`.
 - [ ] **Fase 3.4: Modo Offline-First para Registro de Asistencia y Calificaciones** (Docentes)
   - Almacenamiento local IndexedDB para aulas sin conectividad y sincronización background.
+
 
 

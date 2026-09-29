@@ -9,6 +9,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        importScripts: ['/custom-sw.js'],
+      },
       manifest: {
         name: 'Plataforma ULTEC',
         short_name: 'ULTEC',
