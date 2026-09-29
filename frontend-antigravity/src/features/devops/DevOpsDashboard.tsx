@@ -6,8 +6,10 @@ import {
     ShieldAlert, CheckCircle
 } from 'lucide-react';
 import { getSystemTelemetry, type SystemTelemetry } from './devopsService';
+import DatabaseBackupManager from './DatabaseBackupManager';
 
 export const DevOpsDashboard: React.FC = () => {
+    const [devopsTab, setDevopsTab] = useState<'telemetry' | 'backups'>('telemetry');
     const [telemetry, setTelemetry] = useState<SystemTelemetry | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -55,33 +57,77 @@ export const DevOpsDashboard: React.FC = () => {
         return () => clearInterval(timer);
     }, [lastUpdated]);
 
+    const renderSubNav = () => (
+        <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-200/70 dark:bg-slate-800/70 w-fit border border-slate-300/40 dark:border-slate-700/50 shadow-inner">
+            <button
+                type="button"
+                onClick={() => setDevopsTab('telemetry')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    devopsTab === 'telemetry'
+                        ? 'bg-white dark:bg-slate-900 text-brand-blue dark:text-brand-teal shadow-md'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+            >
+                <Activity className="h-4 w-4" />
+                <span>Telemetría y Servidor</span>
+            </button>
+            <button
+                type="button"
+                onClick={() => setDevopsTab('backups')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    devopsTab === 'backups'
+                        ? 'bg-white dark:bg-slate-900 text-brand-blue dark:text-brand-teal shadow-md'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+            >
+                <Database className="h-4 w-4" />
+                <span>Copias de Seguridad (Disaster Recovery)</span>
+            </button>
+        </div>
+    );
+
+    if (devopsTab === 'backups') {
+        return (
+            <div className="space-y-6 animate-in fade-in duration-300">
+                {renderSubNav()}
+                <DatabaseBackupManager />
+            </div>
+        );
+    }
+
     if (loading) {
         return (
-            <div className="flex flex-col justify-center items-center h-full min-h-[420px] gap-3">
-                <RefreshCw className="w-10 h-10 text-brand-blue animate-spin" />
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                    Recopilando telemetría del servidor en tiempo real...
-                </p>
+            <div className="space-y-6 animate-in fade-in duration-300">
+                {renderSubNav()}
+                <div className="flex flex-col justify-center items-center h-full min-h-[420px] gap-3">
+                    <RefreshCw className="w-10 h-10 text-brand-blue animate-spin" />
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                        Recopilando telemetría del servidor en tiempo real...
+                    </p>
+                </div>
             </div>
         );
     }
 
     if (error || !telemetry) {
         return (
-            <div className="p-6 text-center max-w-xl mx-auto">
-                <div className="p-6 rounded-3xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-rose-600 dark:text-rose-400 space-y-3 shadow-md">
-                    <AlertCircle className="w-10 h-10 mx-auto" />
-                    <h3 className="font-bold text-base">Error al Cargar Telemetría</h3>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                        {error || 'No se pudieron consultar las métricas de infraestructura.'}
-                    </p>
-                    <button
-                        onClick={() => fetchTelemetry(true)}
-                        className="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-rose-700 transition-all inline-flex items-center gap-2"
-                    >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Reintentar Conexión</span>
-                    </button>
+            <div className="space-y-6 animate-in fade-in duration-300">
+                {renderSubNav()}
+                <div className="p-6 text-center max-w-xl mx-auto">
+                    <div className="p-6 rounded-3xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-rose-600 dark:text-rose-400 space-y-3 shadow-md">
+                        <AlertCircle className="w-10 h-10 mx-auto" />
+                        <h3 className="font-bold text-base">Error al Cargar Telemetría</h3>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                            {error || 'No se pudieron consultar las métricas de infraestructura.'}
+                        </p>
+                        <button
+                            onClick={() => fetchTelemetry(true)}
+                            className="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-rose-700 transition-all inline-flex items-center gap-2"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            <span>Reintentar Conexión</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -97,6 +143,8 @@ export const DevOpsDashboard: React.FC = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
+            {renderSubNav()}
+
             {/* Top Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-3.5">

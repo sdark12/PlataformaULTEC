@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.17` (Build 27)** — Desplegada en producción el 28/29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.1.18` (Build 28)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -188,7 +188,31 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 
 ---
 
-## 9. Hoja de Ruta de Fases y Estado
+---
+
+## 9. Sistema de Copias de Seguridad y Disaster Recovery (v1.1.18)
+
+- **Mecanismo de Volcado:** `pg_dump` oficial ejecutado desde `ultec-backend` contra el contenedor `supabase-db`:
+  ```bash
+  pg_dump -h supabase-db -U postgres -d postgres --schema=public --schema=auth --clean --if-exists --no-owner --no-privileges
+  ```
+  - Respalda tanto los datos institucionales (`public`: alumnos, cursos, pagos, notas) como las credenciales y sesiones de Supabase (`auth`).
+- **Compresión e Integridad:**
+  - Compresión al vuelo mediante Node.js `zlib.createGzip({ level: 9 })`.
+  - Cálculo de suma de verificación criptográfica **SHA-256** en el flujo de escritura.
+  - Almacenamiento persistente en `/home/ubuntu/ultec-backend/uploads/backups/`.
+- **Política de Retención Automática:**
+  - Temporizador de fondo que ejecuta un respaldo diario automático.
+  - Rotación inteligente: mantiene las 7 copias programadas más recientes y depura las anteriores para preservar espacio en el disco NVMe del VPS.
+  - Los respaldos manuales generados por el SuperAdmin se conservan permanentemente.
+- **Comando Oficial de Restauración de Emergencia:**
+  ```bash
+  gunzip -c backup_ultec_YYYYMMDD_HHMMSS.sql.gz | docker exec -i supabase-db psql -U postgres -d postgres
+  ```
+
+---
+
+## 10. Hoja de Ruta de Fases y Estado
 
 - [x] **Fase 1: Panel DevOps y Telemetría en Vivo de Infraestructura** (v1.1.16)
   - Métricas en tiempo real de CPU, RAM, disco y base de datos PostgreSQL.
@@ -198,9 +222,17 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Selector global con consolidado institucional para SuperAdmin.
   - Validación RLS alineada para rol `superadmin`.
   - Blindaje contra eliminación de sedes con alumnos activos.
-- [ ] **Fase 3: Mejoras a Largo Plazo (Pendientes de Planificación)**
-  - Respaldo automatizado de Base de Datos y Snapshots externos periódicos.
-  - Notificaciones Push nativas completas vía Firebase Cloud Messaging (FCM).
-  - Módulo de Caja Chica y Arqueo Diario por Sede.
-  - Integración de Pasarela de Pagos en Línea (recurrente o transferencias).
-  - Portal de Calificaciones y Asistencia Offline-First con sincronización en segundo plano.
+- [x] **Fase 3.1: Sistema Automatizado de Respaldos de Base de Datos y Disaster Recovery** (v1.1.18)
+  - Motor de respaldo `pg_dump` con compresión gzip nivel 9 y checksums SHA-256.
+  - Interfaz de gestión y descarga directa desde el Panel DevOps.
+  - Cron inteligente de respaldo diario y rotación de retención de 7 días.
+- [ ] **Fase 3.2: Módulo de Caja Chica y Arqueo Diario por Sede** (Siguiente objetivo sugerido)
+  - Apertura y cierre de turnos de caja para secretaría / administración.
+  - Control de efectivo vs pagos electrónicos y transferencias bancarias.
+  - Registro de egresos y gastos operativos menores de sede con comprobante.
+  - Corte diario consolidado y reporte descargable / imprimible.
+- [ ] **Fase 3.3: Centro de Notificaciones Push Nativas y Alertas Escolares** (FCM / Web Push)
+  - Alertas automáticas para pagos aprobados, boletas listas para entrega física y avisos de asistencia.
+- [ ] **Fase 3.4: Modo Offline-First para Registro de Asistencia y Calificaciones** (Docentes)
+  - Almacenamiento local IndexedDB para aulas sin conectividad y sincronización background.
+

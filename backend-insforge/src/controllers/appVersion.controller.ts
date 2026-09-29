@@ -4,18 +4,18 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.17",
-    versionCode: 27,
+    version: "1.1.18",
+    versionCode: 28,
     minVersion: "1.0.0",
-    releaseDate: "2026-09-28",
+    releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.17 - Arquitectura Multisede Jerárquica y Delegación Regional",
+    title: "Actualización v1.1.18 - Sistema Automatizado de Respaldos y Disaster Recovery",
     releaseNotes: [
-        "Arquitectura Multisede Jerárquica: Gobernanza regional con aislamiento estricto por plantel y delegación administrativa segura.",
-        "Selector Global de Sede para SuperAdmin: Alternancia instantánea entre consolidado institucional y planteles individuales con refresco reactivo.",
-        "Gestión Territorial Avanzada: Contadores de matrícula y cursos en tiempo real por sede con protección contra eliminación de sedes activas."
+        "Copias de Seguridad Automatizadas: Respaldos programados de base de datos PostgreSQL con compresión Gzip nivel 9 y checksums SHA-256.",
+        "Disaster Recovery en Panel DevOps: Generación manual inmediata, historial de descargas y comando oficial de restauración de emergencia.",
+        "Política de Retención Inteligente: Depuración automática rotativa manteniendo los últimos 7 respaldos diarios para optimizar disco."
     ],
     isCritical: false
 };
