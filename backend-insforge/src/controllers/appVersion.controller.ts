@@ -4,18 +4,18 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.16",
-    versionCode: 26,
+    version: "1.1.17",
+    versionCode: 27,
     minVersion: "1.0.0",
     releaseDate: "2026-09-28",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.16 - Panel DevOps y Telemetría en Vivo de Infraestructura",
+    title: "Actualización v1.1.17 - Arquitectura Multisede Jerárquica y Delegación Regional",
     releaseNotes: [
-        "Panel DevOps y Telemetría de Servidor: Monitorización en tiempo real de CPU, RAM, Disco del VPS y estado de Node.js.",
-        "Métricas de Base de Datos PostgreSQL: Conexiones activas, tamaño físico de base de datos y tiempo de actividad (uptime) en vivo.",
-        "Inventario Operativo en Tiempo Real: Contadores consolidados de alumnos, pagos, calificaciones y eventos auditados para SuperAdmin."
+        "Arquitectura Multisede Jerárquica: Gobernanza regional con aislamiento estricto por plantel y delegación administrativa segura.",
+        "Selector Global de Sede para SuperAdmin: Alternancia instantánea entre consolidado institucional y planteles individuales con refresco reactivo.",
+        "Gestión Territorial Avanzada: Contadores de matrícula y cursos en tiempo real por sede con protección contra eliminación de sedes activas."
     ],
     isCritical: false
 };

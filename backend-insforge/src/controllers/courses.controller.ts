@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 export const getCourses = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const db = req.dbUserClient || adminClient || client;
 
     try {
@@ -41,8 +42,10 @@ export const getCourses = async (req: Request, res: Response) => {
 export const createCourse = async (req: Request, res: Response) => {
     const { name, description, monthly_fee, start_date, end_date, branch_id } = req.body;
     
-    // Clean up empty strings to null for database compatibility
-    const finalBranchId = (branch_id === '' ? null : branch_id) || req.currentUser?.branch_id;
+    const user = req.currentUser;
+    const finalBranchId = user?.role === 'superadmin'
+        ? ((branch_id === '' ? null : branch_id) || getEffectiveBranchId(req))
+        : (user?.branch_id || null);
     const finalStartDate = start_date === '' ? null : start_date;
     const finalEndDate = end_date === '' ? null : end_date;
     const finalDescription = description === '' ? null : description;

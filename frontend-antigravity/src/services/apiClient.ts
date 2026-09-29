@@ -8,13 +8,20 @@ const api = axios.create({
     },
 });
 
-// Request Interceptor (Auth Token)
+// Request Interceptor (Auth Token & Multi-Branch Scoping)
 api.interceptors.request.use((config: any) => {
     const token = localStorage.getItem('token');
     if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
     }
+
+    const branchId = localStorage.getItem('selected_branch_id');
+    if (branchId && branchId !== 'all' && branchId !== 'undefined') {
+        config.headers = config.headers || {};
+        config.headers['X-Branch-Id'] = branchId;
+    }
+
     return config;
 });
 

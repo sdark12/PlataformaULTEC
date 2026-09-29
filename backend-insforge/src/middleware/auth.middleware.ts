@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { adminClient } from '../config/insforge';
 import { getSetting, getSettingBool } from '../controllers/settings.controller';
 
 interface UserPayload {
@@ -115,7 +116,11 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
             }
         }
 
-        req.dbUserClient = verifyClient;
+        if (profile.role === 'superadmin') {
+            req.dbUserClient = adminClient || verifyClient;
+        } else {
+            req.dbUserClient = verifyClient;
+        }
         next();
     } catch (err) {
         console.error('Auth middleware error:', err);

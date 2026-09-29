@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 import NodeCache from 'node-cache';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 // Cache for 5 minutes by default
 const dashboardCache = new NodeCache({ stdTTL: 300, checkperiod: 320 });
@@ -26,11 +27,11 @@ export const getTodayDateRangeGuatemala = () => {
 };
 
 export const getDashboardStats = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const userRole = req.currentUser?.role;
     const userId = req.currentUser?.id;
     const isSecretary = userRole === 'secretary';
-    const cacheKey = isSecretary ? `sec_${userId}` : (branchId || 'global');
+    const cacheKey = isSecretary ? `sec_${userId}` : (branchId ? `branch_${branchId}` : 'global');
     const db = (req as any).dbUserClient || adminClient || client;
     
     // Check if we have cached stats for this branch
@@ -133,7 +134,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 };
 
 export const getFinancialReport = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const userRole = req.currentUser?.role;
     const userId = req.currentUser?.id;
     const isSecretary = userRole === 'secretary';
@@ -212,7 +213,7 @@ export const getFinancialReport = async (req: Request, res: Response) => {
 };
 
 export const getPendingPaymentsReport = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const db = (req as any).dbUserClient || adminClient || client;
     // Ensure we count months correctly
     const currentDate = new Date();
@@ -317,7 +318,7 @@ export const getPendingPaymentsReport = async (req: Request, res: Response) => {
 };
 
 export const getStudentReports = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const db = (req as any).dbUserClient || adminClient || client;
 
     try {
@@ -516,7 +517,7 @@ export const getStudentDashboardStats = async (req: Request, res: Response) => {
 // ADMIN DASHBOARD EXTENDED
 // ==========================================
 export const getAdminDashboardExtended = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const db = (req as any).dbUserClient || adminClient || client;
 
     try {

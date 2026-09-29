@@ -7,6 +7,8 @@ export interface Branch {
     phone: string;
     email: string;
     created_at?: string;
+    students_count?: number;
+    courses_count?: number;
 }
 
 export const getBranches = async () => {

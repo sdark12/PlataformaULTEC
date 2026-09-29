@@ -35,13 +35,15 @@ import VerifyStudent from './pages/VerifyStudent';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { UpdateProvider } from './context/UpdateContext';
 import { IdleTimerProvider } from './context/IdleTimerContext';
+import { BranchProvider } from './context/BranchContext';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UpdateProvider>
-        <IdleTimerProvider>
-          <Router>
+      <BranchProvider>
+        <UpdateProvider>
+          <IdleTimerProvider>
+            <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -118,8 +120,9 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-        </IdleTimerProvider>
-      </UpdateProvider>
+          </IdleTimerProvider>
+        </UpdateProvider>
+      </BranchProvider>
     </QueryClientProvider>
   );
 }

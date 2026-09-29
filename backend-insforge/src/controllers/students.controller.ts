@@ -3,6 +3,7 @@ import client, { adminClient } from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../services/email.service';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 const linkOrCreateParent = async (studentId: string, email: string, fullName: string, relationship: string, createdBy: string | undefined) => {
     try {
@@ -70,7 +71,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
 };
 
 export const getStudents = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const db = req.dbUserClient || adminClient || client;
 
     try {
@@ -156,8 +157,10 @@ export const createStudent = async (req: Request, res: Response) => {
         branch_id // Front-end passed branch_id
     } = req.body;
 
-    // Clean up empty strings to null for database compatibility
-    const finalBranchId = (branch_id === '' ? null : branch_id) || req.currentUser?.branch_id;
+    const user = req.currentUser;
+    const finalBranchId = user?.role === 'superadmin'
+        ? ((branch_id === '' ? null : branch_id) || getEffectiveBranchId(req))
+        : (user?.branch_id || null);
     const finalBirthDate = birth_date === '' ? null : birth_date;
     const finalUserId = user_id === '' ? null : user_id;
     const finalAcademyCode = academy_code === '' ? null : academy_code;

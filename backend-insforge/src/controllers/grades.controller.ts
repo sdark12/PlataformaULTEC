@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 import { getSettingBool, getSetting, getSettingNumber } from './settings.controller';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 export const getGrades = async (req: Request, res: Response) => {
     const { course_id, unit_name, schedule_id } = req.query;
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
 
     if (!course_id || !unit_name) {
         return res.status(400).json({ message: 'course_id and unit_name are required' });
@@ -532,7 +533,7 @@ export const getStudentReportCard = async (req: Request, res: Response) => {
 export const getCourseGradebook = async (req: Request, res: Response) => {
     const { course_id } = req.params;
     const { schedule_id } = req.query;
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
 
     try {
         const db = (req as any).dbUserClient || adminClient || client;

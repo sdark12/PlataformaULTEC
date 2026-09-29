@@ -3,10 +3,11 @@ import client, { adminClient } from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
 import { sendPaymentConfirmationEmail } from '../services/email.service';
 import { getTodayDateRangeGuatemala } from './reports.controller';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 // Get Payments
 export const getPayments = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const userRole = req.currentUser?.role;
     const userId = req.currentUser?.id;
     const isSecretary = userRole === 'secretary';
@@ -90,8 +91,11 @@ export const getPayments = async (req: Request, res: Response) => {
 // Register Payment
 export const createPayment = async (req: Request, res: Response) => {
     const { student_id, enrollment_id, enrollment_ids, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0, courses, branch_id } = req.body;
-    const userId = req.currentUser?.id;
-    const finalBranchId = branch_id || req.currentUser?.branch_id;
+    const user = req.currentUser;
+    const userId = user?.id;
+    const finalBranchId = user?.role === 'superadmin'
+        ? (branch_id || getEffectiveBranchId(req))
+        : (user?.branch_id || null);
     const db = (req as any).dbUserClient || adminClient || client;
 
     try {

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 export const enrollStudent = async (req: Request, res: Response) => {
     const { 
@@ -12,7 +13,10 @@ export const enrollStudent = async (req: Request, res: Response) => {
         scholarship_amount,
         scholarship_reason
     } = req.body;
-    const finalBranchId = branch_id || req.currentUser?.branch_id;
+    const user = req.currentUser;
+    const finalBranchId = user?.role === 'superadmin'
+        ? (branch_id || getEffectiveBranchId(req))
+        : (user?.branch_id || null);
 
     try {
         // Use the authenticated client attached by middleware or adminClient
@@ -111,7 +115,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
 };
 
 export const getEnrollments = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
     const db = req.dbUserClient || adminClient || client;
     const { student_id } = req.query;
     try {

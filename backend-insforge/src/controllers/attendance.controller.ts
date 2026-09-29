@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 import { getSettingBool, getSettingNumber } from './settings.controller';
+import { getEffectiveBranchId } from '../utils/branch.utils';
 
 // Get Attendance (merged with enrolled students and contact/QR info)
 export const getAttendance = async (req: Request, res: Response) => {
     const { course_id, date, schedule_id } = req.query;
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
 
     if (!course_id || !date) {
         return res.status(400).json({ message: 'course_id and date are required' });
@@ -287,7 +288,7 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
 // ==========================================
 export const getAttendanceMatrix = async (req: Request, res: Response) => {
     const { course_id, month, schedule_id } = req.query;
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
 
     if (!course_id) {
         return res.status(400).json({ message: 'course_id is required' });
@@ -518,7 +519,7 @@ export const getJustifications = async (req: Request, res: Response) => {
     const { course_id, status, student_id } = req.query;
     const userRole = req.currentUser?.role;
     const userId = req.currentUser?.id;
-    const branchId = req.currentUser?.branch_id;
+    const branchId = getEffectiveBranchId(req);
 
     try {
         let query = adminClient

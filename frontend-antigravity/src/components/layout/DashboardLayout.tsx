@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
+import BranchSwitcher from './BranchSwitcher';
 import { fetchCurrentUser, getCurrentUser } from '../../features/auth/authService';
 
 const SidebarItem = ({ 
@@ -315,14 +316,8 @@ const DashboardLayout = () => {
 
                     {/* Right side controls */}
                     <div className="flex items-center space-x-1.5 sm:space-x-2.5 md:space-x-4 ml-auto shrink-0">
-                        {/* Branch Selector Pill */}
-                        <Link 
-                            to="/branches"
-                            className="hidden sm:flex items-center space-x-1 px-2.5 py-1 rounded-full bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 text-xs font-medium text-slate-700 dark:text-slate-300 hover:border-brand-teal/50 transition-colors"
-                        >
-                            <Building2 className="h-3.5 w-3.5 text-brand-teal" />
-                            <span className="truncate max-w-[90px]">Sede Central</span>
-                        </Link>
+                        {/* Global Regional Scope / Branch Switcher */}
+                        <BranchSwitcher />
 
                         <button
                             onClick={toggleTheme}
