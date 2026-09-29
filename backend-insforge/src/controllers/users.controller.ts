@@ -196,6 +196,13 @@ export const createUser = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Nombre, correo, contraseña y rol son obligatorios.' });
         }
 
+        const callerRole = req.currentUser?.role;
+
+        // RBAC: Solo Superadmin puede crear roles administrativos (admin o superadmin)
+        if (['admin', 'superadmin'].includes(role) && callerRole !== 'superadmin') {
+            return res.status(403).json({ message: 'Solo un Superadministrador puede registrar usuarios con roles administrativos.' });
+        }
+
         let userId: string;
 
         // 1. Check if a profile with this email already exists
@@ -436,6 +443,33 @@ export const updateUser = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { full_name, email, role, phone, active, branch_id } = req.body;
 
+        const callerRole = req.currentUser?.role;
+        const callerId = req.currentUser?.id;
+
+        // Fetch target profile to verify permissions
+        const { data: targetProfile, error: targetError } = await client
+            .from('profiles')
+            .select('id, role, branch_id')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (targetError || !targetProfile) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+
+        // RBAC: Solo Superadmin puede modificar o asignar roles administrativos
+        if (callerRole !== 'superadmin') {
+            if (targetProfile.role === 'superadmin') {
+                return res.status(403).json({ message: 'Acceso denegado: No tiene permisos para modificar una cuenta de Superadministrador.' });
+            }
+            if (targetProfile.role === 'admin' && targetProfile.id !== callerId) {
+                return res.status(403).json({ message: 'Acceso denegado: Solo un Superadministrador puede modificar otras cuentas de administradores.' });
+            }
+            if (role && ['admin', 'superadmin'].includes(role) && targetProfile.role !== role) {
+                return res.status(403).json({ message: 'Acceso denegado: Solo un Superadministrador puede otorgar roles administrativos.' });
+            }
+        }
+
         const updatePayload: any = {};
         if (full_name !== undefined) updatePayload.full_name = full_name;
         if (email !== undefined) updatePayload.email = email;
@@ -606,6 +640,22 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
+        const callerRole = req.currentUser?.role;
+
+        // Fetch target profile
+        const { data: targetProfile } = await client
+            .from('profiles')
+            .select('id, role')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (targetProfile?.role === 'superadmin') {
+            return res.status(403).json({ message: 'Acción bloqueada: No es posible eliminar a un Superadministrador del sistema.' });
+        }
+
+        if (callerRole !== 'superadmin' && targetProfile?.role === 'admin') {
+            return res.status(403).json({ message: 'Acceso denegado: Solo un Superadministrador puede eliminar cuentas de administradores.' });
+        }
 
         // 1. Unlink any students referencing this user
         await client.from('students').update({ user_id: null }).eq('user_id', id);

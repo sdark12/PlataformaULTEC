@@ -1,21 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getSettings, updateSettings } from './settingsService';
-import type { SystemSettings } from './settingsService';
+import { getSettings, updateSettings, getSettingsAuditHistory } from './settingsService';
+import type { SystemSettings, SettingsAuditLog } from './settingsService';
 import { 
     Settings, Save, Loader2, Building2, GraduationCap, 
     DollarSign, ToggleLeft, Award, User, Phone, Mail, 
     MapPin, CheckCircle2, AlertCircle, Shield, Sparkles,
-    Smartphone, Download, RefreshCw, CheckCircle
+    Smartphone, Download, RefreshCw, CheckCircle,
+    Lock, ShieldAlert, ShieldCheck, Wrench, History, Clock, ArrowRight
 } from 'lucide-react';
 import UserProfile from '../../pages/UserProfile';
 import { useAppUpdate } from '../../context/UpdateContext';
+import { getCurrentUser } from '../auth/authService';
 
 const SettingsPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const tabParam = searchParams.get('tab');
     const activeTab = tabParam === 'profile' ? 'profile' : tabParam === 'updates' ? 'updates' : 'system';
     
+    const currentUser = getCurrentUser();
+    const isSuperAdmin = currentUser?.role === 'superadmin';
+
     const { 
         hasUpdate, 
         currentVersion, 
@@ -28,9 +33,23 @@ const SettingsPage: React.FC = () => {
     } = useAppUpdate();
 
     const [settings, setSettings] = useState<SystemSettings | null>(null);
+    const [auditLogs, setAuditLogs] = useState<SettingsAuditLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingAudit, setLoadingAudit] = useState(false);
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+    const fetchAuditHistory = async () => {
+        setLoadingAudit(true);
+        try {
+            const data = await getSettingsAuditHistory();
+            setAuditLogs(data);
+        } catch (err) {
+            console.error("Error loading settings audit history:", err);
+        } finally {
+            setLoadingAudit(false);
+        }
+    };
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -45,9 +64,10 @@ const SettingsPage: React.FC = () => {
             }
         };
         fetchSettings();
+        fetchAuditHistory();
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         const val = type === 'checkbox' ? String((e.target as HTMLInputElement).checked) : value;
 
@@ -61,9 +81,11 @@ const SettingsPage: React.FC = () => {
             const updated = await updateSettings(settings);
             setSettings(updated);
             showNotification("Configuración guardada correctamente", "success");
-        } catch (error) {
+            fetchAuditHistory();
+        } catch (error: any) {
             console.error("Error saving settings:", error);
-            showNotification("Error al guardar la configuración", "error");
+            const msg = error.response?.data?.message || "Error al guardar la configuración";
+            showNotification(msg, "error");
         } finally {
             setSaving(false);
         }
@@ -71,7 +93,7 @@ const SettingsPage: React.FC = () => {
 
     const showNotification = (message: string, type: 'success' | 'error') => {
         setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3500);
+        setTimeout(() => setNotification(null), 4000);
     };
 
     const scrollToSection = (id: string) => {
@@ -104,18 +126,18 @@ const SettingsPage: React.FC = () => {
         <div className="p-3.5 sm:p-6 max-w-6xl mx-auto pb-36 sm:pb-28 animate-in fade-in duration-300">
             {/* Floating Toast Notification */}
             {notification && (
-                <div className="fixed top-5 right-5 z-[130] animate-in slide-in-from-top-3 fade-in duration-300">
-                    <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-sm font-bold backdrop-blur-md ${
+                <div className="fixed top-5 right-5 z-[130] animate-in slide-in-from-top-3 fade-in duration-300 max-w-md">
+                    <div className={`flex items-start gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-sm font-bold backdrop-blur-md ${
                         notification.type === 'success' 
                             ? 'bg-emerald-500/95 text-white border-emerald-400 shadow-emerald-500/20' 
                             : 'bg-rose-500/95 text-white border-rose-400 shadow-rose-500/20'
                     }`}>
                         {notification.type === 'success' ? (
-                            <CheckCircle2 className="w-5 h-5 shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
                         ) : (
-                            <AlertCircle className="w-5 h-5 shrink-0" />
+                            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                         )}
-                        <span>{notification.message}</span>
+                        <span className="leading-snug">{notification.message}</span>
                     </div>
                 </div>
             )}
@@ -133,15 +155,27 @@ const SettingsPage: React.FC = () => {
                         )}
                     </div>
                     <div>
-                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                            {activeTab === 'profile' ? 'Mi Perfil y Cuenta' : activeTab === 'updates' ? 'Actualizaciones de la App' : 'Configuración del Sistema'}
-                        </h1>
+                        <div className="flex items-center gap-2.5">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                                {activeTab === 'profile' ? 'Mi Perfil y Cuenta' : activeTab === 'updates' ? 'Actualizaciones de la App' : 'Configuración del Sistema'}
+                            </h1>
+                            {activeTab === 'system' && (
+                                <span className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                                    isSuperAdmin 
+                                        ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' 
+                                        : 'bg-blue-500/10 text-brand-blue border border-brand-blue/20'
+                                }`}>
+                                    {isSuperAdmin ? <ShieldCheck className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
+                                    <span>{isSuperAdmin ? 'SuperAdmin' : 'Admin Sede'}</span>
+                                </span>
+                            )}
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-2xl">
                             {activeTab === 'profile'
                                 ? 'Administre sus datos personales y credenciales de acceso como administrador.'
                                 : activeTab === 'updates'
                                 ? 'Verifique y descargue las versiones más recientes de la aplicación móvil y el sistema.'
-                                : 'Ajuste la configuración global de la plataforma, reglas académicas y opciones de negocio.'}
+                                : 'Ajuste la configuración institucional, reglas académicas, finanzas, gobernanza y accesos.'}
                         </p>
                     </div>
                 </div>
@@ -158,7 +192,7 @@ const SettingsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Segmented Control Tabs (Mobile-Friendly Pill Grid) */}
+            {/* Segmented Control Tabs */}
             <div className="grid grid-cols-3 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 border border-slate-200/80 dark:border-slate-700/60 shadow-inner gap-1">
                 <button
                     onClick={() => setSearchParams({ tab: 'system' })}
@@ -295,7 +329,7 @@ const SettingsPage: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Enlace directo a descarga de APK para distribución */}
+                        {/* Enlace directo a descarga de APK */}
                         <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
                             <span>¿Deseas descargar el instalador APK directamente para instalarlo en otro dispositivo?</span>
                             <a
@@ -311,7 +345,20 @@ const SettingsPage: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    {/* Quick Jump Section Pills for Mobile & Desktop */}
+                    {/* Role Guard Warning Banner for Standard Admins */}
+                    {!isSuperAdmin && (
+                        <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3.5 text-amber-900 dark:text-amber-200 text-xs sm:text-sm animate-in fade-in shadow-sm">
+                            <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <div>
+                                <span className="font-bold block text-sm mb-0.5">Modo Administrador de Sede</span>
+                                <span className="opacity-95 leading-relaxed">
+                                    Has iniciado sesión con el rol de <strong>Administrador</strong>. Puedes editar los datos de contacto institucional y puntos de mérito. Las políticas académicas centrales, finanzas duras, habilitación de portales y Modo Mantenimiento están reservados exclusivamente para el <strong>Superadministrador</strong>.
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Quick Jump Section Pills */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar text-xs font-semibold">
                         <button
                             type="button"
@@ -328,6 +375,7 @@ const SettingsPage: React.FC = () => {
                         >
                             <GraduationCap className="w-3.5 h-3.5 text-emerald-500" />
                             <span>Académico</span>
+                            {!isSuperAdmin && <Lock className="w-2.5 h-2.5 text-amber-500" />}
                         </button>
                         <button
                             type="button"
@@ -336,6 +384,7 @@ const SettingsPage: React.FC = () => {
                         >
                             <DollarSign className="w-3.5 h-3.5 text-amber-500" />
                             <span>Finanzas</span>
+                            {!isSuperAdmin && <Lock className="w-2.5 h-2.5 text-amber-500" />}
                         </button>
                         <button
                             type="button"
@@ -344,6 +393,16 @@ const SettingsPage: React.FC = () => {
                         >
                             <ToggleLeft className="w-3.5 h-3.5 text-purple-500" />
                             <span>Accesos</span>
+                            {!isSuperAdmin && <Lock className="w-2.5 h-2.5 text-amber-500" />}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollToSection('sec-governance')}
+                            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-brand-blue/40 shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95 transition-all"
+                        >
+                            <Wrench className="w-3.5 h-3.5 text-rose-500" />
+                            <span>Gobernanza</span>
+                            {!isSuperAdmin && <Lock className="w-2.5 h-2.5 text-amber-500" />}
                         </button>
                         <button
                             type="button"
@@ -352,6 +411,14 @@ const SettingsPage: React.FC = () => {
                         >
                             <Award className="w-3.5 h-3.5 text-teal-500" />
                             <span>Gamificación</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollToSection('sec-audit')}
+                            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-brand-blue/40 shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95 transition-all"
+                        >
+                            <History className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Historial DIFF</span>
                         </button>
                     </div>
 
@@ -445,12 +512,20 @@ const SettingsPage: React.FC = () => {
                         <GraduationCap className="w-32 h-32" />
                     </div>
                     <div className="relative z-10">
-                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5 mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                                <GraduationCap className="w-4 h-4" />
-                            </div>
-                            <span>Configuración Académica</span>
-                        </h2>
+                        <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                    <GraduationCap className="w-4 h-4" />
+                                </div>
+                                <span>Configuración Académica</span>
+                            </h2>
+                            {!isSuperAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 text-[11px] font-black">
+                                    <Lock className="w-3 h-3" />
+                                    <span>SuperAdmin</span>
+                                </span>
+                            )}
+                        </div>
                         
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
@@ -461,10 +536,11 @@ const SettingsPage: React.FC = () => {
                                     <input
                                         type="number"
                                         name="total_grade_units"
+                                        disabled={!isSuperAdmin}
                                         value={settings.total_grade_units}
                                         onChange={handleChange}
                                         min="1" max="10"
-                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                     />
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Notas parciales por curso (ej: 4 bimestres).</p>
                                 </div>
@@ -475,10 +551,11 @@ const SettingsPage: React.FC = () => {
                                     <input
                                         type="number"
                                         name="default_course_duration_months"
+                                        disabled={!isSuperAdmin}
                                         value={settings.default_course_duration_months}
                                         onChange={handleChange}
                                         min="1" max="24"
-                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                     />
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Meses estándar de duración.</p>
                                 </div>
@@ -491,11 +568,12 @@ const SettingsPage: React.FC = () => {
                                 <input
                                     type="text"
                                     name="grade_unit_names"
+                                    disabled={!isSuperAdmin}
                                     value={settings.grade_unit_names}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                    className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                 />
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Ej: Unidad 1,Unidad 2,Unidad 3,Unidad 4</p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Ej: Bimestre 1,Bimestre 2,Bimestre 3,Bimestre 4</p>
                             </div>
 
                             <div>
@@ -505,9 +583,10 @@ const SettingsPage: React.FC = () => {
                                 <input
                                     type="text"
                                     name="grade_unit_cutoff_months"
+                                    disabled={!isSuperAdmin}
                                     value={settings.grade_unit_cutoff_months || ''}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white font-mono min-h-[44px]"
+                                    className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white font-mono min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                 />
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Ej: "3,6,8,10" para condicionar cada bloque a cuotas pagadas.</p>
                             </div>
@@ -521,19 +600,23 @@ const SettingsPage: React.FC = () => {
                                         <input
                                             type="number"
                                             name="minimum_passing_grade"
+                                            disabled={!isSuperAdmin}
                                             value={settings.minimum_passing_grade}
                                             onChange={handleChange}
                                             min="0" max="100"
-                                            className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                            className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                         />
                                     </div>
-                                    <label className="flex items-center justify-between sm:justify-start gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all min-h-[44px]">
+                                    <label className={`flex items-center justify-between sm:justify-start gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all min-h-[44px] ${
+                                        !isSuperAdmin ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                                    }`}>
                                         <input
                                             type="checkbox"
                                             name="allow_instructor_grade_edits"
+                                            disabled={!isSuperAdmin}
                                             checked={settings.allow_instructor_grade_edits === 'true'}
                                             onChange={handleChange}
-                                            className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue"
+                                            className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue disabled:cursor-not-allowed"
                                         />
                                         <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
                                             Permitir a docentes editar notas
@@ -551,12 +634,20 @@ const SettingsPage: React.FC = () => {
                         <DollarSign className="w-32 h-32" />
                     </div>
                     <div className="relative z-10">
-                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5 mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
-                            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                                <DollarSign className="w-4 h-4" />
-                            </div>
-                            <span>Finanzas y Restricciones</span>
-                        </h2>
+                        <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                    <DollarSign className="w-4 h-4" />
+                                </div>
+                                <span>Finanzas y Restricciones</span>
+                            </h2>
+                            {!isSuperAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 text-[11px] font-black">
+                                    <Lock className="w-3 h-3" />
+                                    <span>SuperAdmin</span>
+                                </span>
+                            )}
+                        </div>
                         
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
@@ -567,9 +658,10 @@ const SettingsPage: React.FC = () => {
                                     <input
                                         type="text"
                                         name="default_currency_symbol"
+                                        disabled={!isSuperAdmin}
                                         value={settings.default_currency_symbol}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                         placeholder="Q"
                                     />
                                 </div>
@@ -580,10 +672,11 @@ const SettingsPage: React.FC = () => {
                                     <input
                                         type="number"
                                         name="grace_period_days"
+                                        disabled={!isSuperAdmin}
                                         value={settings.grace_period_days}
                                         onChange={handleChange}
                                         min="0"
-                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                     />
                                 </div>
                                 <div>
@@ -593,23 +686,27 @@ const SettingsPage: React.FC = () => {
                                     <input
                                         type="number"
                                         name="late_fee_percentage"
+                                        disabled={!isSuperAdmin}
                                         value={settings.late_fee_percentage}
                                         onChange={handleChange}
                                         min="0"
-                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px]"
+                                        className="w-full px-4 py-2.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-sm text-slate-900 dark:text-white min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                                     />
                                 </div>
                             </div>
                             
                             <div className="space-y-3 pt-2">
-                                <label className="flex items-start gap-3.5 cursor-pointer p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                                <label className={`flex items-start gap-3.5 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all ${
+                                    !isSuperAdmin ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                                }`}>
                                     <div className="pt-0.5">
                                         <input
                                             type="checkbox"
                                             name="restrict_grades_by_payment"
+                                            disabled={!isSuperAdmin}
                                             checked={settings.restrict_grades_by_payment === 'true'}
                                             onChange={handleChange}
-                                            className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue"
+                                            className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue disabled:cursor-not-allowed"
                                         />
                                     </div>
                                     <div>
@@ -622,14 +719,17 @@ const SettingsPage: React.FC = () => {
                                     </div>
                                 </label>
 
-                                <label className="flex items-start gap-3.5 cursor-pointer p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                                <label className={`flex items-start gap-3.5 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all ${
+                                    !isSuperAdmin ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                                }`}>
                                     <div className="pt-0.5">
                                         <input
                                             type="checkbox"
                                             name="restrict_future_payments_if_debt"
+                                            disabled={!isSuperAdmin}
                                             checked={settings.restrict_future_payments_if_debt === 'true'}
                                             onChange={handleChange}
-                                            className="w-5 h-5 text-emerald-500 rounded-lg border-slate-300 dark:border-slate-600 focus:ring-emerald-500"
+                                            className="w-5 h-5 text-emerald-500 rounded-lg border-slate-300 dark:border-slate-600 focus:ring-emerald-500 disabled:cursor-not-allowed"
                                         />
                                     </div>
                                     <div>
@@ -652,15 +752,25 @@ const SettingsPage: React.FC = () => {
                         <ToggleLeft className="w-32 h-32" />
                     </div>
                     <div className="relative z-10">
-                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5 mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
-                            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
-                                <ToggleLeft className="w-4 h-4" />
-                            </div>
-                            <span>Accesos Globales</span>
-                        </h2>
+                        <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                                    <ToggleLeft className="w-4 h-4" />
+                                </div>
+                                <span>Accesos Globales</span>
+                            </h2>
+                            {!isSuperAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 text-[11px] font-black">
+                                    <Lock className="w-3 h-3" />
+                                    <span>SuperAdmin</span>
+                                </span>
+                            )}
+                        </div>
                         
                         <div className="space-y-3">
-                            <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                            <label className={`flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all ${
+                                !isSuperAdmin ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                            }`}>
                                 <div>
                                     <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
                                         Portal de Estudiantes
@@ -672,13 +782,16 @@ const SettingsPage: React.FC = () => {
                                 <input
                                     type="checkbox"
                                     name="allow_student_portal"
+                                    disabled={!isSuperAdmin}
                                     checked={settings.allow_student_portal === 'true'}
                                     onChange={handleChange}
-                                    className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue"
+                                    className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue disabled:cursor-not-allowed"
                                 />
                             </label>
 
-                            <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                            <label className={`flex items-center justify-between p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all ${
+                                !isSuperAdmin ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                            }`}>
                                 <div>
                                     <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
                                         Portal de Padres de Familia
@@ -690,17 +803,100 @@ const SettingsPage: React.FC = () => {
                                 <input
                                     type="checkbox"
                                     name="allow_parent_portal"
+                                    disabled={!isSuperAdmin}
                                     checked={settings.allow_parent_portal === 'true'}
                                     onChange={handleChange}
-                                    className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue"
+                                    className="w-5 h-5 text-brand-blue rounded-lg border-slate-300 dark:border-slate-600 focus:ring-brand-blue disabled:cursor-not-allowed"
                                 />
                             </label>
                             
                             <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2.5">
                                 <Shield className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" />
                                 <span>
-                                    <span className="font-bold">Mantenimiento:</span> Si desactivas el acceso a un portal, los usuarios no podrán ingresar hasta que lo reactives.
+                                    <span className="font-bold">Control Central:</span> Al desactivar un portal, los usuarios verán una pantalla de cierre temporal al intentar acceder.
                                 </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── GOBERNANZA & MODO MANTENIMIENTO ─── */}
+                <div id="sec-governance" className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-800/90 p-5 sm:p-6 overflow-hidden relative group transition-all">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 text-rose-500">
+                        <Wrench className="w-32 h-32" />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                                    <Wrench className="w-4 h-4" />
+                                </div>
+                                <span>Gobernanza y Modo Mantenimiento</span>
+                            </h2>
+                            {!isSuperAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 text-[11px] font-black">
+                                    <Lock className="w-3 h-3" />
+                                    <span>SuperAdmin</span>
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Visual State Banner */}
+                            {settings.system_maintenance_mode === 'true' ? (
+                                <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-900 dark:text-rose-200 flex items-start gap-3">
+                                    <ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5 animate-pulse" />
+                                    <div>
+                                        <span className="font-black block text-sm mb-0.5">MODO MANTENIMIENTO ACTIVO</span>
+                                        <p className="text-xs leading-relaxed opacity-90">
+                                            La plataforma se encuentra bloqueada para estudiantes, padres y docentes. Solo las cuentas de administración pueden navegar y operar.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-2.5 text-xs font-semibold">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                                    <span>Plataforma Operativa Normal: Todos los servicios y accesos habilitados.</span>
+                                </div>
+                            )}
+
+                            <label className={`flex items-start justify-between gap-4 p-4 rounded-2xl border transition-all ${
+                                settings.system_maintenance_mode === 'true'
+                                    ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800/60'
+                                    : 'border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                            } ${!isSuperAdmin ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                <div>
+                                    <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                                        Activar Modo Mantenimiento
+                                    </h3>
+                                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
+                                        Interrumpe el acceso general para mantenimiento de base de datos o cierres de ciclo.
+                                    </p>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    name="system_maintenance_mode"
+                                    disabled={!isSuperAdmin}
+                                    checked={settings.system_maintenance_mode === 'true'}
+                                    onChange={handleChange}
+                                    className="w-5 h-5 text-rose-600 rounded-lg border-slate-300 dark:border-slate-600 focus:ring-rose-500 disabled:cursor-not-allowed"
+                                />
+                            </label>
+
+                            <div>
+                                <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Mensaje Informativo para la Comunidad
+                                </label>
+                                <textarea
+                                    name="system_maintenance_message"
+                                    disabled={!isSuperAdmin}
+                                    value={settings.system_maintenance_message || ''}
+                                    onChange={handleChange}
+                                    rows={2}
+                                    placeholder="La plataforma se encuentra en mantenimiento programado..."
+                                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs sm:text-sm text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed resize-none"
+                                />
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Este mensaje se mostrará en pantalla completa a los usuarios durante el mantenimiento.</p>
                             </div>
                         </div>
                     </div>
@@ -822,6 +1018,122 @@ const SettingsPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* ─── HISTORIAL DE AUDITORÍA DE CONFIGURACIÓN (DIFFS) ─── */}
+                <div id="sec-audit" className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-800/90 p-5 sm:p-6 overflow-hidden relative col-span-1 lg:col-span-2 transition-all">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 text-indigo-500">
+                        <History className="w-32 h-32" />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                            <div>
+                                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                        <History className="w-4 h-4" />
+                                    </div>
+                                    <span>Trazabilidad y Auditoría de Cambios (DIFFs Recientes)</span>
+                                </h2>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Registro inmutable de modificaciones en parámetros institucionales, académicos y de gobernanza.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={fetchAuditHistory}
+                                disabled={loadingAudit}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all self-start sm:self-auto"
+                            >
+                                <RefreshCw className={`w-3.5 h-3.5 ${loadingAudit ? 'animate-spin text-brand-blue' : ''}`} />
+                                <span>Actualizar Registro</span>
+                            </button>
+                        </div>
+
+                        {loadingAudit && auditLogs.length === 0 ? (
+                            <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
+                                <Loader2 className="w-6 h-6 animate-spin text-brand-blue" />
+                                <span className="text-xs font-semibold">Cargando registros de auditoría...</span>
+                            </div>
+                        ) : auditLogs.length === 0 ? (
+                            <div className="py-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Configuración Estable</h4>
+                                <p className="text-xs text-slate-500 mt-0.5">Los próximos cambios guardados generarán un registro detallado en esta sección.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3.5 max-h-[460px] overflow-y-auto pr-1">
+                                {auditLogs.map((log) => {
+                                    const oldChanges = log.old_data?.changes || [];
+                                    const newChanges = log.new_data?.changes || [];
+                                    const dateFormatted = new Date(log.created_at).toLocaleString();
+
+                                    return (
+                                        <div
+                                            key={log.id}
+                                            className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 space-y-3 transition-all hover:border-brand-blue/30"
+                                        >
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-200/50 dark:border-slate-700/50">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+                                                        {log.user?.full_name?.charAt(0) || 'U'}
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                                            {log.user?.full_name || log.metadata?.user_name || 'Administrador'}
+                                                        </span>
+                                                        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-2">
+                                                            ({log.user?.email || log.metadata?.user_email || 'correo no registrado'})
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                                    <span className={`px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-[10px] ${
+                                                        (log.user?.role || log.metadata?.user_role) === 'superadmin'
+                                                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                                                            : 'bg-blue-500/10 text-brand-blue border border-brand-blue/20'
+                                                    }`}>
+                                                        {log.user?.role || log.metadata?.user_role || 'admin'}
+                                                    </span>
+                                                    <span className="flex items-center gap-1 text-slate-400">
+                                                        <Clock className="w-3 h-3" />
+                                                        <span>{dateFormatted}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* DIFF Presentation */}
+                                            <div className="space-y-1.5">
+                                                {newChanges.map((change, idx) => {
+                                                    const oldItem = oldChanges.find(o => o.key === change.key);
+                                                    const oldVal = oldItem?.value ?? '';
+                                                    const newVal = change.value ?? '';
+                                                    const label = change.label || change.key;
+
+                                                    return (
+                                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-white dark:bg-slate-900/70 border border-slate-200/50 dark:border-slate-800 gap-1.5">
+                                                            <span className="font-bold text-slate-700 dark:text-slate-300 sm:max-w-xs truncate">
+                                                                {label}
+                                                            </span>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className="text-rose-600 dark:text-rose-400 line-through bg-rose-500/10 px-2 py-0.5 rounded text-[11px]">
+                                                                    {oldVal === '' ? '(vacío)' : oldVal}
+                                                                </span>
+                                                                <ArrowRight className="w-3 h-3 text-slate-400" />
+                                                                <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[11px]">
+                                                                    {newVal === '' ? '(vacío)' : newVal}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
             {/* Floating Bottom Save Button for Mobile */}
@@ -846,4 +1158,3 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
-

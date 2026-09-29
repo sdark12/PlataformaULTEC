@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { getSetting, getSettingBool } from '../controllers/settings.controller';
 
 interface UserPayload {
     id: string;
@@ -80,6 +81,39 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
             role: profile.role || 'student',
             branch_id: profile.branch_id || null
         };
+
+        // Gobernanza: Si el sistema está en modo mantenimiento, bloquear acceso a roles no administrativos
+        const isStaff = ['admin', 'superadmin'].includes(profile.role);
+        if (!isStaff) {
+            const isMaintenance = await getSettingBool('system_maintenance_mode');
+            if (isMaintenance) {
+                const maintenanceMsg = await getSetting('system_maintenance_message') 
+                    || 'La plataforma se encuentra en mantenimiento programado. Regresaremos en breve.';
+                return res.status(503).json({ 
+                    message: maintenanceMsg, 
+                    maintenance: true, 
+                    code: 'MAINTENANCE_MODE' 
+                });
+            }
+
+            if (profile.role === 'student') {
+                const allowStudent = await getSettingBool('allow_student_portal');
+                if (!allowStudent) {
+                    return res.status(403).json({ 
+                        message: 'El portal de estudiantes se encuentra deshabilitado temporalmente por la dirección institucional.',
+                        code: 'PORTAL_DISABLED'
+                    });
+                }
+            } else if (profile.role === 'parent') {
+                const allowParent = await getSettingBool('allow_parent_portal');
+                if (!allowParent) {
+                    return res.status(403).json({ 
+                        message: 'El portal de padres de familia se encuentra deshabilitado temporalmente por la dirección institucional.',
+                        code: 'PORTAL_DISABLED'
+                    });
+                }
+            }
+        }
 
         req.dbUserClient = verifyClient;
         next();

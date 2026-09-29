@@ -15,8 +15,8 @@ export const auditLogger = async (req: Request, res: Response, next: NextFunctio
             const rawUrl = req.originalUrl || req.url || '';
             const cleanPath = rawUrl.split('?')[0];
 
-            // Evitar auditar el visor de logs para no saturar la tabla
-            if (cleanPath.includes('/audit-logs')) {
+            // Evitar auditar el visor de logs y settings (settings tiene su propio logger con diffs)
+            if (cleanPath.includes('/audit-logs') || cleanPath.includes('/settings')) {
                 return;
             }
 

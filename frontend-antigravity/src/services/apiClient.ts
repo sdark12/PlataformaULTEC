@@ -32,6 +32,16 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
+        // Modo Mantenimiento o Portal Deshabilitado por Gobernanza
+        if ((error.response?.status === 503 || error.response?.status === 403) && (errorCode === 'MAINTENANCE_MODE' || errorCode === 'PORTAL_DISABLED')) {
+            const msg = error.response?.data?.message || '';
+            if (msg) sessionStorage.setItem('maintenance_message', msg);
+            localStorage.clear();
+            const reason = errorCode === 'MAINTENANCE_MODE' ? 'maintenance' : 'portal_disabled';
+            window.location.href = `/login?reason=${reason}`;
+            return Promise.reject(error);
+        }
+
         // Sesión expirada o no autorizada
         if (error.response?.status === 401 && !isLoginRequest) {
             localStorage.clear();

@@ -19,12 +19,47 @@ export interface SystemSettings {
     allow_parent_portal: string;
     default_currency_symbol: string;
 
+    // Gobernanza y Modo Mantenimiento
+    system_maintenance_mode: string;
+    system_maintenance_message: string;
+
     // Gamificación / Méritos
     merit_points_attendance_present: string;
     merit_points_grade_excellent: string;
     merit_points_grade_good: string;
     merit_enable_auto_attendance: string;
     merit_enable_auto_grades: string;
+}
+
+export interface SettingsDiffItem {
+    key: string;
+    label?: string;
+    value: string;
+}
+
+export interface SettingsAuditLog {
+    id: string;
+    user_id: string;
+    action: string;
+    entity: string;
+    entity_id: string;
+    old_data: { changes?: SettingsDiffItem[] } | null;
+    new_data: { changes?: SettingsDiffItem[] } | null;
+    ip_address: string;
+    created_at: string;
+    metadata?: {
+        total_changes?: number;
+        changed_keys?: string[];
+        user_role?: string;
+        user_email?: string;
+        user_name?: string;
+    };
+    user?: {
+        id: string;
+        full_name: string;
+        email: string;
+        role: string;
+    };
 }
 
 export const getSettings = async (): Promise<SystemSettings> => {
@@ -34,5 +69,10 @@ export const getSettings = async (): Promise<SystemSettings> => {
 
 export const updateSettings = async (settings: Partial<SystemSettings>): Promise<SystemSettings> => {
     const response = await api.put('/api/settings', settings);
+    return response.data;
+};
+
+export const getSettingsAuditHistory = async (): Promise<SettingsAuditLog[]> => {
+    const response = await api.get('/api/settings/audit-history');
     return response.data;
 };

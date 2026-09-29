@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 import { validatePasswordPolicy } from '../utils/passwordPolicy';
+import { getSetting, getSettingBool } from './settings.controller';
 
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -32,6 +33,40 @@ export const login = async (req: Request, res: Response) => {
             return res.status(403).json({ 
                 message: 'Tu cuenta ha sido desactivada o suspendida por la administración. Comunícate con la dirección del centro educativo.' 
             });
+        }
+
+        const userRole = profile?.role || 'student';
+        const isStaff = ['admin', 'superadmin'].includes(userRole);
+
+        // Gobernanza: Verificar Modo Mantenimiento
+        const isMaintenance = await getSettingBool('system_maintenance_mode');
+        if (isMaintenance && !isStaff) {
+            const maintenanceMsg = await getSetting('system_maintenance_message') 
+                || 'La plataforma se encuentra en mantenimiento programado. Regresaremos en breve.';
+            return res.status(503).json({ 
+                message: maintenanceMsg, 
+                maintenance: true, 
+                code: 'MAINTENANCE_MODE' 
+            });
+        }
+
+        // Gobernanza: Verificar acceso a portales
+        if (userRole === 'student') {
+            const allowStudent = await getSettingBool('allow_student_portal');
+            if (!allowStudent) {
+                return res.status(403).json({ 
+                    message: 'El portal de estudiantes se encuentra deshabilitado temporalmente por la dirección institucional.',
+                    code: 'PORTAL_DISABLED'
+                });
+            }
+        } else if (userRole === 'parent') {
+            const allowParent = await getSettingBool('allow_parent_portal');
+            if (!allowParent) {
+                return res.status(403).json({ 
+                    message: 'El portal de padres de familia se encuentra deshabilitado temporalmente por la dirección institucional.',
+                    code: 'PORTAL_DISABLED'
+                });
+            }
         }
 
         // Track last login timestamp and IP

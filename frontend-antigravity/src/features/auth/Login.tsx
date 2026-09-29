@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login } from './authService';
-import { Lock, Mail, Loader2, Eye, EyeOff, AlertCircle, Clock, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, Loader2, Eye, EyeOff, AlertCircle, Clock, ShieldAlert, Wrench, ShieldOff } from 'lucide-react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const Login = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const reason = searchParams.get('reason');
+    const maintenanceMsg = sessionStorage.getItem('maintenance_message') || 'La plataforma se encuentra en mantenimiento programado. Regresaremos en breve.';
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -85,6 +86,23 @@ const Login = () => {
                         <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-3.5 py-2.5 rounded-xl mb-5 text-xs sm:text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
                             <AlertCircle className="w-4 h-4 text-indigo-500 shrink-0" />
                             <span>Tu sesión ha expirado. Por favor ingresa tus credenciales nuevamente.</span>
+                        </div>
+                    )}
+
+                    {reason === 'maintenance' && (
+                        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 p-4 rounded-2xl mb-5 text-xs sm:text-sm font-semibold flex items-start gap-3 animate-in fade-in slide-in-from-top-1 shadow-sm">
+                            <Wrench className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-bounce" />
+                            <div>
+                                <span className="font-black block text-amber-900 dark:text-amber-100 mb-0.5">Modo Mantenimiento Activo</span>
+                                <span className="opacity-90">{maintenanceMsg}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {reason === 'portal_disabled' && (
+                        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 p-3.5 rounded-xl mb-5 text-xs sm:text-sm font-medium flex items-center gap-2.5 animate-in fade-in slide-in-from-top-1">
+                            <ShieldOff className="w-4 h-4 text-rose-500 shrink-0" />
+                            <span>El portal para tu perfil se encuentra temporalmente deshabilitado por la dirección.</span>
                         </div>
                     )}
 
