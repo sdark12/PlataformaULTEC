@@ -92,6 +92,32 @@ const formatSeconds = (seconds: number): string => {
     return parts.join(' ');
 };
 
+const sampleCpuUsage = async (sampleMs = 120): Promise<number> => {
+    const getTicks = () => {
+        const cpus = os.cpus() || [];
+        let idle = 0;
+        let total = 0;
+        for (const cpu of cpus) {
+            for (const type in cpu.times) {
+                total += cpu.times[type as keyof typeof cpu.times];
+            }
+            idle += cpu.times.idle;
+        }
+        return { idle, total };
+    };
+
+    const first = getTicks();
+    await new Promise((resolve) => setTimeout(resolve, sampleMs));
+    const second = getTicks();
+
+    const idleDiff = second.idle - first.idle;
+    const totalDiff = second.total - first.total;
+
+    if (totalDiff <= 0) return 0;
+    const usage = Math.round(((totalDiff - idleDiff) / totalDiff) * 100);
+    return Math.min(100, Math.max(0, usage));
+};
+
 export const getSystemTelemetry = async (): Promise<SystemTelemetry> => {
     const startTime = Date.now();
 
@@ -105,8 +131,8 @@ export const getSystemTelemetry = async (): Promise<SystemTelemetry> => {
     const cpuCount = cpus.length;
     const cpuModel = cpus[0]?.model || 'ARM / x86_64 Processor';
     const loadAvg = os.loadavg();
-    // Rough estimate of 1m load as percentage of total available cores
-    const loadPercent1m = cpuCount > 0 ? Math.min(100, Number(((loadAvg[0] / cpuCount) * 100).toFixed(1))) : 0;
+    // Real instant CPU active percentage sampled over 120ms
+    const loadPercent1m = await sampleCpuUsage(120);
 
     // ─── 2. Disk Storage via fs.statfsSync ───
     let diskTotal = 0;
@@ -242,12 +268,12 @@ export const getSystemTelemetry = async (): Promise<SystemTelemetry> => {
         });
     }
 
-    if (loadPercent1m >= 90) {
+    if (loadPercent1m >= 85 || loadAvg[0] >= 3.0) {
         if (overallStatus === 'healthy') overallStatus = 'warning';
         alerts.push({
             level: 'warning',
             title: 'Carga de CPU elevada',
-            message: `Carga de procesamiento en ${loadPercent1m}% (1 min: ${loadAvg[0]}).`
+            message: `Uso de procesador al ${loadPercent1m}% (Carga 1 min: ${loadAvg[0]}).`
         });
     }
 
