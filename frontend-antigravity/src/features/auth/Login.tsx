@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login } from './authService';
-import { Lock, Mail, Loader2 } from 'lucide-react';
+import { Lock, Mail, Loader2, Eye, EyeOff, AlertCircle, Clock, ShieldAlert } from 'lucide-react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const Login = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const reason = searchParams.get('reason');
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
@@ -36,43 +40,74 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 overflow-hidden relative transition-colors duration-500">
-            {/* Background decorations - Animated Gradient */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-brand-blue/20 dark:bg-brand-blue/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-brand-purple/20 dark:bg-brand-purple/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-brand-teal/20 dark:bg-brand-teal/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
+        <div className="min-h-screen min-h-[100dvh] flex flex-col justify-between items-center bg-slate-50 dark:bg-slate-950 px-4 py-6 sm:p-8 relative overflow-hidden transition-colors duration-500">
+            {/* Background decorations - Subtle ambient gradient blurs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute -top-24 -left-24 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-brand-blue/20 dark:bg-brand-blue/10 blur-[90px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow"></div>
+                <div className="absolute -bottom-24 -right-24 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-brand-purple/20 dark:bg-brand-purple/10 blur-[90px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-brand-teal/15 dark:bg-brand-teal/5 blur-[100px] pointer-events-none"></div>
             </div>
 
-            <div className="w-full max-w-md p-8 relative z-10 mx-4">
-                <div className="glass-card shadow-glass dark:shadow-glass-dark border border-white/40 dark:border-slate-700/50 rounded-3xl p-8 md:p-10 transform transition-all hover:shadow-[0_8px_32px_rgba(13,89,242,0.15)] duration-500 animate-in spin-in-2 zoom-in-95">
-                    <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-blue to-brand-purple mb-6 shadow-[0_0_20px_rgba(13,89,242,0.3)]">
-                            <Lock className="h-8 w-8 text-white" />
+            {/* Spacer for top balance on mobile */}
+            <div className="hidden sm:block"></div>
+
+            {/* Main Login Card */}
+            <div className="w-full max-w-sm sm:max-w-md my-auto relative z-10">
+                <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-white/70 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-black/60 transition-all">
+                    {/* Header with App Logo */}
+                    <div className="text-center mb-6 sm:mb-8">
+                        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-brand-blue to-brand-purple mb-3.5 shadow-lg shadow-brand-blue/30 text-white">
+                            <span className="font-black text-2xl sm:text-3xl tracking-tighter">U</span>
                         </div>
-                        <h1 className="text-3xl font-black bg-gradient-to-r from-slate-900 to-brand-blue dark:from-white dark:to-blue-400 bg-clip-text text-transparent mb-2 tracking-tight">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                             Ultra Tecnología
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-widest uppercase">
+                        <p className="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">
                             Plataforma de Gestión
                         </p>
                     </div>
 
-                    {error && (
-                        <div className="bg-brand-danger/10 border border-brand-danger/30 text-brand-danger px-4 py-3 rounded-xl mb-6 text-sm flex items-start animate-in fade-in slide-in-from-top-2">
-                            <span className="block font-medium">{error}</span>
+                    {reason === 'idle_timeout' && (
+                        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-300 px-3.5 py-2.5 rounded-xl mb-5 text-xs sm:text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+                            <span>Tu sesión se cerró por inactividad prolongada (30 min) para proteger tus datos.</span>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2 relative">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1 block">Correo Electrónico</label>
+                    {reason === 'deactivated' && (
+                        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 px-3.5 py-2.5 rounded-xl mb-5 text-xs sm:text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+                            <span>Tu cuenta ha sido desactivada o suspendida. Comunícate con la administración.</span>
+                        </div>
+                    )}
+
+                    {reason === 'session_expired' && (
+                        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-3.5 py-2.5 rounded-xl mb-5 text-xs sm:text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <AlertCircle className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <span>Tu sesión ha expirado. Por favor ingresa tus credenciales nuevamente.</span>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 px-3.5 py-2.5 rounded-xl mb-5 text-xs sm:text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                        {/* Email Input */}
+                        <div>
+                            <label className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
+                                Correo Electrónico
+                            </label>
                             <div className="relative group">
-                                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors" />
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors pointer-events-none" />
                                 <input
                                     type="email"
                                     required
-                                    className="w-full pl-12 pr-4 py-3.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-all shadow-inner"
+                                    autoComplete="email"
+                                    className="w-full h-11 sm:h-12 pl-10 sm:pl-11 pr-3.5 bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                                     placeholder="nombre@ejemplo.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -80,58 +115,80 @@ const Login = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2 relative">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1 block">Contraseña</label>
+                        {/* Password Input with Show/Hide toggle */}
+                        <div>
+                            <label className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
+                                Contraseña
+                            </label>
                             <div className="relative group">
-                                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors" />
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors pointer-events-none" />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     required
-                                    className="w-full pl-12 pr-4 py-3.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-blue/20 focus:border-brand-blue text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-all shadow-inner font-mono text-lg tracking-wider"
+                                    autoComplete="current-password"
+                                    className="w-full h-11 sm:h-12 pl-10 sm:pl-11 pr-11 bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none"
+                                    tabIndex={-1}
+                                    aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                                    ) : (
+                                        <Eye className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
+                                    )}
+                                </button>
                             </div>
                         </div>
 
-                        <div className="flex justify-end">
+                        {/* Forgot password */}
+                        <div className="flex justify-end pt-0.5">
                             <button
                                 type="button"
                                 onClick={() => setIsForgotModalOpen(true)}
-                                className="text-xs font-bold text-brand-blue hover:text-blue-700 dark:text-blue-400 hover:underline transition-colors"
+                                className="text-xs font-semibold text-brand-blue hover:text-blue-700 dark:text-brand-teal dark:hover:text-teal-300 transition-colors"
                             >
                                 ¿Olvidaste tu contraseña?
                             </button>
                         </div>
 
+                        {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={loginMutation.isPending}
-                            className="w-full py-4 px-4 bg-gradient-to-r from-brand-blue to-brand-teal hover:from-blue-600 hover:to-teal-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(13,89,242,0.3)] transform transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center mt-4 border border-white/10"
+                            className="w-full h-11 sm:h-12 bg-gradient-to-r from-brand-blue to-brand-teal hover:from-blue-600 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-brand-blue/25 hover:shadow-brand-blue/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm sm:text-base mt-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                         >
                             {loginMutation.isPending ? (
-                                <Loader2 className="animate-spin h-5 w-5" />
+                                <>
+                                    <Loader2 className="animate-spin h-4 w-4" />
+                                    <span>Iniciando sesión...</span>
+                                </>
                             ) : (
-                                <span className="tracking-wide">INGRESAR A LA PLATAFORMA</span>
+                                <span>Iniciar Sesión</span>
                             )}
                         </button>
                     </form>
-                    
+
                     <ForgotPasswordModal 
                         isOpen={isForgotModalOpen} 
                         onClose={() => setIsForgotModalOpen(false)} 
                     />
-
-                    <div className="mt-10 text-center">
-                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                            © 2026 Ultra Tecnología. Todos los derechos reservados.
-                        </p>
-                    </div>
                 </div>
             </div>
+
+            {/* Footer */}
+            <footer className="w-full text-center py-3 relative z-10 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                © 2026 Ultra Tecnología. Todos los derechos reservados.
+            </footer>
         </div>
     );
 };
 
 export default Login;
+

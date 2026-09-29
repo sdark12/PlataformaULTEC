@@ -23,11 +23,23 @@ api.interceptors.response.use(
     (response: any) => response,
     (error: any) => {
         const isLoginRequest = error.config?.url?.includes('/auth/login');
-        if (error.response?.status === 401 && !isLoginRequest) {
-            // Handle unauthorized access (e.g., redirect to login)
-            localStorage.removeItem('token');
-            window.location.href = '/login';
+        const errorCode = error.response?.data?.code;
+
+        // Revocación inmediata: Cuenta desactivada por administración
+        if (error.response?.status === 403 && errorCode === 'ACCOUNT_DEACTIVATED') {
+            localStorage.clear();
+            window.location.href = '/login?reason=deactivated';
+            return Promise.reject(error);
         }
+
+        // Sesión expirada o no autorizada
+        if (error.response?.status === 401 && !isLoginRequest) {
+            localStorage.clear();
+            const reason = errorCode === 'TOKEN_EXPIRED' ? 'session_expired' : 'unauthorized';
+            window.location.href = `/login?reason=${reason}`;
+            return Promise.reject(error);
+        }
+
         return Promise.reject(error);
     }
 );

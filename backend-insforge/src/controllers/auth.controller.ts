@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
+import { validatePasswordPolicy } from '../utils/passwordPolicy';
 
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -26,12 +27,76 @@ export const login = async (req: Request, res: Response) => {
             console.error('Profile fetch error:', profileError);
         }
 
-        // Map profile data to expected format if needed
-        // Assuming profiles has branch_id and role_id from our schema update
-        // But role is ENUM in original profiles?
-        // Let's check profile structure from previous step.
-        // It had `role` as user_role type. 
-        // I added `role_id` and `branch_id`.
+        // Verify account is active
+        if (profile && profile.active === false) {
+            return res.status(403).json({ 
+                message: 'Tu cuenta ha sido desactivada o suspendida por la administración. Comunícate con la dirección del centro educativo.' 
+            });
+        }
+
+        // Track last login timestamp and IP
+        const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || '';
+        const clientIp = rawIp.replace(/^::ffff:/, '');
+
+        adminClient.from('profiles').update({
+            last_login_at: new Date().toISOString(),
+            last_login_ip: clientIp
+        }).eq('id', data.user.id).then(({ error }) => {
+            if (error) console.error('[AUTH] Failed to update last_login info:', error);
+        });
+
+        adminClient.from('audit_logs').insert([{
+            user_id: data.user.id,
+            branch_id: profile?.branch_id || null,
+            action: 'LOGIN',
+            entity: 'auth',
+            entity_id: data.user.id,
+            ip_address: clientIp,
+            new_data: { role: profile?.role, email: data.user.email },
+            metadata: { user_agent: req.headers['user-agent'] || 'unknown' }
+        }]).then(({ error }) => {
+            if (error) console.error('[AUTH] Failed to record login audit log:', error);
+        });
+
+        let fullName = profile?.full_name || '';
+
+        // If student, pull official full name from students table
+        if (profile?.role === 'student') {
+            const { data: st } = await adminClient
+                .from('students')
+                .select('full_name')
+                .eq('user_id', data.user.id)
+                .maybeSingle();
+
+            if (st?.full_name && st.full_name.trim()) {
+                fullName = st.full_name.trim();
+                if (profile.full_name !== fullName) {
+                    await adminClient.from('profiles').update({ full_name: fullName }).eq('id', data.user.id);
+                }
+            }
+        } else if (profile?.role === 'parent') {
+            const { data: links } = await adminClient
+                .from('parent_student_links')
+                .select('student_id')
+                .eq('parent_user_id', data.user.id);
+
+            if (links && links.length > 0) {
+                const { data: st } = await adminClient
+                    .from('students')
+                    .select('guardian_name')
+                    .eq('id', (links[0] as any).student_id)
+                    .maybeSingle();
+
+                if (st?.guardian_name && st.guardian_name.trim()) {
+                    if (!fullName || fullName.trim().split(' ').length < 2) {
+                        fullName = st.guardian_name.trim();
+                        if (profile.full_name !== fullName) {
+                            await adminClient.from('profiles').update({ full_name: fullName }).eq('id', data.user.id);
+                        }
+                    }
+                }
+            }
+        }
 
         res.json({
             token: data.session?.access_token,
@@ -40,7 +105,7 @@ export const login = async (req: Request, res: Response) => {
                 email: data.user.email,
                 role: profile?.role || 'student',
                 branch_id: profile?.branch_id || null,
-                full_name: profile?.full_name || ''
+                full_name: fullName
             },
         });
     } catch (error) {
@@ -51,31 +116,133 @@ export const login = async (req: Request, res: Response) => {
 
 export const adminResetPassword = async (req: Request, res: Response) => {
     const { userId, newPassword } = req.body;
+    const currentUser = (req as any).currentUser;
+
+    if (currentUser?.role !== 'admin' && currentUser?.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Acceso no autorizado. Solo administradores pueden restablecer contraseñas.' });
+    }
 
     if (!userId || !newPassword) {
         return res.status(400).json({ message: 'Se requiere el ID del usuario y la nueva contraseña.' });
     }
 
-    try {
-        // We need the SERVICE ROLE KEY to update another user's password
-        const { createClient } = require('@supabase/supabase-js');
-        const adminClient = createClient(process.env.INSFORGE_URL, process.env.INSFORGE_SERVICE_ROLE_KEY || process.env.INSFORGE_API_KEY);
+    const policyCheck = validatePasswordPolicy(newPassword);
+    if (!policyCheck.isValid) {
+        return res.status(400).json({ message: `Contraseña no segura: ${policyCheck.errors.join(' ')}` });
+    }
 
-        // Given that Insforge SDK doesn't expose auth.admin, we call a trusted Postgres RPC 
-        // to update the password securely via the database.
-        const { data, error } = await adminClient.rpc('admin_change_user_password', {
-            target_user_id: userId,
-            new_password: newPassword
+    try {
+        // Update user password directly via Supabase Auth Admin API (uses service_role key)
+        const { data, error } = await adminClient.auth.admin.updateUserById(userId, {
+            password: newPassword
         });
 
         if (error) {
-            console.error('Admin reset password error:', error);
-            return res.status(400).json({ message: 'Error al actualizar contraseña. (Asegúrese de ejecutar el script SQL).', details: error.message });
+            console.error('Admin reset password error via auth.admin:', error);
+            // Fallback to RPC if configured
+            const { error: rpcError } = await adminClient.rpc('admin_change_user_password', {
+                target_user_id: userId,
+                new_password: newPassword
+            });
+            if (rpcError) {
+                console.error('Admin reset password error via rpc fallback:', rpcError);
+                return res.status(400).json({ message: error.message || 'Error al actualizar contraseña.', details: error });
+            }
         }
+
+        // Trazabilidad en auditoría
+        const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || '';
+        const clientIp = rawIp.replace(/^::ffff:/, '');
+
+        adminClient.from('audit_logs').insert([{
+            user_id: currentUser.id,
+            branch_id: currentUser.branch_id || null,
+            action: 'PASSWORD_RESET',
+            entity: 'users',
+            entity_id: String(userId),
+            ip_address: clientIp,
+            metadata: {
+                admin_email: currentUser.email,
+                target_user_id: userId,
+                method: 'admin_reset'
+            }
+        }]).then(({ error: auditErr }) => {
+            if (auditErr) console.error('[AUDIT] Error recording password reset:', auditErr);
+        });
 
         res.json({ message: 'Contraseña actualizada correctamente.' });
     } catch (error: any) {
         console.error('Admin reset password generic error:', error);
+        res.status(500).json({ message: 'Error interno del servidor.', details: error.message });
+    }
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    const currentUser = (req as any).currentUser;
+
+    if (!currentUser?.id || !currentUser?.email) {
+        return res.status(401).json({ message: 'No autenticado.' });
+    }
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Se requiere la contraseña actual y la nueva contraseña.' });
+    }
+
+    const policyCheck = validatePasswordPolicy(newPassword, currentUser.role);
+    if (!policyCheck.isValid) {
+        return res.status(400).json({ message: `Contraseña no segura: ${policyCheck.errors.join(' ')}` });
+    }
+
+    try {
+        // 1. Verify current password with a temporary client
+        const { createClient } = require('@supabase/supabase-js');
+        const tempClient = createClient(
+            process.env.INSFORGE_URL || 'http://kong:8000',
+            process.env.INSFORGE_ANON_KEY || process.env.INSFORGE_API_KEY
+        );
+
+        const { data: signInData, error: signInError } = await tempClient.auth.signInWithPassword({
+            email: currentUser.email,
+            password: currentPassword
+        });
+
+        if (signInError || !signInData?.user) {
+            return res.status(400).json({ message: 'La contraseña actual es incorrecta.' });
+        }
+
+        // 2. Update to new password via adminClient (service_role)
+        const { error: updateError } = await adminClient.auth.admin.updateUserById(currentUser.id, {
+            password: newPassword
+        });
+
+        if (updateError) {
+            console.error('Change password update error:', updateError);
+            return res.status(400).json({ message: updateError.message || 'Error al actualizar la contraseña.' });
+        }
+
+        // Trazabilidad en auditoría
+        const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || '';
+        const clientIp = rawIp.replace(/^::ffff:/, '');
+
+        adminClient.from('audit_logs').insert([{
+            user_id: currentUser.id,
+            branch_id: currentUser.branch_id || null,
+            action: 'PASSWORD_CHANGE',
+            entity: 'users',
+            entity_id: String(currentUser.id),
+            ip_address: clientIp,
+            metadata: {
+                user_email: currentUser.email,
+                method: 'self_change'
+            }
+        }]).then(({ error: auditErr }) => {
+            if (auditErr) console.error('[AUDIT] Error recording password change:', auditErr);
+        });
+
+        res.json({ message: 'Contraseña actualizada correctamente.' });
+    } catch (error: any) {
+        console.error('Change password generic error:', error);
         res.status(500).json({ message: 'Error interno del servidor.', details: error.message });
     }
 };

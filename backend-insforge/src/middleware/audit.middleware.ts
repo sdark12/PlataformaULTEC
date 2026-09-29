@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 export const auditLogger = async (req: Request, res: Response, next: NextFunction) => {
     const originalSend = res.send;
@@ -10,30 +10,74 @@ export const auditLogger = async (req: Request, res: Response, next: NextFunctio
     };
 
     res.on('finish', async () => {
-        // Solo auditar métodos que modifican estado
+        // Solo auditar métodos que modifican estado (POST, PUT, DELETE, PATCH)
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method) && res.statusCode >= 200 && res.statusCode < 300) {
+            const rawUrl = req.originalUrl || req.url || '';
+            const cleanPath = rawUrl.split('?')[0];
+
+            // Evitar auditar el visor de logs para no saturar la tabla
+            if (cleanPath.includes('/audit-logs')) {
+                return;
+            }
+
             const userId = req.currentUser?.id;
             const branchId = req.currentUser?.branch_id;
             const action = req.method;
-            
-            // Inferir entidad desde el path (ej. /api/students -> students)
-            const pathSegments = req.baseUrl ? req.baseUrl.split('/') : req.path.split('/');
-            const entity = pathSegments[pathSegments.length - 1] || 'unknown';
-            
-            const entityId = req.params.id || null;
-            const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
-            
-            const newData = req.method === 'DELETE' ? null : req.body;
-            let responseData = null;
-            try {
-                if (res.locals.responseBody) {
-                    responseData = JSON.parse(res.locals.responseBody);
+
+            // Extraer módulo/entidad e identificador del path
+            const segments = cleanPath.split('/').filter(Boolean);
+            let entity = 'unknown';
+            let urlEntityId: string | null = null;
+
+            if (segments.length > 0) {
+                if (segments[0] === 'api') {
+                    entity = segments[1] || 'api';
+                    if (segments.length > 2 && segments[2] !== 'bulk' && segments[2] !== 'verify') {
+                        urlEntityId = segments[2];
+                    }
+                } else {
+                    entity = segments[0];
+                    if (segments.length > 1) {
+                        urlEntityId = segments[1];
+                    }
                 }
-            } catch (e) {
-                // Ignore if response body is not JSON
             }
 
-            const db = req.dbUserClient || client;
+            const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || 'unknown';
+            const ipAddress = rawIp.replace(/^::ffff:/, '');
+
+            let responseData: any = null;
+            try {
+                if (res.locals.responseBody) {
+                    responseData = typeof res.locals.responseBody === 'string'
+                        ? JSON.parse(res.locals.responseBody)
+                        : res.locals.responseBody;
+                }
+            } catch {
+                // Ignore parse errors for non-JSON responses
+            }
+
+            const entityId = req.params?.id 
+                || (responseData?.data?.id ? String(responseData.data.id) : null)
+                || (responseData?.id ? String(responseData.id) : null)
+                || (urlEntityId ? String(urlEntityId) : null);
+
+            // Sanitizar datos sensibles para que no se almacenen contraseñas
+            let sanitizedBody = null;
+            if (req.method !== 'DELETE' && req.body) {
+                try {
+                    sanitizedBody = JSON.parse(JSON.stringify(req.body));
+                    if (typeof sanitizedBody === 'object' && sanitizedBody !== null) {
+                        if (sanitizedBody.password) sanitizedBody.password = '********';
+                        if (sanitizedBody.confirmPassword) sanitizedBody.confirmPassword = '********';
+                        if (sanitizedBody.token) sanitizedBody.token = '[REDACTED]';
+                    }
+                } catch {
+                    sanitizedBody = null;
+                }
+            }
+
+            const db = adminClient || client;
 
             try {
                 await db.from('audit_logs').insert([{
@@ -41,15 +85,18 @@ export const auditLogger = async (req: Request, res: Response, next: NextFunctio
                     branch_id: branchId || null,
                     action: action,
                     entity: entity,
-                    entity_id: entityId ? parseInt(entityId as string) : (responseData?.id || null),
-                    new_data: newData,
+                    entity_id: entityId ? String(entityId) : null,
+                    new_data: sanitizedBody,
+                    old_data: res.locals.oldData || null,
                     ip_address: ipAddress,
                     metadata: {
-                        url: req.originalUrl,
-                        status: res.statusCode
+                        url: rawUrl,
+                        method: req.method,
+                        status: res.statusCode,
+                        user_agent: req.headers['user-agent'] || 'unknown'
                     }
                 }]);
-                console.log(`[AUDIT] Logged ${action} on ${entity} by user ${userId}`);
+                console.log(`[AUDIT] Logged ${action} on ${entity} (id: ${entityId}) by user ${userId || 'anonymous'}`);
             } catch (error) {
                 console.error('[AUDIT] Failed to save audit log:', error);
             }

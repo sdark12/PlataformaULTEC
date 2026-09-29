@@ -1,11 +1,12 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { saveWorkbook, savePdfDoc } from './fileDownloader';
 
 /**
  * Export data to Excel (.xlsx)
  */
-export const exportToExcel = (
+export const exportToExcel = async (
     data: Record<string, any>[],
     filename: string,
     sheetName: string = 'Datos'
@@ -24,13 +25,13 @@ export const exportToExcel = (
     });
     worksheet['!cols'] = maxWidths;
 
-    XLSX.writeFile(workbook, `${filename}.xlsx`);
+    await saveWorkbook(workbook, `${filename}.xlsx`);
 };
 
 /**
  * Export data to PDF with table format
  */
-export const exportToPDF = (
+export const exportToPDF = async (
     columns: { header: string; dataKey: string }[],
     rows: Record<string, any>[],
     title: string,
@@ -69,5 +70,6 @@ export const exportToPDF = (
         margin: { top: 32 },
     });
 
-    doc.save(`${filename}.pdf`);
+    await savePdfDoc(doc, `${filename}.pdf`);
 };
+

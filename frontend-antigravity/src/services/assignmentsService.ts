@@ -12,6 +12,13 @@ export interface Assignment {
     unit_name?: string;
     max_score: number;
     schedule_id?: string;
+    category_id?: string | null;
+    category_name?: string;
+    subgrade_categories?: {
+        id: string;
+        name: string;
+        max_score: number;
+    };
     created_by?: string;
     created_at?: string;
 }
@@ -19,6 +26,8 @@ export interface Assignment {
 export interface StudentAssignment extends Assignment {
     assignment_id: string;
     course_name: string;
+    category_id?: string | null;
+    category_name?: string;
     submission_id?: string;
     status?: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE';
     submission_date?: string;
@@ -71,6 +80,16 @@ export const assignmentsService = {
     // Instructor/Admin Endpoints
     createAssignment: async (assignmentData: Partial<Assignment>) => {
         const response = await api.post('/api/assignments', assignmentData);
+        return response.data;
+    },
+
+    updateAssignment: async (id: string, assignmentData: Partial<Assignment>) => {
+        const response = await api.put(`/api/assignments/${id}`, assignmentData);
+        return response.data;
+    },
+
+    deleteAssignment: async (id: string) => {
+        const response = await api.delete(`/api/assignments/${id}`);
         return response.data;
     },
 

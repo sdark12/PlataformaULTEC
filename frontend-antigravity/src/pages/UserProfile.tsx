@@ -3,7 +3,9 @@ import {
     User, Mail, Phone, KeyRound, Save, Loader2, 
     CheckCircle2, AlertCircle, Building2, Sparkles, Lock
 } from 'lucide-react';
-import { updateUser, resetUserPassword, getUserById } from '../features/users/userService';
+import { updateUser, changeUserPassword, getUserById } from '../features/users/userService';
+import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter';
+import { validatePassword } from '../utils/passwordValidator';
 
 const UserProfile: React.FC = () => {
     let storedUser: any = null;
@@ -17,8 +19,13 @@ const UserProfile: React.FC = () => {
     const [phone, setPhone] = useState(storedUser?.phone || '');
     const [role, setRole] = useState(storedUser?.role || 'student');
     const [studentCode, setStudentCode] = useState(storedUser?.personal_code || '');
+    const [studentId, setStudentId] = useState(storedUser?.student_id || '');
+    const [academyCode, setAcademyCode] = useState(storedUser?.academy_code || '');
+    const [guardianPhone, setGuardianPhone] = useState(storedUser?.guardian_phone || '');
+    const [guardianName, setGuardianName] = useState(storedUser?.guardian_name || '');
 
     // Password fields
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -34,12 +41,22 @@ const UserProfile: React.FC = () => {
         const fetchUserData = async () => {
             try {
                 const data = await getUserById(storedUser.id);
+                console.log('[UserProfile] Profile fetched:', data);
                 if (data) {
                     setFullName(data.full_name || storedUser.full_name || '');
                     setEmail(data.email || storedUser.email || '');
                     setPhone(data.phone || '');
                     setRole(data.role || storedUser.role || 'student');
                     if (data.personal_code) setStudentCode(data.personal_code);
+                    if (data.student_id) setStudentId(data.student_id);
+                    if (data.academy_code) setAcademyCode(data.academy_code);
+                    if (data.guardian_phone) setGuardianPhone(data.guardian_phone);
+                    if (data.guardian_name) setGuardianName(data.guardian_name);
+
+                    try {
+                        const updated = { ...storedUser, ...data };
+                        localStorage.setItem('user', JSON.stringify(updated));
+                    } catch (e) {}
                 }
             } catch (err) {
                 console.error('Error fetching user profile:', err);
@@ -92,8 +109,19 @@ const UserProfile: React.FC = () => {
         e.preventDefault();
         if (!storedUser?.id) return;
 
-        if (!newPassword || newPassword.length < 6) {
-            showFeedback('error', 'La nueva contraseña debe tener al menos 6 caracteres.');
+        if (!currentPassword) {
+            showFeedback('error', 'Por favor ingresa tu contraseña actual.');
+            return;
+        }
+
+        const passwordValidation = validatePassword(newPassword, role);
+        if (!passwordValidation.isValid) {
+            showFeedback('error', passwordValidation.errors[0] || 'La nueva contraseña no cumple con las políticas de seguridad.');
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            showFeedback('error', 'La nueva contraseña no puede ser igual a la contraseña actual.');
             return;
         }
 
@@ -104,11 +132,12 @@ const UserProfile: React.FC = () => {
 
         setIsChangingPassword(true);
         try {
-            await resetUserPassword({
-                userId: storedUser.id,
+            await changeUserPassword({
+                currentPassword: currentPassword,
                 newPassword: newPassword
             });
 
+            setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
             showFeedback('success', '¡Tu contraseña ha sido cambiada con éxito!');
@@ -130,6 +159,37 @@ const UserProfile: React.FC = () => {
     };
 
     const currentBadge = roleBadges[role] || { label: role, color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' };
+
+    const getPhoneConfig = () => {
+        switch (role) {
+            case 'student':
+                return {
+                    label: 'Teléfono Personal del Alumno',
+                    placeholder: 'Ej. 5555-1234 (Tu celular personal)',
+                    help: 'Número de celular o WhatsApp personal del estudiante.'
+                };
+            case 'parent':
+                return {
+                    label: 'Teléfono del Encargado / Contacto Familiar',
+                    placeholder: 'Ej. 5555-1234 (Contacto para la academia)',
+                    help: 'Número principal para avisos escolares, pagos y emergencias.'
+                };
+            case 'instructor':
+                return {
+                    label: 'Teléfono del Docente',
+                    placeholder: 'Ej. 5555-1234',
+                    help: 'Número de contacto institucional o WhatsApp.'
+                };
+            default:
+                return {
+                    label: 'Teléfono / WhatsApp',
+                    placeholder: 'Ej. 5555-1234',
+                    help: 'Número de contacto personal.'
+                };
+        }
+    };
+
+    const phoneConfig = getPhoneConfig();
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto pb-20 md:pb-8 animate-in fade-in duration-500">
@@ -186,10 +246,21 @@ const UserProfile: React.FC = () => {
                             <Mail className="h-3.5 w-3.5 text-brand-teal" />
                             <span>{email}</span>
                         </p>
-                        {studentCode && (
-                            <p className="text-xs text-brand-teal font-mono font-bold">
-                                Código ID: {studentCode}
-                            </p>
+                        {role === 'student' && (
+                            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                                    <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Cód. Establecimiento:</span>
+                                    <span className="text-xs font-mono font-bold text-brand-teal">
+                                        {studentCode || 'No asignado'}
+                                    </span>
+                                </div>
+                                <div className="px-3 py-1.5 rounded-xl bg-purple-500/10 backdrop-blur-sm border border-purple-500/20 flex items-center gap-2">
+                                    <span className="text-[11px] uppercase tracking-wider text-purple-300 font-semibold">Cód. Academia:</span>
+                                    <span className="text-xs font-mono font-bold text-brand-purple">
+                                        {academyCode || (studentId ? `UT-2026-${studentId.slice(0, 4).toUpperCase()}` : 'UT-2026')}
+                                    </span>
+                                </div>
+                            </div>
                         )}
                         <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-400">
                             <span className="flex items-center gap-1">
@@ -235,18 +306,37 @@ const UserProfile: React.FC = () => {
                             <div>
                                 <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                                     <Phone className="h-3.5 w-3.5 text-brand-blue" />
-                                    <span>Teléfono / WhatsApp</span>
+                                    <span>{phoneConfig.label}</span>
                                 </label>
                                 <div className="relative">
                                     <input
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
-                                        placeholder="Ej. +502 5555-1234"
+                                        placeholder={phoneConfig.placeholder}
                                         className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                                     />
                                 </div>
+                                <p className="text-[10px] text-slate-400 mt-1">{phoneConfig.help}</p>
                             </div>
+
+                            {role === 'student' && guardianPhone && (
+                                <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 text-xs space-y-1 animate-in fade-in duration-300">
+                                    <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
+                                        <User className="h-3.5 w-3.5" />
+                                        <span>Padre o Encargado Registrado</span>
+                                    </div>
+                                    <p className="text-slate-600 dark:text-slate-300">
+                                        Nombre: <strong className="text-slate-900 dark:text-white">{guardianName || 'Tutor legal'}</strong>
+                                    </p>
+                                    <p className="text-slate-600 dark:text-slate-300">
+                                        Teléfono de Emergencia: <strong className="font-mono text-brand-blue dark:text-brand-teal">{guardianPhone}</strong>
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 italic pt-0.5">
+                                        * Para modificar los datos del encargado, comunícate con secretaría académica.
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
@@ -293,16 +383,33 @@ const UserProfile: React.FC = () => {
                         <form onSubmit={handleChangePassword} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                    Contraseña Actual
+                                </label>
+                                <input
+                                    type="password"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    placeholder="Ingresa tu contraseña actual"
+                                    required
+                                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                                     Nueva Contraseña
                                 </label>
                                 <input
                                     type="password"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="Mínimo 6 caracteres"
+                                    placeholder={role === 'admin' || role === 'superadmin' ? 'Mínimo 10 caracteres seguros' : 'Mínimo 8 caracteres seguros'}
                                     required
                                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple transition-all"
                                 />
+                                <div className="mt-2.5">
+                                    <PasswordStrengthMeter password={newPassword} role={role} />
+                                </div>
                             </div>
 
                             <div>

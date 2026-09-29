@@ -11,12 +11,11 @@ import ResetPassword from './features/auth/ResetPassword';
 import PaymentsList from './features/finance/PaymentsList';
 import InvoicesList from './features/finance/InvoicesList';
 import Attendance from './features/academic/Attendance';
-import Reports from './features/finance/Reports';
-import StudentReports from './features/academic/StudentReports';
-import Grades from './features/academic/Grades';
+import ReportsHub from './features/finance/ReportsHub';
+import AcademicGradesHub from './features/academic/AcademicGradesHub';
+import ConductHub from './features/merits/ConductHub';
 import UsersList from './features/users/UsersList';
 import AuditLogs from './features/users/AuditLogs';
-import CourseGradebook from './features/academic/CourseGradebook';
 import AssignmentsModule from './features/academic/Assignments/AssignmentsModule';
 import StudentAssignments from './features/academic/Assignments/StudentAssignments';
 import BranchesList from './features/branches/BranchesList';
@@ -27,20 +26,28 @@ import StudentSchedule from './features/academic/StudentSchedule';
 import DocumentCenter from './features/academic/DocumentCenter';
 import ParentDashboard from './pages/ParentDashboard';
 import DashboardHome from './pages/DashboardHome';
-import DisciplineModule from './features/academic/DisciplineModule';
 import SettingsPage from './features/settings/SettingsPage';
-import MeritsAdmin from './features/merits/MeritsAdmin';
 import MyMerits from './features/merits/MyMerits';
 import UserProfile from './pages/UserProfile';
+import PromotionsManager from './features/academic/PromotionsManager';
+import VerifyReceipt from './pages/VerifyReceipt';
+import VerifyStudent from './pages/VerifyStudent';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { UpdateProvider } from './context/UpdateContext';
+import { IdleTimerProvider } from './context/IdleTimerContext';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <UpdateProvider>
+        <IdleTimerProvider>
+          <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-receipt/:invoiceNumber" element={<VerifyReceipt />} />
+          <Route path="/verify-student/:identifier" element={<VerifyStudent />} />
+          <Route path="/verify/student/:identifier" element={<VerifyStudent />} />
 
           {/* Core Auth & Layout Protection */}
           <Route element={<ProtectedRoute />}>
@@ -60,24 +67,25 @@ function App() {
                 <Route path="/courses" element={<CoursesList />} />
                 <Route path="/students" element={<StudentsList />} />
                 <Route path="/enrollments" element={<EnrollmentsList />} />
+                <Route path="/promotions" element={<PromotionsManager />} />
                 <Route path="/payments" element={<PaymentsList />} />
                 <Route path="/invoices" element={<InvoicesList />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/student-reports" element={<StudentReports />} />
+                <Route path="/reports" element={<ReportsHub />} />
+                <Route path="/student-reports" element={<ReportsHub defaultTab="students" />} />
               </Route>
 
               {/* Attendance & Grades (Admin, Superadmin, Secretary, Instructor) */}
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'secretary', 'instructor']} />}>
                 <Route path="/attendance" element={<Attendance />} />
-                <Route path="/grades" element={<Grades />} />
+                <Route path="/grades" element={<AcademicGradesHub />} />
+                <Route path="/course-gradebook" element={<AcademicGradesHub defaultTab="gradebook" />} />
               </Route>
 
               {/* Instructor/Admin Specific */}
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin', 'instructor']} />}>
-                <Route path="/course-gradebook" element={<CourseGradebook />} />
                 <Route path="/assignments" element={<AssignmentsModule />} />
-                <Route path="/discipline" element={<DisciplineModule />} />
-                <Route path="/merits" element={<MeritsAdmin />} />
+                <Route path="/discipline" element={<ConductHub defaultTab="discipline" />} />
+                <Route path="/merits" element={<ConductHub />} />
               </Route>
 
               {/* Shared between Instructors, Students, Admins, Parents, Secs */}
@@ -110,6 +118,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+        </IdleTimerProvider>
+      </UpdateProvider>
     </QueryClientProvider>
   );
 }

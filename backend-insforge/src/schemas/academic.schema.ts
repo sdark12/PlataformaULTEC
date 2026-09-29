@@ -26,8 +26,8 @@ export const createCourseScheduleSchema = z.object({
   body: z.object({
     grade: z.string().min(1, "El grado/sección es requerido."),
     day_of_week: z.string().min(1, "El día de la semana es requerido."),
-    start_time: z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)$/, "Hora de inicio inválida (HH:MM)."),
-    end_time: z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)$/, "Hora de fin inválida (HH:MM)."),
+    start_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, "Hora de inicio inválida (HH:MM o HH:MM:SS)."),
+    end_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, "Hora de fin inválida (HH:MM o HH:MM:SS)."),
   }),
 });
 
@@ -49,6 +49,7 @@ export const createStudentSchema = z.object({
     medical_notes: z.string().optional().nullable(),
     previous_school: z.string().optional().nullable(),
     personal_code: z.string().optional().nullable(),
+    academy_code: z.string().optional().nullable(),
     user_id: z.string().uuid("ID de usuario inválido").optional().nullable().or(z.literal('')),
     branch_id: z.string().uuid("ID de sede inválido").optional().nullable().or(z.literal('')),
   }),
@@ -72,6 +73,7 @@ export const updateStudentSchema = z.object({
     medical_notes: z.string().optional().nullable(),
     previous_school: z.string().optional().nullable(),
     personal_code: z.string().optional().nullable(),
+    academy_code: z.string().optional().nullable(),
     user_id: z.string().uuid("ID de usuario inválido").optional().nullable().or(z.literal('')),
   }),
 });

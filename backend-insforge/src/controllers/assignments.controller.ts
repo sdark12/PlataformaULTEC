@@ -1,6 +1,104 @@
 import { Request, Response } from 'express';
 import client, { adminClient } from '../config/insforge';
 
+/**
+ * Helper to sync a subgrade category and bimestral grades for students
+ */
+async function syncCategoryForStudents(categoryId: string, studentIds?: string[], userId?: string) {
+    try {
+        const db = adminClient;
+        // 1. Fetch category
+        const { data: category } = await db
+            .from('subgrade_categories')
+            .select('id, name, max_score, course_id, unit_name')
+            .eq('id', categoryId)
+            .single();
+        if (!category) return;
+
+        // 2. Fetch all assignments in this category
+        const { data: catAssignments } = await db
+            .from('assignments')
+            .select('id, max_score')
+            .eq('category_id', categoryId);
+
+        const catAssignmentIds = (catAssignments || []).map((a: any) => a.id);
+
+        let targetStudents = studentIds;
+        if (!targetStudents || targetStudents.length === 0) {
+            const { data: enrs } = await db
+                .from('enrollments')
+                .select('student_id')
+                .eq('course_id', category.course_id)
+                .eq('is_active', true);
+            targetStudents = (enrs || []).map((e: any) => e.student_id);
+        }
+
+        if (!targetStudents || targetStudents.length === 0) return;
+
+        for (const studentId of targetStudents) {
+            let totalEarned = 0;
+            if (catAssignmentIds.length > 0) {
+                const { data: subs } = await db
+                    .from('assignment_submissions')
+                    .select('score')
+                    .in('assignment_id', catAssignmentIds)
+                    .eq('student_id', studentId);
+
+                subs?.forEach((s: any) => {
+                    if (s.score !== null && s.score !== undefined) {
+                        totalEarned += Number(s.score);
+                    }
+                });
+            }
+
+            const catMaxScore = Number(category.max_score) || 100;
+            const finalScore = Math.min(catMaxScore, Math.max(0, Math.round(totalEarned * 100) / 100));
+
+            await db
+                .from('subgrades')
+                .upsert({
+                    category_id: category.id,
+                    student_id: studentId,
+                    score: finalScore,
+                    remarks: `Sincronizado de Tareas (${finalScore}/${catMaxScore} pts)`,
+                    created_by: userId || null
+                }, { onConflict: 'category_id, student_id' });
+
+            // Sync bimestral grades
+            const { data: allCats } = await db
+                .from('subgrade_categories')
+                .select('id')
+                .eq('course_id', category.course_id)
+                .eq('unit_name', category.unit_name);
+
+            if (allCats && allCats.length > 0) {
+                const allCatIds = allCats.map((c: any) => c.id);
+                const { data: allSg } = await db
+                    .from('subgrades')
+                    .select('score')
+                    .in('category_id', allCatIds)
+                    .eq('student_id', studentId);
+
+                const sumScore = (allSg || []).reduce((acc: number, curr: any) => acc + (Number(curr.score) || 0), 0);
+                const bimestralScore = Math.min(100, Math.max(0, Math.round(sumScore)));
+
+                await db
+                    .from('grades')
+                    .upsert({
+                        course_id: category.course_id,
+                        unit_name: category.unit_name,
+                        student_id: studentId,
+                        score: bimestralScore,
+                        remarks: `Sincronizado de ${allCats.length} subcalificaciones`,
+                        created_by: userId || null
+                    }, { onConflict: 'student_id, course_id, unit_name' });
+            }
+        }
+    } catch (err) {
+        console.error('Error in syncCategoryForStudents:', err);
+    }
+}
+
 export const assignmentsController = {
     // ---- INSTRUCTOR / ADMIN ENDPOINTS ----
 
@@ -17,10 +115,46 @@ export const assignmentsController = {
                 max_score, 
                 schedule_id,
                 merit_points = 0,
-                unit_name = 'Bimestre 1'
+                unit_name = 'Bimestre 1',
+                category_id = null
             } = req.body;
             const created_by = req.currentUser?.id;
             const db = adminClient; // Use service role to bypass RLS since we verify manually
+
+            // Budget validation for linked category (Enfoque 1: Suma directa con presupuesto)
+            if (category_id) {
+                const { data: cat, error: catErr } = await db
+                    .from('subgrade_categories')
+                    .select('id, name, max_score')
+                    .eq('id', category_id)
+                    .single();
+
+                if (catErr || !cat) {
+                    return res.status(400).json({ message: 'La categoría seleccionada no existe.' });
+                }
+
+                const { data: existingAssignments } = await db
+                    .from('assignments')
+                    .select('id, max_score')
+                    .eq('category_id', category_id);
+
+                const currentAllocated = (existingAssignments || []).reduce((sum: number, a: any) => sum + (Number(a.max_score) || 0), 0);
+                const catMax = Number(cat.max_score) || 0;
+                const remaining = Math.max(0, catMax - currentAllocated);
+                const requestedScore = Number(max_score) || 0;
+
+                if (remaining <= 0) {
+                    return res.status(400).json({ 
+                        message: `La categoría "${cat.name}" ya tiene asignados todos sus puntos (${catMax} pts). No se pueden agregar más tareas a esta categoría.` 
+                    });
+                }
+
+                if (requestedScore > remaining + 0.01) {
+                    return res.status(400).json({ 
+                        message: `El punteo asignado (${requestedScore} pts) supera los puntos disponibles (${remaining} pts) de la categoría "${cat.name}".` 
+                    });
+                }
+            }
 
             const { data, error } = await db
                 .from('assignments')
@@ -35,9 +169,10 @@ export const assignmentsController = {
                     schedule_id: schedule_id || null, 
                     merit_points: Number(merit_points) || 0,
                     unit_name: unit_name || 'Bimestre 1',
+                    category_id: category_id || null,
                     created_by 
                 }])
-                .select()
+                .select('*, subgrade_categories(id, name, max_score)')
                 .single();
 
             if (error) throw error;
@@ -57,7 +192,7 @@ export const assignmentsController = {
 
             let query = db
                 .from('assignments')
-                .select('*')
+                .select('*, subgrade_categories(id, name, max_score)')
                 .eq('course_id', courseId);
 
             if (schedule_id) {
@@ -157,7 +292,7 @@ export const assignmentsController = {
                 .from('assignment_submissions')
                 .update({ score: Number(score), feedback, status: 'GRADED' })
                 .eq('id', submissionId)
-                .select('*, assignments(id, title, max_score, merit_points, course_id, courses(name))')
+                .select('*, assignments(id, title, max_score, merit_points, course_id, unit_name, category_id, courses(name))')
                 .single();
 
             if (error) throw error;
@@ -207,12 +342,167 @@ export const assignmentsController = {
                         .eq('reference_id', submissionId)
                         .eq('transaction_type', 'assignment');
                 }
+
+                // Handle Subgrades Sync if linked to a category (Enfoque 1: Suma directa)
+                if (assignment.category_id) {
+                    await syncCategoryForStudents(assignment.category_id, [studentId], userId);
+                }
             }
 
             res.json(data);
         } catch (error: any) {
             console.error('Error grading submission:', error);
             res.status(500).json({ message: 'Error grading submission', error: error?.message });
+        }
+    },
+
+    /** Update an assignment */
+    async updateAssignment(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { 
+                title, 
+                description, 
+                assignment_type, 
+                due_date, 
+                weight_points, 
+                max_score, 
+                schedule_id,
+                merit_points,
+                unit_name,
+                category_id
+            } = req.body;
+            const db = adminClient;
+            const userId = req.currentUser?.id;
+
+            const { data: current, error: curErr } = await db
+                .from('assignments')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (curErr || !current) {
+                return res.status(404).json({ message: 'Tarea no encontrada.' });
+            }
+
+            const targetCatId = category_id !== undefined ? (category_id || null) : current.category_id;
+            const targetMaxScore = max_score !== undefined ? Number(max_score) : Number(current.max_score);
+
+            if (targetCatId) {
+                const { data: cat } = await db
+                    .from('subgrade_categories')
+                    .select('id, name, max_score')
+                    .eq('id', targetCatId)
+                    .single();
+
+                if (cat) {
+                    const { data: otherAssignments } = await db
+                        .from('assignments')
+                        .select('id, max_score')
+                        .eq('category_id', targetCatId)
+                        .neq('id', id);
+
+                    const otherAllocated = (otherAssignments || []).reduce((sum: number, a: any) => sum + (Number(a.max_score) || 0), 0);
+                    const catMax = Number(cat.max_score) || 0;
+                    const remaining = Math.max(0, catMax - otherAllocated);
+
+                    if (targetMaxScore > remaining + 0.01) {
+                        return res.status(400).json({ 
+                            message: `El punteo asignado (${targetMaxScore} pts) supera los puntos disponibles (${remaining} pts) de la categoría "${cat.name}".` 
+                        });
+                    }
+                }
+            }
+
+            const updatePayload: any = {};
+            if (title !== undefined) updatePayload.title = title;
+            if (description !== undefined) updatePayload.description = description;
+            if (assignment_type !== undefined) updatePayload.assignment_type = assignment_type;
+            if (due_date !== undefined) updatePayload.due_date = due_date;
+            if (weight_points !== undefined) updatePayload.weight_points = Number(weight_points) || 1.0;
+            if (max_score !== undefined) updatePayload.max_score = Number(max_score) || 100;
+            if (schedule_id !== undefined) updatePayload.schedule_id = schedule_id || null;
+            if (merit_points !== undefined) updatePayload.merit_points = Number(merit_points) || 0;
+            if (unit_name !== undefined) updatePayload.unit_name = unit_name || 'Bimestre 1';
+            if (category_id !== undefined) updatePayload.category_id = category_id || null;
+
+            const { data: updated, error: updateErr } = await db
+                .from('assignments')
+                .update(updatePayload)
+                .eq('id', id)
+                .select('*, subgrade_categories(id, name, max_score)')
+                .single();
+
+            if (updateErr) throw updateErr;
+
+            if (current.category_id && current.category_id !== targetCatId) {
+                await syncCategoryForStudents(current.category_id, undefined, userId);
+            }
+            if (targetCatId) {
+                await syncCategoryForStudents(targetCatId, undefined, userId);
+            }
+
+            res.json(updated);
+        } catch (error: any) {
+            console.error('Error updating assignment:', error);
+            res.status(500).json({ message: 'Error updating assignment', error: error?.message });
+        }
+    },
+
+    /** Delete an assignment */
+    async deleteAssignment(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const db = adminClient;
+            const userId = req.currentUser?.id;
+
+            const { data: current, error: curErr } = await db
+                .from('assignments')
+                .select('id, category_id, course_id')
+                .eq('id', id)
+                .single();
+
+            if (curErr || !current) {
+                return res.status(404).json({ message: 'Tarea no encontrada.' });
+            }
+
+            // Get submissions to clear merits and capture affected students
+            const { data: subs } = await db
+                .from('assignment_submissions')
+                .select('id, student_id')
+                .eq('assignment_id', id);
+
+            const subIds = (subs || []).map((s: any) => s.id);
+            const studentIds = (subs || []).map((s: any) => s.student_id);
+
+            if (subIds.length > 0) {
+                await db
+                    .from('merit_transactions')
+                    .delete()
+                    .in('reference_id', subIds)
+                    .eq('transaction_type', 'assignment');
+
+                await db
+                    .from('assignment_submissions')
+                    .delete()
+                    .eq('assignment_id', id);
+            }
+
+            const { error: delErr } = await db
+                .from('assignments')
+                .delete()
+                .eq('id', id);
+
+            if (delErr) throw delErr;
+
+            if (current.category_id) {
+                await syncCategoryForStudents(current.category_id, studentIds.length > 0 ? studentIds : undefined, userId);
+            }
+
+            res.json({ message: 'Tarea eliminada exitosamente' });
+        } catch (error: any) {
+            console.error('Error deleting assignment:', error);
+            res.status(500).json({ message: 'Error deleting assignment', error: error?.message });
         }
     },
 
@@ -360,7 +650,7 @@ export const assignmentsController = {
             // Fetch all assignments for those courses
             const { data: assignments, error: assignError } = await db
                 .from('assignments')
-                .select('*')
+                .select('*, subgrade_categories(id, name, max_score)')
                 .in('course_id', courseIds)
                 .order('due_date', { ascending: true });
 
@@ -408,6 +698,8 @@ export const assignmentsController = {
                         weight_points: a.weight_points,
                         merit_points: a.merit_points ?? 0,
                         unit_name: a.unit_name || 'Bimestre 1',
+                        category_id: a.category_id || null,
+                        category_name: a.subgrade_categories?.name || null,
                         max_score: a.max_score,
                         course_name: Array.isArray(enr?.courses) ? enr?.courses[0]?.name : (enr?.courses as any)?.name || '',
                         submission_id: sub?.id,

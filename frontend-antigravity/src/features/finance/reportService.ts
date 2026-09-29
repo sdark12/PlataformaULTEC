@@ -8,11 +8,24 @@ export interface DashboardStats {
 }
 
 export interface StudentDashboardStats {
+    student_id?: string;
+    student_code?: string;
+    full_name?: string;
     pending_assignments: number;
     attendance_percentage: number;
+    has_attendance_records?: boolean;
     average_grade: number;
     total_courses: number;
-    recent_resources: Array<{ id: string; title: string; resource_type: string; created_at: string; courses: { name: string } }>;
+    recent_resources: Array<{ 
+        id: string; 
+        title: string; 
+        description?: string;
+        file_url?: string;
+        resource_type: string; 
+        created_at: string; 
+        courses?: { id?: string; name: string };
+        author?: { full_name: string };
+    }>;
     latest_announcement: { id: string; title: string; content: string; created_at: string } | null;
 }
 

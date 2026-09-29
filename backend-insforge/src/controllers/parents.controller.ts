@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { adminClient } from '../config/insforge';
-import { getSettingBool, getSetting } from './settings.controller';
+import { getSettingBool, getSetting, getSettingNumber } from './settings.controller';
 
 /**
  * Helper: Calculate how many grade units a student can see per course
@@ -8,7 +8,7 @@ import { getSettingBool, getSetting } from './settings.controller';
  */
 const calculateAllowedUnitsForParent = async (studentId: string, courseIds: number[]): Promise<Map<number, number>> => {
     const allowedMap = new Map<number, number>();
-    const TOTAL_UNITS = 4;
+    const TOTAL_UNITS = (await getSettingNumber('total_grade_units')) || 4;
 
     if (courseIds.length === 0) return allowedMap;
 
@@ -93,10 +93,11 @@ const calculateAllowedUnitsForParent = async (studentId: string, courseIds: numb
     return allowedMap;
 };
 
-// Admin: Get all parent-student links
+// Admin: Get all parent-student links (with optional filter by parent_user_id or student_id)
 export const getParentLinks = async (req: Request, res: Response) => {
     try {
-        const { data, error } = await adminClient
+        const { parent_user_id, student_id } = req.query;
+        let query = adminClient
             .from('parent_student_links')
             .select(`
                 id,
@@ -105,9 +106,18 @@ export const getParentLinks = async (req: Request, res: Response) => {
                 relationship,
                 created_at,
                 profiles!parent_user_id ( id, full_name, email ),
-                students ( id, full_name, personal_code )
+                students ( id, full_name, personal_code, academy_code )
             `)
             .order('created_at', { ascending: false });
+
+        if (parent_user_id) {
+            query = query.eq('parent_user_id', parent_user_id);
+        }
+        if (student_id) {
+            query = query.eq('student_id', student_id);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         res.json(data || []);
@@ -145,6 +155,110 @@ export const createParentLink = async (req: Request, res: Response) => {
         }
         console.error('Error creating parent link:', error);
         res.status(500).json({ message: 'Error creating parent link' });
+    }
+};
+
+// Admin: Synchronize all student links for a parent (add new, update, remove unselected)
+export const syncParentLinks = async (req: Request, res: Response) => {
+    const { parent_user_id, student_links } = req.body;
+
+    if (!parent_user_id) {
+        return res.status(400).json({ message: 'parent_user_id es obligatorio' });
+    }
+
+    try {
+        // 1. Fetch parent profile for cascade update
+        const { data: parentProfile } = await adminClient
+            .from('profiles')
+            .select('full_name, email, phone')
+            .eq('id', parent_user_id)
+            .maybeSingle();
+
+        // 2. Fetch existing links
+        const { data: currentLinks } = await adminClient
+            .from('parent_student_links')
+            .select('id, student_id, relationship')
+            .eq('parent_user_id', parent_user_id);
+
+        const currentMap = new Map((currentLinks || []).map((l: any) => [l.student_id, l]));
+        const incomingStudentIds = new Set((student_links || []).map((l: any) => l.student_id));
+
+        // Delete links not in incoming
+        const toDeleteIds: string[] = [];
+        for (const [stId, link] of currentMap.entries()) {
+            if (!incomingStudentIds.has(stId)) {
+                toDeleteIds.push(link.id);
+            }
+        }
+
+        if (toDeleteIds.length > 0) {
+            await adminClient
+                .from('parent_student_links')
+                .delete()
+                .in('id', toDeleteIds);
+        }
+
+        // Insert or update incoming links
+        for (const item of (student_links || [])) {
+            if (!item.student_id) continue;
+            const existing = currentMap.get(item.student_id);
+            const rel = item.relationship || 'parent';
+            if (existing) {
+                if (existing.relationship !== rel) {
+                    await adminClient
+                        .from('parent_student_links')
+                        .update({ relationship: rel })
+                        .eq('id', existing.id);
+                }
+            } else {
+                await adminClient
+                    .from('parent_student_links')
+                    .insert({
+                        parent_user_id,
+                        student_id: item.student_id,
+                        relationship: rel,
+                        created_by: req.currentUser?.id
+                    });
+            }
+        }
+
+        // 3. Cascade update guardian contact details on students table
+        if (parentProfile && incomingStudentIds.size > 0) {
+            const studentIdsArray = Array.from(incomingStudentIds);
+            const studentUpdates: any = {};
+            if (parentProfile.full_name) studentUpdates.guardian_name = parentProfile.full_name;
+            if (parentProfile.phone) studentUpdates.guardian_phone = parentProfile.phone;
+            if (parentProfile.email) studentUpdates.guardian_email = parentProfile.email;
+
+            if (Object.keys(studentUpdates).length > 0) {
+                await adminClient
+                    .from('students')
+                    .update(studentUpdates)
+                    .in('id', studentIdsArray);
+            }
+        }
+
+        // 4. Return refreshed links
+        const { data: updatedLinks } = await adminClient
+            .from('parent_student_links')
+            .select(`
+                id,
+                parent_user_id,
+                student_id,
+                relationship,
+                students (
+                    id,
+                    full_name,
+                    personal_code,
+                    academy_code
+                )
+            `)
+            .eq('parent_user_id', parent_user_id);
+
+        res.json({ message: 'Vínculos familiares actualizados exitosamente', links: updatedLinks || [] });
+    } catch (error) {
+        console.error('Error syncing parent links:', error);
+        res.status(500).json({ message: 'Error al sincronizar vínculos familiares' });
     }
 };
 
@@ -482,11 +596,13 @@ export const getChildGrades = async (req: Request, res: Response) => {
             allowedUnitsMap = await calculateAllowedUnitsForParent(String(studentId), courseIds);
         }
 
-        const unitOrder = ['Unidad 1', 'Unidad 2', 'Unidad 3', 'Unidad 4', 'Examen Final', 'Proyecto'];
+        const unitNamesStr = await getSetting('grade_unit_names');
+        const configuredUnits = unitNamesStr ? unitNamesStr.split(',').map(s => s.trim()).filter(Boolean) : ['Unidad 1', 'Unidad 2', 'Unidad 3', 'Unidad 4'];
+        const unitOrder = [...configuredUnits, 'Recuperación'];
 
         const reportCard: any[] = [];
         let totalScoreSum = 0;
-        let totalUnits = 0;
+        let totalCoursesGraded = 0;
 
         coursesMap.forEach((course) => {
             // Sort units in order
@@ -495,6 +611,9 @@ export const getChildGrades = async (req: Request, res: Response) => {
                 const bi = unitOrder.indexOf(b.unit_name);
                 return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
             });
+
+            // Filter out deprecated 'Examen Final' and 'Proyecto' if any legacy records exist
+            course.units = course.units.filter((u: any) => !['Examen Final', 'Proyecto'].includes(u.unit_name));
 
             const allowedCount = allowedUnitsMap.get(course.course_id) ?? course.units.length;
             let paymentRestricted = false;
@@ -512,22 +631,43 @@ export const getChildGrades = async (req: Request, res: Response) => {
                 return { ...unit, restricted: false };
             });
 
-            const visibleUnits = processedUnits.filter((u: any) => !u.restricted && u.score !== null);
-            const sum = visibleUnits.reduce((acc: number, curr: any) => acc + Number(curr.score), 0);
-            course.average = visibleUnits.length > 0 ? Number((sum / visibleUnits.length).toFixed(2)) : 0;
+            // Separate ordinary bimestres from extraordinary Recuperación
+            const ordinaryUnits = processedUnits.filter((u: any) => !u.restricted && u.score !== null && u.unit_name !== 'Recuperación');
+            const recupUnit = processedUnits.find((u: any) => !u.restricted && u.score !== null && u.unit_name === 'Recuperación');
 
-            totalScoreSum += sum;
-            totalUnits += visibleUnits.length;
+            const ordinarySum = ordinaryUnits.reduce((acc: number, curr: any) => acc + Number(curr.score), 0);
+            const ordinaryAvg = ordinaryUnits.length > 0 ? Number((ordinarySum / ordinaryUnits.length).toFixed(2)) : 0;
+
+            let finalAvg = ordinaryAvg;
+            let status = ordinaryAvg >= 60 ? 'APROBADO' : 'REPROBADO';
+
+            if (ordinaryAvg < 60 && recupUnit && Number(recupUnit.score) >= 60) {
+                finalAvg = 60; // Aprobado con nota oficial de 60 en Recuperación
+                status = 'APROBADO_RECUPERACION';
+            }
+
+            course.average = finalAvg;
+            course.ordinary_average = ordinaryAvg;
+            course.recuperation_score = recupUnit ? Number(recupUnit.score) : null;
+            course.status = status;
+
+            if (ordinaryUnits.length > 0) {
+                totalScoreSum += finalAvg;
+                totalCoursesGraded++;
+            }
 
             reportCard.push({
                 course_name: course.course_name,
                 units: processedUnits,
                 average: course.average,
+                ordinary_average: course.ordinary_average,
+                recuperation_score: course.recuperation_score,
+                status: course.status,
                 payment_restricted: paymentRestricted
             });
         });
 
-        const generalAverage = totalUnits > 0 ? Number((totalScoreSum / totalUnits).toFixed(2)) : 0;
+        const generalAverage = totalCoursesGraded > 0 ? Number((totalScoreSum / totalCoursesGraded).toFixed(2)) : 0;
 
         res.json({
             general_average: generalAverage,

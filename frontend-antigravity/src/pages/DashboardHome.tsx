@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import QRCode from 'qrcode';
 import {
     Loader2, Users, BookOpen, DollarSign, AlertCircle, Clock,
     TrendingUp, FileText, Megaphone,
     UserPlus, AlertTriangle,
     Zap, Flame, QrCode, Maximize2, Download,
-    MapPin, X, ChevronRight, CheckCircle2
+    MapPin, X, ChevronRight, CheckCircle2,
+    Copy, Check, Video, Image as ImageIcon, Link as LinkIcon,
+    Eye
 } from 'lucide-react';
 import { getDashboardStats, getStudentDashboardStats, getAdminDashboardExtended } from '../features/finance/reportService';
 import { getStudentBalance } from '../features/merits/meritsService';
@@ -14,9 +17,16 @@ import { assignmentsService } from '../services/assignmentsService';
 import { getCourses } from '../features/academic/academicService';
 import api from '../services/apiClient';
 import ParentDashboard from './ParentDashboard';
+import MediaViewerModal from '../features/academic/components/MediaViewerModal';
+import type { ViewableResource } from '../features/academic/components/MediaViewerModal';
 
 const DashboardHome = () => {
+    const navigate = useNavigate();
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+    const [qrDataUrl, setQrDataUrl] = useState<string>('');
+    const [copiedQr, setCopiedQr] = useState(false);
+    const [viewerResource, setViewerResource] = useState<ViewableResource | null>(null);
+    const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
     let currentUser: any = null;
     try {
         const userStr = localStorage.getItem('user');
@@ -28,6 +38,7 @@ const DashboardHome = () => {
     const isParent = role === 'parent';
     const isAdmin = ['admin', 'superadmin', 'secretary'].includes(role);
     const isInstructor = role === 'instructor';
+    const isSecretary = role === 'secretary';
 
     // Admin primary stats
     const { data: stats, isLoading: loadingStats } = useQuery({
@@ -81,6 +92,66 @@ const DashboardHome = () => {
         enabled: isInstructor,
     });
 
+    // QR Code & Student Credential generation
+    const studentCode = studentStats?.student_code || currentUser?.personal_code || `UT-${new Date().getFullYear()}-${currentUser?.id?.slice(0, 4)?.toUpperCase() || 'EST'}`;
+
+    useEffect(() => {
+        if (isStudent && studentCode) {
+            const verifyUrl = `${window.location.origin}/verify-student/${encodeURIComponent(studentCode)}`;
+            QRCode.toDataURL(verifyUrl, {
+                width: 360,
+                margin: 1,
+                color: {
+                    dark: '#020617',
+                    light: '#ffffff'
+                }
+            }).then(url => {
+                setQrDataUrl(url);
+            }).catch(err => {
+                console.error('Error generating QR code:', err);
+            });
+        }
+    }, [isStudent, studentCode]);
+
+    const handleCopyVerificationLink = () => {
+        const verifyUrl = `${window.location.origin}/verify-student/${encodeURIComponent(studentCode)}`;
+        navigator.clipboard.writeText(verifyUrl);
+        setCopiedQr(true);
+        setTimeout(() => setCopiedQr(false), 2500);
+    };
+
+    const handleDownloadQr = () => {
+        if (!qrDataUrl) return;
+        const link = document.createElement('a');
+        link.download = `Credencial_${studentCode}.png`;
+        link.href = qrDataUrl;
+        link.click();
+    };
+
+    const handleOpenResource = (r: any) => {
+        if (!r.file_url) {
+            navigate('/resources');
+            return;
+        }
+        setViewerResource(r);
+        setIsViewerModalOpen(true);
+    };
+
+    const getDashboardResourceIcon = (type?: string) => {
+        switch (type) {
+            case 'video':
+                return { icon: Video, color: 'text-rose-500 bg-rose-500/10' };
+            case 'document':
+                return { icon: FileText, color: 'text-indigo-500 bg-indigo-500/10' };
+            case 'image':
+                return { icon: ImageIcon, color: 'text-emerald-500 bg-emerald-500/10' };
+            case 'link':
+                return { icon: LinkIcon, color: 'text-blue-500 bg-blue-500/10' };
+            default:
+                return { icon: BookOpen, color: 'text-amber-500 bg-amber-500/10' };
+        }
+    };
+
     // ======== PARENT / FAMILIAR DASHBOARD ========
     if (isParent) {
         return <ParentDashboard />;
@@ -104,11 +175,10 @@ const DashboardHome = () => {
 
     // ======== STUDENT DASHBOARD (STITCH DESIGN) ========
     if (isStudent) {
-        const hasAttendance = studentStats?.attendance_percentage !== undefined && studentStats?.attendance_percentage !== null;
-        const attendancePct = hasAttendance ? studentStats.attendance_percentage : 100;
+        const hasRecords = studentStats?.has_attendance_records;
+        const attendancePct = hasRecords ? (studentStats?.attendance_percentage ?? 100) : 100;
         const xp = meritsBalance?.balance ?? 0;
         const level = Math.max(1, Math.floor(xp / 200) + 1);
-        const studentCode = currentUser?.personal_code || `UT-${new Date().getFullYear()}-${currentUser?.id?.slice(0, 4)?.toUpperCase() || 'EST'}`;
         const rankTitle = level >= 5 ? 'Maker Master • Élite' : level >= 3 ? 'Tech Innovator' : 'Estudiante Maker';
 
         const now = Date.now();
@@ -157,7 +227,9 @@ const DashboardHome = () => {
                         </h1>
                         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 shadow-sm">
                             <Flame className="h-4 w-4 text-emerald-500 fill-emerald-500" />
-                            <span className="text-xs font-extrabold text-slate-800 dark:text-white">{attendancePct}/100</span>
+                            <span className="text-xs font-extrabold text-slate-800 dark:text-white">
+                                {hasRecords ? `${attendancePct}/100` : '100/100'}
+                            </span>
                         </div>
                     </div>
 
@@ -199,45 +271,28 @@ const DashboardHome = () => {
 
                         {/* Center Dynamic QR Block */}
                         <div className="flex flex-col items-center justify-center py-2">
-                            <div className="relative p-3 bg-slate-950/90 rounded-2xl border border-white/10 shadow-inner flex items-center justify-center">
+                            <div className="relative p-2.5 bg-white rounded-2xl border border-white/20 shadow-[0_0_25px_rgba(37,192,244,0.25)] flex items-center justify-center">
                                 {/* Neon Corner Guides */}
                                 <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-brand-teal rounded-tl-sm pointer-events-none"></div>
                                 <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-brand-teal rounded-tr-sm pointer-events-none"></div>
                                 <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-brand-teal rounded-bl-sm pointer-events-none"></div>
                                 <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-brand-teal rounded-br-sm pointer-events-none"></div>
 
-                                {/* Stylized Stitch QR SVG */}
-                                <svg className="w-32 h-32 md:w-36 md:h-36 transition-transform duration-300 group-hover:scale-105" fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                    <rect fill="#25C0F4" fillOpacity="0.2" height="24" rx="4" width="24" x="10" y="10"></rect>
-                                    <rect fill="#6bd3ff" height="16" rx="2" width="16" x="14" y="14"></rect>
-                                    <rect fill="#0f131d" height="8" rx="1" width="8" x="18" y="18"></rect>
-                                    <rect fill="#25C0F4" fillOpacity="0.2" height="24" rx="4" width="24" x="66" y="10"></rect>
-                                    <rect fill="#6bd3ff" height="16" rx="2" width="16" x="70" y="14"></rect>
-                                    <rect fill="#0f131d" height="8" rx="1" width="8" x="74" y="18"></rect>
-                                    <rect fill="#25C0F4" fillOpacity="0.2" height="24" rx="4" width="24" x="10" y="66"></rect>
-                                    <rect fill="#6bd3ff" height="16" rx="2" width="16" x="14" y="70"></rect>
-                                    <rect fill="#0f131d" height="8" rx="1" width="8" x="18" y="74"></rect>
-                                    <rect fill="#d7baff" height="6" rx="1.5" width="6" x="42" y="12"></rect>
-                                    <rect fill="#7f0df2" height="14" rx="1.5" width="6" x="52" y="12"></rect>
-                                    <rect fill="#6bd3ff" height="12" rx="1.5" width="6" x="42" y="22"></rect>
-                                    <rect fill="#6bd3ff" height="6" rx="1.5" width="14" x="12" y="42"></rect>
-                                    <rect fill="#d7baff" height="6" rx="1.5" width="12" x="22" y="52"></rect>
-                                    <rect fill="#7f0df2" fillOpacity="0.3" height="20" rx="4" width="20" x="40" y="40"></rect>
-                                    <rect fill="#4edea3" height="8" rx="2" width="8" x="46" y="46"></rect>
-                                    <rect fill="#6bd3ff" height="8" rx="1.5" width="8" x="66" y="42"></rect>
-                                    <rect fill="#7f0df2" height="6" rx="1.5" width="10" x="78" y="42"></rect>
-                                    <rect fill="#d7baff" height="16" rx="1.5" width="6" x="66" y="54"></rect>
-                                    <rect fill="#6bd3ff" height="6" rx="1.5" width="12" x="76" y="54"></rect>
-                                    <rect fill="#6bd3ff" height="12" rx="1.5" width="6" x="42" y="66"></rect>
-                                    <rect fill="#7f0df2" height="16" rx="1.5" width="6" x="52" y="72"></rect>
-                                    <rect fill="#d7baff" height="6" rx="1.5" width="6" x="42" y="82"></rect>
-                                    <rect fill="#6bd3ff" height="12" rx="1.5" width="8" x="66" y="76"></rect>
-                                    <rect fill="#d7baff" height="12" rx="1.5" width="10" x="78" y="76"></rect>
-                                </svg>
+                                {qrDataUrl ? (
+                                    <img 
+                                        src={qrDataUrl} 
+                                        alt={`QR ${studentCode}`} 
+                                        className="w-32 h-32 md:w-36 md:h-36 rounded-xl object-contain transition-transform duration-300 group-hover:scale-105" 
+                                    />
+                                ) : (
+                                    <div className="w-32 h-32 md:w-36 md:h-36 rounded-xl bg-slate-100 flex items-center justify-center">
+                                        <QrCode className="h-10 w-10 text-slate-400 animate-pulse" />
+                                    </div>
+                                )}
                             </div>
                             <p className="mt-2 text-[11px] text-brand-teal font-semibold flex items-center gap-1">
                                 <Maximize2 className="h-3 w-3" />
-                                Toca para ampliar QR
+                                Toca para ampliar credencial
                             </p>
                         </div>
 
@@ -278,9 +333,9 @@ const DashboardHome = () => {
                         </div>
                         <div className="space-y-0.5 text-center">
                             <span className="text-[11px] font-bold text-emerald-500">
-                                {attendancePct >= 80 ? 'Excelente récord' : 'Por mejorar'}
+                                {hasRecords ? (attendancePct >= 80 ? 'Excelente récord' : 'Por mejorar') : 'Al día • Sin inasistencias'}
                             </span>
-                            <p className="text-[10px] text-slate-400">Puntualidad y asistencia</p>
+                            <p className="text-[10px] text-slate-400">{hasRecords ? 'Puntualidad y asistencia' : 'Ciclo en progreso'}</p>
                         </div>
                     </Link>
 
@@ -489,54 +544,65 @@ const DashboardHome = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Biblioteca & Descargas</h2>
-                            <p className="text-xs text-slate-400">Archivos y materiales de clase</p>
+                            <p className="text-xs text-slate-400">Archivos y materiales de tus cursos</p>
                         </div>
-                        <Link to="/resources" className="text-xs font-bold text-brand-blue dark:text-brand-teal hover:underline">
-                            Ver biblioteca →
+                        <Link to="/resources" className="text-xs font-bold text-brand-blue dark:text-brand-teal hover:underline flex items-center gap-1">
+                            <span>Ver biblioteca</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                     </div>
 
                     {studentStats?.recent_resources && studentStats.recent_resources.length > 0 ? (
                         <div className="space-y-2">
-                            {studentStats.recent_resources.slice(0, 3).map((r: any) => (
-                                <div key={r.id} className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-between shadow-sm">
-                                    <div className="flex items-center gap-3 min-w-0 pr-2">
-                                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-                                            <FileText className="h-5 w-5" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate">{r.title}</h3>
-                                            <p className="text-[10px] text-slate-400 truncate">
-                                                {r.courses?.name} • {new Date(r.created_at).toLocaleDateString('es-ES')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <Link
-                                        to="/resources"
-                                        className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-brand-blue dark:text-brand-teal hover:scale-105 active:scale-95 transition-all shrink-0"
-                                        title="Descargar material"
+                            {studentStats.recent_resources.slice(0, 3).map((r: any) => {
+                                const { icon: ResourceIcon, color: iconStyle } = getDashboardResourceIcon(r.resource_type);
+                                return (
+                                    <div 
+                                        key={r.id} 
+                                        onClick={() => handleOpenResource(r)}
+                                        className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-between shadow-sm hover:border-brand-blue/30 dark:hover:border-white/20 transition-all cursor-pointer group"
                                     >
-                                        <Download className="h-4 w-4" />
-                                    </Link>
-                                </div>
-                            ))}
+                                        <div className="flex items-center gap-3 min-w-0 pr-2">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconStyle}`}>
+                                                <ResourceIcon className="h-5 w-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-brand-blue transition-colors">{r.title}</h3>
+                                                <p className="text-[10px] text-slate-400 truncate">
+                                                    {r.courses?.name || 'Curso'} • {new Date(r.created_at).toLocaleDateString('es-ES')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOpenResource(r);
+                                            }}
+                                            className="w-9 h-9 rounded-xl bg-brand-blue/10 dark:bg-brand-blue/20 flex items-center justify-center text-brand-blue dark:text-teal-400 hover:scale-105 active:scale-95 transition-all shrink-0 cursor-pointer shadow-xs"
+                                            title="Previsualizar material"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : (
-                        <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-between shadow-sm">
-                            <div className="flex items-center gap-3 min-w-0 pr-2">
-                                <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-                                    <FileText className="h-5 w-5" />
-                                </div>
-                                <div className="min-w-0">
-                                    <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate">Guía Sensores Ultrasónicos & Motores.pdf</h3>
-                                    <p className="text-[10px] text-slate-400 truncate">4.2 MB • Material de apoyo práctico</p>
-                                </div>
+                        <div className="p-5 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
+                            <div className="w-10 h-10 rounded-full bg-brand-blue/10 text-brand-teal flex items-center justify-center">
+                                <BookOpen className="h-5 w-5" />
                             </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sin nuevos materiales</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+                                Tus docentes aún no han publicado documentos en tus cursos inscritos.
+                            </p>
                             <Link
                                 to="/resources"
-                                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-brand-blue dark:text-brand-teal shrink-0"
+                                className="text-xs font-bold text-brand-blue dark:text-brand-teal hover:underline pt-1 inline-flex items-center gap-1"
                             >
-                                <Download className="h-4 w-4" />
+                                <span>Explorar biblioteca general</span>
+                                <ChevronRight className="h-3 w-3" />
                             </Link>
                         </div>
                     )}
@@ -544,7 +610,7 @@ const DashboardHome = () => {
 
                 {/* Fullscreen Interactive QR Modal */}
                 {isQrModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-300">
                         <div className="bg-slate-900 border border-white/20 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
                             <button
                                 onClick={() => setIsQrModalOpen(false)}
@@ -553,52 +619,76 @@ const DashboardHome = () => {
                                 <X className="h-5 w-5" />
                             </button>
 
-                            <div className="w-12 h-12 rounded-2xl bg-brand-blue/20 text-brand-teal flex items-center justify-center mb-3">
+                            <div className="w-12 h-12 rounded-2xl bg-brand-blue/20 text-brand-teal flex items-center justify-center mb-2">
                                 <QrCode className="h-6 w-6" />
                             </div>
 
                             <h3 className="text-xl font-black text-white tracking-tight">Pase Estudiantil Activo</h3>
-                            <p className="text-xs text-slate-400 mt-1 mb-5">Escanee en el lector de acceso al ingresar a laboratorios</p>
+                            <p className="text-xs text-slate-400 mt-0.5 mb-4">Escanee para verificar credencial o registrar acceso</p>
 
-                            {/* Stylized QR Code Enlarge */}
-                            <div className="p-4 bg-slate-950 rounded-2xl border-2 border-brand-teal/40 shadow-[0_0_30px_rgba(37,192,244,0.3)] mb-5">
-                                <svg className="w-48 h-48" fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                    <rect fill="#25C0F4" fillOpacity="0.2" height="24" rx="4" width="24" x="10" y="10"></rect>
-                                    <rect fill="#6bd3ff" height="16" rx="2" width="16" x="14" y="14"></rect>
-                                    <rect fill="#0f131d" height="8" rx="1" width="8" x="18" y="18"></rect>
-                                    <rect fill="#25C0F4" fillOpacity="0.2" height="24" rx="4" width="24" x="66" y="10"></rect>
-                                    <rect fill="#6bd3ff" height="16" rx="2" width="16" x="70" y="14"></rect>
-                                    <rect fill="#0f131d" height="8" rx="1" width="8" x="74" y="18"></rect>
-                                    <rect fill="#25C0F4" fillOpacity="0.2" height="24" rx="4" width="24" x="10" y="66"></rect>
-                                    <rect fill="#6bd3ff" height="16" rx="2" width="16" x="14" y="70"></rect>
-                                    <rect fill="#0f131d" height="8" rx="1" width="8" x="18" y="74"></rect>
-                                    <rect fill="#d7baff" height="6" rx="1.5" width="6" x="42" y="12"></rect>
-                                    <rect fill="#7f0df2" height="14" rx="1.5" width="6" x="52" y="12"></rect>
-                                    <rect fill="#6bd3ff" height="12" rx="1.5" width="6" x="42" y="22"></rect>
-                                    <rect fill="#6bd3ff" height="6" rx="1.5" width="14" x="12" y="42"></rect>
-                                    <rect fill="#d7baff" height="6" rx="1.5" width="12" x="22" y="52"></rect>
-                                    <rect fill="#7f0df2" fillOpacity="0.3" height="20" rx="4" width="20" x="40" y="40"></rect>
-                                    <rect fill="#4edea3" height="8" rx="2" width="8" x="46" y="46"></rect>
-                                    <rect fill="#6bd3ff" height="8" rx="1.5" width="8" x="66" y="42"></rect>
-                                    <rect fill="#7f0df2" height="6" rx="1.5" width="10" x="78" y="42"></rect>
-                                    <rect fill="#d7baff" height="16" rx="1.5" width="6" x="66" y="54"></rect>
-                                    <rect fill="#6bd3ff" height="6" rx="1.5" width="12" x="76" y="54"></rect>
-                                    <rect fill="#6bd3ff" height="12" rx="1.5" width="6" x="42" y="66"></rect>
-                                    <rect fill="#7f0df2" height="16" rx="1.5" width="6" x="52" y="72"></rect>
-                                    <rect fill="#d7baff" height="6" rx="1.5" width="6" x="42" y="82"></rect>
-                                    <rect fill="#6bd3ff" height="12" rx="1.5" width="8" x="66" y="76"></rect>
-                                    <rect fill="#d7baff" height="12" rx="1.5" width="10" x="78" y="76"></rect>
-                                </svg>
+                            {/* Scannable Real QR Code */}
+                            <div className="p-3 bg-white rounded-2xl border-4 border-brand-teal/40 shadow-[0_0_35px_rgba(37,192,244,0.3)] mb-4">
+                                {qrDataUrl ? (
+                                    <img 
+                                        src={qrDataUrl} 
+                                        alt={`QR ${studentCode}`} 
+                                        className="w-52 h-52 object-contain" 
+                                    />
+                                ) : (
+                                    <div className="w-52 h-52 bg-slate-100 flex items-center justify-center">
+                                        <QrCode className="h-16 w-16 text-slate-400 animate-pulse" />
+                                    </div>
+                                )}
                             </div>
 
                             <p className="text-base font-black text-white">{currentUser?.full_name}</p>
                             <p className="text-xs text-brand-teal font-mono font-bold mt-0.5">{studentCode}</p>
-                            <span className="mt-3 text-[11px] px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                            <span className="mt-2 text-[11px] px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
                                 Acceso Autorizado • ULTEC
                             </span>
+
+                            {/* Action Buttons */}
+                            <div className="grid grid-cols-2 gap-2 w-full mt-5">
+                                <button
+                                    type="button"
+                                    onClick={handleCopyVerificationLink}
+                                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700 cursor-pointer"
+                                >
+                                    {copiedQr ? (
+                                        <>
+                                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                            <span className="text-emerald-400">¡Copiado!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="h-3.5 w-3.5" />
+                                            <span>Copiar Enlace</span>
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadQr}
+                                    disabled={!qrDataUrl}
+                                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-blue to-brand-teal hover:opacity-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                    <span>Guardar QR</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
+
+                {/* Media Viewer Modal for direct video and document previews */}
+                <MediaViewerModal
+                    isOpen={isViewerModalOpen}
+                    onClose={() => {
+                        setIsViewerModalOpen(false);
+                        setViewerResource(null);
+                    }}
+                    resource={viewerResource}
+                />
             </div>
         );
     }
@@ -888,12 +978,14 @@ const DashboardHome = () => {
                     </div>
                 </Link>
 
-                {/* Card 2: Recaudación Mensual */}
+                {/* Card 2: Recaudación / Mi Caja de Hoy */}
                 <Link to="/payments" className="group relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/5 rounded-2xl p-4 md:p-5 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md hover:border-brand-teal/40 active:scale-[0.98] transition-all">
                     <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-brand-teal/20 rounded-full blur-xl pointer-events-none" />
                     <div>
                         <div className="flex items-center justify-between gap-1 mb-2">
-                            <span className="text-[11px] md:text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold truncate">Recaudación</span>
+                            <span className="text-[11px] md:text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold truncate">
+                                {isSecretary ? 'Mi Caja de Hoy' : 'Recaudación'}
+                            </span>
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-teal to-emerald-500 flex items-center justify-center text-white shadow-sm flex-shrink-0">
                                 <DollarSign className="h-4 w-4" />
                             </div>
@@ -901,11 +993,13 @@ const DashboardHome = () => {
                         <div className="text-xl md:text-2xl font-black text-brand-teal tracking-tight leading-tight my-1 truncate">
                             Q{(stats?.monthly_income ?? 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}
                         </div>
-                        <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 truncate">Cobros del mes actual</p>
+                        <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {isSecretary ? 'Cobros de tu turno hoy' : 'Cobros del mes actual'}
+                        </p>
                     </div>
                     <div className="mt-3 pt-2 flex items-center gap-1 text-emerald-500 text-[11px] md:text-xs font-bold border-t border-slate-100 dark:border-white/5">
                         <TrendingUp className="h-3.5 w-3.5" />
-                        <span>Ingresos en tiempo real</span>
+                        <span>{isSecretary ? 'Turno en vivo' : 'Ingresos en tiempo real'}</span>
                     </div>
                 </Link>
 

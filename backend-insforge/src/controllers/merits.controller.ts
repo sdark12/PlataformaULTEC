@@ -12,7 +12,7 @@ export const getStudentBalance = async (req: Request, res: Response) => {
         // Resolve student_id if it's user_id or already student_id
         const { data: student, error: studentError } = await adminClient
             .from('students')
-            .select('id, full_name, personal_code')
+            .select('id, full_name, personal_code, academy_code')
             .or(`id.eq.${student_id},user_id.eq.${student_id}`)
             .maybeSingle();
 
@@ -51,14 +51,33 @@ export const getStudentBalance = async (req: Request, res: Response) => {
  */
 export const getLeaderboard = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
+    const { course_id } = req.query;
+
     try {
+        let studentIdsFilter: string[] | null = null;
+        if (course_id) {
+            const { data: enrollments } = await adminClient
+                .from('enrollments')
+                .select('student_id')
+                .eq('course_id', course_id);
+
+            studentIdsFilter = (enrollments || []).map((e: any) => e.student_id).filter(Boolean);
+        }
+
         // Fetch all active students (filtered by branch if applicable)
         let studentsQuery = adminClient
             .from('students')
-            .select('id, full_name, personal_code, branch_id');
+            .select('id, full_name, personal_code, academy_code, branch_id');
 
         if (branchId) {
             studentsQuery = studentsQuery.eq('branch_id', branchId);
+        }
+
+        if (studentIdsFilter !== null) {
+            if (studentIdsFilter.length === 0) {
+                return res.json([]);
+            }
+            studentsQuery = studentsQuery.in('id', studentIdsFilter);
         }
 
         const { data: students, error: studentError } = await studentsQuery;
@@ -77,10 +96,11 @@ export const getLeaderboard = async (req: Request, res: Response) => {
             balanceMap.set(tx.student_id, (balanceMap.get(tx.student_id) || 0) + tx.points);
         });
 
-        const leaderboard = students.map((s: any) => ({
+        const leaderboard = (students || []).map((s: any) => ({
             id: s.id,
             full_name: s.full_name,
             personal_code: s.personal_code,
+            academy_code: s.academy_code,
             branch_id: s.branch_id,
             balance: balanceMap.get(s.id) || 0
         }));
@@ -307,6 +327,7 @@ export const claimReward = async (req: Request, res: Response) => {
                 student_id: studentId,
                 points: -reward.points_required,
                 transaction_type: 'claim',
+                status: 'pending',
                 description: `Canje de Premio: ${reward.title}`,
                 reference_id: reward.id,
                 created_by: userId
@@ -330,5 +351,231 @@ export const claimReward = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('Error claiming reward:', error);
         res.status(500).json({ message: 'Error al reclamar la recompensa', error: error?.message });
+    }
+};
+
+/**
+ * GET /api/merits/claims
+ * Returns all reward claims made by students with related student & reward details.
+ */
+export const getClaims = async (req: Request, res: Response) => {
+    try {
+        const { data: claims, error: claimsError } = await adminClient
+            .from('merit_transactions')
+            .select('*')
+            .eq('transaction_type', 'claim')
+            .order('created_at', { ascending: false });
+
+        if (claimsError) throw claimsError;
+
+        if (!claims || claims.length === 0) {
+            return res.json([]);
+        }
+
+        // Fetch students
+        const studentIds = Array.from(new Set(claims.map((c: any) => c.student_id).filter(Boolean)));
+        const { data: students } = await adminClient
+            .from('students')
+            .select('id, full_name, personal_code, academy_code')
+            .in('id', studentIds);
+        const studentMap = new Map((students || []).map((s: any) => [s.id, s]));
+
+        // Fetch rewards
+        const rewardIds = Array.from(new Set(claims.map((c: any) => c.reference_id).filter(Boolean)));
+        let rewardMap = new Map();
+        if (rewardIds.length > 0) {
+            const { data: rewards } = await adminClient
+                .from('rewards')
+                .select('id, title, image_url, points_required')
+                .in('id', rewardIds);
+            rewardMap = new Map((rewards || []).map((r: any) => [r.id, r]));
+        }
+
+        // Fetch deliverer profiles if any
+        const delivererIds = Array.from(new Set(claims.map((c: any) => c.delivered_by).filter(Boolean)));
+        let delivererMap = new Map();
+        if (delivererIds.length > 0) {
+            const { data: profiles } = await adminClient
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', delivererIds);
+            delivererMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+        }
+
+        const enrichedClaims = claims.map((claim: any) => ({
+            ...claim,
+            student: studentMap.get(claim.student_id) || null,
+            reward: rewardMap.get(claim.reference_id) || null,
+            deliverer: claim.delivered_by ? delivererMap.get(claim.delivered_by) : null
+        }));
+
+        res.json(enrichedClaims);
+    } catch (error: any) {
+        console.error('Error fetching claims:', error);
+        res.status(500).json({ message: 'Error al obtener las solicitudes de canje', error: error?.message });
+    }
+};
+
+/**
+ * PUT /api/merits/claims/:id/deliver
+ * Marks a reward claim as physically delivered.
+ */
+export const deliverClaim = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.currentUser?.id;
+
+    try {
+        const { data, error } = await adminClient
+            .from('merit_transactions')
+            .update({
+                status: 'delivered',
+                delivered_at: new Date().toISOString(),
+                delivered_by: userId
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ message: 'Premio marcado como entregado con éxito', claim: data });
+    } catch (error: any) {
+        console.error('Error delivering claim:', error);
+        res.status(500).json({ message: 'Error al marcar entrega de premio', error: error?.message });
+    }
+};
+
+/**
+ * PUT /api/merits/claims/:id/cancel
+ * Cancels a reward claim, refunds the points to the student, and restores reward stock.
+ */
+export const cancelClaim = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.currentUser?.id;
+    const { reason } = req.body;
+
+    try {
+        // 1. Get the original claim transaction
+        const { data: claim, error: claimError } = await adminClient
+            .from('merit_transactions')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (claimError || !claim) {
+            return res.status(404).json({ message: 'Solicitud de canje no encontrada' });
+        }
+
+        if (claim.status === 'cancelled') {
+            return res.status(400).json({ message: 'Este canje ya ha sido cancelado previamente' });
+        }
+
+        // 2. Update claim status to cancelled
+        const { error: updateError } = await adminClient
+            .from('merit_transactions')
+            .update({
+                status: 'cancelled',
+                delivered_at: null,
+                delivered_by: userId
+            })
+            .eq('id', id);
+
+        if (updateError) throw updateError;
+
+        // 3. Create refund transaction (points was negative, so Math.abs to return positive points)
+        const refundPoints = Math.abs(claim.points);
+        const { error: refundError } = await adminClient
+            .from('merit_transactions')
+            .insert([{
+                student_id: claim.student_id,
+                points: refundPoints,
+                transaction_type: 'refund',
+                status: 'delivered',
+                description: `Reembolso por canje cancelado: ${claim.description}${reason ? ` (${reason})` : ''}`,
+                reference_id: claim.id,
+                created_by: userId
+            }]);
+
+        if (refundError) throw refundError;
+
+        // 4. Restore reward stock if not unlimited
+        if (claim.reference_id) {
+            const { data: reward } = await adminClient
+                .from('rewards')
+                .select('id, stock')
+                .eq('id', claim.reference_id)
+                .maybeSingle();
+
+            if (reward && reward.stock !== null) {
+                await adminClient
+                    .from('rewards')
+                    .update({ stock: reward.stock + 1, updated_at: new Date().toISOString() })
+                    .eq('id', reward.id);
+            }
+        }
+
+        res.json({ message: 'Canje cancelado y puntos reembolsados exitosamente al estudiante' });
+    } catch (error: any) {
+        console.error('Error cancelling claim:', error);
+        res.status(500).json({ message: 'Error al cancelar canje y reembolsar puntos', error: error?.message });
+    }
+};
+
+/**
+ * POST /api/merits/award-bulk
+ * Awards points to multiple students at once (by array of student IDs or by course).
+ */
+export const awardPointsBulk = async (req: Request, res: Response) => {
+    const userId = req.currentUser?.id;
+    const { student_ids, course_id, points, description } = req.body;
+
+    if (!points || !description) {
+        return res.status(400).json({ message: 'points y description son requeridos' });
+    }
+
+    try {
+        let targetStudentIds: string[] = [];
+
+        if (student_ids && Array.isArray(student_ids) && student_ids.length > 0) {
+            targetStudentIds = student_ids;
+        } else if (course_id) {
+            const { data: enrollments, error: enrollError } = await adminClient
+                .from('enrollments')
+                .select('student_id')
+                .eq('course_id', course_id);
+
+            if (enrollError) throw enrollError;
+            targetStudentIds = (enrollments || []).map((e: any) => e.student_id).filter(Boolean);
+        } else {
+            return res.status(400).json({ message: 'Debe especificar student_ids o course_id' });
+        }
+
+        if (targetStudentIds.length === 0) {
+            return res.status(400).json({ message: 'No se encontraron estudiantes para la asignación' });
+        }
+
+        const txRows = targetStudentIds.map(stId => ({
+            student_id: stId,
+            points: Number(points),
+            transaction_type: 'manual',
+            status: 'delivered',
+            description,
+            created_by: userId
+        }));
+
+        const { data, error } = await adminClient
+            .from('merit_transactions')
+            .insert(txRows)
+            .select();
+
+        if (error) throw error;
+
+        res.status(201).json({
+            message: `¡Puntos asignados exitosamente a ${targetStudentIds.length} estudiante(s)!`,
+            count: targetStudentIds.length,
+            transactions: data
+        });
+    } catch (error: any) {
+        console.error('Error in bulk points award:', error);
+        res.status(500).json({ message: 'Error al asignar puntos masivamente', error: error?.message });
     }
 };

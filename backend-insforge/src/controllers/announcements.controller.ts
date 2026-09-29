@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 export const getAnnouncements = async (req: Request, res: Response) => {
     const role = req.currentUser?.role;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     try {
-        let query = client
+        let query = db
             .from('announcements')
             .select(`
                 id,
@@ -47,13 +48,14 @@ export const getAnnouncements = async (req: Request, res: Response) => {
 export const createAnnouncement = async (req: Request, res: Response) => {
     const { title, content, target_role, target_course_id } = req.body;
     const userId = req.currentUser?.id;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     if (!title || !content) {
         return res.status(400).json({ message: 'Title and content are required' });
     }
 
     try {
-        const { data, error } = await client
+        const { data, error } = await db
             .from('announcements')
             .insert([{
                 title,
@@ -75,9 +77,10 @@ export const createAnnouncement = async (req: Request, res: Response) => {
 
 export const deleteAnnouncement = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     try {
-        const { error } = await client
+        const { error } = await db
             .from('announcements')
             .delete()
             .eq('id', id);

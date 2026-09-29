@@ -16,6 +16,7 @@ import {
     FileBadge,
     ClipboardCheck,
     ShieldAlert,
+    ShieldCheck,
     Library,
     Sun,
     Moon,
@@ -23,25 +24,41 @@ import {
     Settings,
     Menu,
     X,
-    Building2
+    Building2,
+    Sparkles
 } from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
 
-const SidebarItem = ({ to, icon: Icon, label, onClick }: { to: string; icon: any; label: string; onClick?: () => void }) => {
+const SidebarItem = ({ 
+    to, 
+    icon: Icon, 
+    label, 
+    matchPaths = [],
+    onClick 
+}: { 
+    to: string; 
+    icon: any; 
+    label: string; 
+    matchPaths?: string[];
+    onClick?: () => void 
+}) => {
     const location = useLocation();
-    const isActive = location.pathname === to;
+    const isActive = location.pathname === to || 
+        (to !== '/' && location.pathname.startsWith(to)) ||
+        matchPaths.some(p => location.pathname === p || location.pathname.startsWith(p));
+
     return (
         <Link
             to={to}
             onClick={onClick}
-            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive
+            className={`flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${isActive
                 ? 'bg-brand-blue/20 text-brand-teal shadow-[0_0_15px_rgba(37,192,244,0.15)] backdrop-blur-sm border border-brand-teal/20'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white hover:translate-x-1'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white hover:translate-x-0.5'
                 }`}
         >
-            <Icon className={`h-5 w-5 transition-transform group-hover:scale-110 ${isActive ? 'text-brand-teal' : 'text-slate-500 group-hover:text-brand-teal'}`} />
-            <span className="font-medium tracking-wide text-sm">{label}</span>
+            <Icon className={`h-4.5 w-4.5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-brand-teal' : 'text-slate-500 group-hover:text-brand-teal'}`} />
+            <span className="font-medium tracking-wide text-sm truncate">{label}</span>
         </Link>
     );
 };
@@ -145,53 +162,60 @@ const DashboardLayout = () => {
                     </div>
 
                     <nav className="space-y-1">
-                        <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-4">Principal</p>
+                        {/* 1. PRINCIPAL */}
+                        <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 mt-3">Principal</p>
                         <SidebarItem to="/" icon={LayoutDashboard} label="Dashboard" onClick={() => setIsMobileMenuOpen(false)} />
-                        <SidebarItem to="/profile" icon={User} label="Mi Perfil" onClick={() => setIsMobileMenuOpen(false)} />
                         
                         {['admin', 'superadmin', 'secretary'].includes(role) && (
-                            <>
-                                <SidebarItem to="/reports" icon={BarChart3} label="Reportes Financieros" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/student-reports" icon={BarChart3} label="Reporte de Alumnos" onClick={() => setIsMobileMenuOpen(false)} />
-                            </>
+                            <SidebarItem 
+                                to="/reports" 
+                                icon={BarChart3} 
+                                label="Centro de Reportes" 
+                                matchPaths={['/student-reports']}
+                                onClick={() => setIsMobileMenuOpen(false)} 
+                            />
                         )}
 
-                        <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Gestión</p>
-
-                        {['admin', 'superadmin'].includes(role) && (
-                            <>
-                                <SidebarItem to="/users" icon={Users} label="Usuarios" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/branches" icon={LayoutDashboard} label="Sedes" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/audit-logs" icon={ShieldAlert} label="Auditoría" onClick={() => setIsMobileMenuOpen(false)} />
-                            </>
-                        )}
-
-                        {['admin', 'superadmin', 'secretary'].includes(role) && (
-                            <>
-                                <SidebarItem to="/courses" icon={BookOpen} label="Cursos" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/students" icon={Users} label="Estudiantes" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/enrollments" icon={GraduationCap} label="Inscripciones" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/documents" icon={FileBadge} label="Documentos" onClick={() => setIsMobileMenuOpen(false)} />
-                            </>
-                        )}
-
+                        {/* 2. ACADÉMICO */}
                         {['admin', 'superadmin', 'secretary', 'instructor'].includes(role) && (
                             <>
+                                <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 mt-5">Académico</p>
+                                {['admin', 'superadmin', 'secretary'].includes(role) && (
+                                    <>
+                                        <SidebarItem to="/courses" icon={BookOpen} label="Cursos" onClick={() => setIsMobileMenuOpen(false)} />
+                                        <SidebarItem to="/students" icon={Users} label="Estudiantes" onClick={() => setIsMobileMenuOpen(false)} />
+                                        <SidebarItem to="/enrollments" icon={GraduationCap} label="Inscripciones" onClick={() => setIsMobileMenuOpen(false)} />
+                                        <SidebarItem to="/promotions" icon={Sparkles} label="Promociones" onClick={() => setIsMobileMenuOpen(false)} />
+                                    </>
+                                )}
+                                <SidebarItem 
+                                    to="/grades" 
+                                    icon={Award} 
+                                    label="Calificaciones y Actas" 
+                                    matchPaths={['/course-gradebook']}
+                                    onClick={() => setIsMobileMenuOpen(false)} 
+                                />
+                                {['admin', 'superadmin', 'instructor'].includes(role) && (
+                                    <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" onClick={() => setIsMobileMenuOpen(false)} />
+                                )}
                                 <SidebarItem to="/attendance" icon={Calendar} label="Asistencia" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/grades" icon={Award} label="Calificaciones" onClick={() => setIsMobileMenuOpen(false)} />
                             </>
                         )}
 
+                        {/* 3. COMUNIDAD Y VIDA ESTUDIANTIL */}
+                        <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 mt-5">Comunidad</p>
                         {['admin', 'superadmin', 'instructor'].includes(role) && (
-                            <>
-                                <SidebarItem to="/course-gradebook" icon={BookOpen} label="Actas de Curso" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/assignments" icon={ClipboardList} label="Gestión de Tareas" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/discipline" icon={ShieldAlert} label="Disciplina" onClick={() => setIsMobileMenuOpen(false)} />
-                                <SidebarItem to="/merits" icon={Award} label="Méritos y Premios" onClick={() => setIsMobileMenuOpen(false)} />
-                            </>
+                            <SidebarItem 
+                                to="/merits" 
+                                icon={ShieldCheck} 
+                                label="Conducta y Méritos" 
+                                matchPaths={['/discipline']}
+                                onClick={() => setIsMobileMenuOpen(false)} 
+                            />
                         )}
 
-                        {['admin', 'superadmin', 'student'].includes(role) && (
+                        {/* Documentos: Única instancia oficial */}
+                        {['admin', 'superadmin', 'secretary', 'student'].includes(role) && (
                             <SidebarItem to="/documents" icon={FileBadge} label="Documentos" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
 
@@ -205,9 +229,7 @@ const DashboardLayout = () => {
                         )}
 
                         {role === 'parent' && (
-                            <>
-                                <SidebarItem to="/parent-dashboard" icon={LayoutDashboard} label="Panel de Padres" onClick={() => setIsMobileMenuOpen(false)} />
-                            </>
+                            <SidebarItem to="/parent-dashboard" icon={LayoutDashboard} label="Panel de Padres" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
                         
                         {['admin', 'superadmin', 'instructor', 'student', 'secretary', 'parent'].includes(role) && (
@@ -217,19 +239,29 @@ const DashboardLayout = () => {
                             </>
                         )}
 
+                        {/* 4. FINANZAS */}
                         {['admin', 'superadmin', 'secretary'].includes(role) && (
                             <>
-                                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Finanzas</p>
+                                <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 mt-5">Finanzas</p>
                                 <SidebarItem to="/payments" icon={DollarSign} label="Pagos" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem to="/invoices" icon={FileText} label="Facturas" onClick={() => setIsMobileMenuOpen(false)} />
                             </>
                         )}
 
+                        {/* 5. SISTEMA Y ADMINISTRACIÓN */}
                         {['admin', 'superadmin'].includes(role) && (
                             <>
-                                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Sistema</p>
+                                <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 mt-5">Sistema</p>
+                                <SidebarItem to="/users" icon={Users} label="Usuarios" onClick={() => setIsMobileMenuOpen(false)} />
+                                <SidebarItem to="/branches" icon={Building2} label="Sedes" onClick={() => setIsMobileMenuOpen(false)} />
+                                <SidebarItem to="/audit-logs" icon={ShieldAlert} label="Auditoría" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem to="/settings" icon={Settings} label="Configuración" onClick={() => setIsMobileMenuOpen(false)} />
                             </>
+                        )}
+
+                        {/* Mi Perfil para roles no administrativos */}
+                        {!['admin', 'superadmin'].includes(role) && (
+                            <SidebarItem to="/profile" icon={User} label="Mi Perfil" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
                     </nav>
                 </div>
@@ -252,27 +284,31 @@ const DashboardLayout = () => {
                 <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-brand-blue/5 dark:from-brand-purple/10 to-transparent pointer-events-none" />
 
                 {/* Top Header Row (Responsive) */}
-                <header className="px-4 md:px-8 py-3.5 md:py-5 flex items-center justify-between relative z-20 border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-brand-dark/70 backdrop-blur-md print:hidden">
+                <header className="px-3 sm:px-4 md:px-8 py-2.5 sm:py-3.5 md:py-5 flex items-center justify-between relative z-20 border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-brand-dark/70 backdrop-blur-md print:hidden">
                     {/* Mobile Brand / Logo */}
-                    <div className="flex items-center space-x-2 md:hidden">
+                    <div className="flex items-center space-x-1.5 md:hidden min-w-0 shrink">
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="p-2 -ml-1 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 active:scale-95 transition-all"
+                            className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 active:scale-95 transition-all shrink-0"
                             aria-label="Open Menu"
                         >
-                            <Menu className="h-6 w-6 text-brand-teal" />
+                            <Menu className="h-5 w-5 sm:h-6 sm:w-6 text-brand-teal" />
                         </button>
-                        <div className="flex items-center space-x-1.5">
-                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-brand-purple to-brand-blue flex items-center justify-center shadow-sm">
+                        <div className="flex items-center space-x-1.5 min-w-0">
+                            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-brand-purple to-brand-blue flex items-center justify-center shadow-sm shrink-0">
                                 <span className="text-white font-bold text-xs">U</span>
                             </div>
-                            <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">Ultra Tecnología</span>
-                            <span className="px-1.5 py-0.5 rounded-full bg-brand-purple/20 text-brand-teal text-[9px] uppercase font-bold tracking-wider">{displayRoleBadge}</span>
+                            <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate max-w-[100px] xs:max-w-[130px] sm:max-w-none">
+                                Ultra Tecnología
+                            </span>
+                            <span className="hidden xs:inline-flex px-1.5 py-0.5 rounded-full bg-brand-purple/20 text-brand-teal text-[9px] uppercase font-bold tracking-wider shrink-0">
+                                {displayRoleBadge}
+                            </span>
                         </div>
                     </div>
 
                     {/* Right side controls */}
-                    <div className="flex items-center space-x-2.5 md:space-x-4 ml-auto">
+                    <div className="flex items-center space-x-1.5 sm:space-x-2.5 md:space-x-4 ml-auto shrink-0">
                         {/* Branch Selector Pill */}
                         <Link 
                             to="/branches"
@@ -284,10 +320,10 @@ const DashboardLayout = () => {
 
                         <button
                             onClick={toggleTheme}
-                            className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                            className="p-1.5 sm:p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm shrink-0"
                             aria-label="Toggle Dark Mode"
                         >
-                            {isDarkMode ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+                            {isDarkMode ? <Sun className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> : <Moon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />}
                         </button>
 
                         <NotificationsPopover />
@@ -297,7 +333,7 @@ const DashboardLayout = () => {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-auto print:overflow-visible p-4 md:p-8 pb-24 md:pb-8 relative z-10 custom-scrollbar">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible p-3 sm:p-4 md:p-8 pb-24 md:pb-8 relative z-10 custom-scrollbar">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>

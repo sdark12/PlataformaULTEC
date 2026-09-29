@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBranches, createBranch, updateBranch, deleteBranch } from './branchesService';
-import { Plus, Loader2, Edit2, Trash2, Building2 } from 'lucide-react';
+import { Plus, Loader2, Edit2, Trash2, Building2, X } from 'lucide-react';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 const BranchesList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [deleteConfirmBranch, setDeleteConfirmBranch] = useState<any | null>(null);
     const [newBranch, setNewBranch] = useState({ name: '', address: '', phone: '', email: '' });
     const [selectedBranch, setSelectedBranch] = useState<any>(null);
     const [errorMsg, setErrorMsg] = useState('');
@@ -54,8 +57,13 @@ const BranchesList = () => {
     });
 
     const handleDelete = (branch: any) => {
-        if (window.confirm(`¿Está seguro de eliminar "${branch.name}"? Esto puede fallar si la sede ya tiene registros asociados.`)) {
-            deleteMutation.mutate(branch.id);
+        setDeleteConfirmBranch(branch);
+    };
+
+    const confirmDeleteBranch = () => {
+        if (deleteConfirmBranch) {
+            deleteMutation.mutate(deleteConfirmBranch.id);
+            setDeleteConfirmBranch(null);
         }
     };
 
@@ -172,61 +180,69 @@ const BranchesList = () => {
             </div>
 
             {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
+            {isModalOpen && createPortal(
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
 
-                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
-                            <h3 className="text-2xl font-bold">{selectedBranch ? 'Editar Sede' : 'Crear Nueva Sede'}</h3>
-                            <p className="text-blue-100 text-sm mt-1">{selectedBranch ? 'Modifique los detalles de la sede.' : 'Complete los detalles para agregar una sede.'}</p>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white flex justify-between items-center">
+                            <div>
+                                <h3 className="text-2xl font-bold">{selectedBranch ? 'Editar Sede' : 'Crear Nueva Sede'}</h3>
+                                <p className="text-blue-100 text-sm mt-1">{selectedBranch ? 'Modifique los detalles de la sede.' : 'Complete los detalles para agregar una sede.'}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-white/80 hover:text-white bg-black/10 hover:bg-black/20 p-2 rounded-full transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-8 space-y-6">
                             {errorMsg && (
-                                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium animate-shake">
+                                <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-medium animate-shake">
                                     {errorMsg}
                                 </div>
                             )}
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Nombre de la Sede</label>
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Nombre de la Sede</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 text-slate-800 dark:text-white"
                                         placeholder="Ej: Sede Norte"
                                         value={newBranch.name}
                                         onChange={(e) => setNewBranch({ ...newBranch, name: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Dirección</label>
+                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Dirección</label>
                                     <textarea
                                         rows={2}
-                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 resize-none"
+                                        className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 text-slate-800 dark:text-white resize-none"
                                         placeholder="Dirección completa..."
                                         value={newBranch.address}
                                         onChange={(e) => setNewBranch({ ...newBranch, address: e.target.value })}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 ml-1">Teléfono</label>
+                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Teléfono</label>
                                         <input
                                             type="text"
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 text-slate-800 dark:text-white"
                                             placeholder="Ej: 5555-1234"
                                             value={newBranch.phone}
                                             onChange={(e) => setNewBranch({ ...newBranch, phone: e.target.value })}
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 ml-1">Correo Electrónico</label>
+                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Correo Electrónico</label>
                                         <input
                                             type="email"
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                                            className="w-full mt-2 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 text-slate-800 dark:text-white"
                                             placeholder="correo@sede.com"
                                             value={newBranch.email}
                                             onChange={(e) => setNewBranch({ ...newBranch, email: e.target.value })}
@@ -235,11 +251,11 @@ const BranchesList = () => {
                                 </div>
                             </div>
 
-                            <div className="flex space-x-4 pt-4">
+                            <div className="flex space-x-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                    className="flex-1 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     Cancelar
                                 </button>
@@ -257,8 +273,27 @@ const BranchesList = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
+
+            {/* Modal de Confirmación para Eliminar Sede */}
+            <ConfirmModal
+                isOpen={!!deleteConfirmBranch}
+                title="¿Eliminar Sede?"
+                description={
+                    <div className="space-y-1.5">
+                        <p>¿Estás seguro de eliminar la sede <strong className="text-rose-400">{deleteConfirmBranch?.name}</strong>?</p>
+                        <p className="text-[11px] text-slate-400">Esta acción no se puede deshacer y puede fallar si la sede tiene cursos o estudiantes asociados.</p>
+                    </div>
+                }
+                confirmText="Sí, Eliminar"
+                cancelText="Cancelar"
+                variant="danger"
+                isLoading={deleteMutation.isPending}
+                onConfirm={confirmDeleteBranch}
+                onClose={() => setDeleteConfirmBranch(null)}
+            />
         </div>
     );
 };

@@ -28,6 +28,10 @@ import parentsRoutes from './routes/parents.routes';
 import disciplineRoutes from './routes/discipline.routes';
 import settingsRoutes from './routes/settings.routes';
 import meritsRoutes from './routes/merits.routes';
+import promotionsRoutes from './routes/promotions.routes';
+import { verifyInvoicePublic } from './controllers/invoices.controller';
+import { verifyStudentPublic } from './controllers/students.controller';
+import { getLatestAppVersion, downloadLatestApk } from './controllers/appVersion.controller';
 
 const app = express();
 
@@ -64,6 +68,12 @@ app.use('/api', auditLogger);
 // Auth routes (have their own rate limiter)
 app.use('/auth', authRoutes);
 
+// Public routes (no auth required)
+app.get('/api/invoices/verify/:invoiceNumber', verifyInvoicePublic);
+app.get('/api/students/verify/:identifier', verifyStudentPublic);
+app.get('/api/app-version/latest', getLatestAppVersion);
+app.get('/api/app-version/download', downloadLatestApk);
+
 // API routes
 app.use('/api', academicRoutes);
 app.use('/api', paymentRoutes);
@@ -83,6 +93,7 @@ app.use('/api/parents', parentsRoutes);
 app.use('/api/discipline', disciplineRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/merits', meritsRoutes);
+app.use('/api', promotionsRoutes);
 
 
 // Root route

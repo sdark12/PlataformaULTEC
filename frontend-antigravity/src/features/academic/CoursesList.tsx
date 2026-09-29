@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, createCourse, updateCourse } from '../../features/academic/academicService';
 import { getBranches } from '../../features/branches/branchesService';
 import { getCurrentUser } from '../../features/auth/authService';
 import { Plus, Loader2, BookOpen, Edit2, Trash2, CalendarClock, Building2, Search, GraduationCap, X } from 'lucide-react';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 import { CourseSchedulesModal } from './CourseSchedulesModal';
 
 const CoursesList = () => {
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [archiveConfirmCourse, setArchiveConfirmCourse] = useState<any | null>(null);
     const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
     const [selectedCourse, setSelectedCourse] = useState<any>(null);
     const [scheduleCourse, setScheduleCourse] = useState<any>(null);
@@ -75,8 +78,13 @@ const CoursesList = () => {
     });
 
     const handleDelete = (course: any) => {
-        if (window.confirm(`¿Está seguro de archivar "${course.name}"? Dejará de estar disponible, pero se mantendrá su historial de estudiantes y pagos.`)) {
-            archiveMutation.mutate(course);
+        setArchiveConfirmCourse(course);
+    };
+
+    const confirmArchive = () => {
+        if (archiveConfirmCourse) {
+            archiveMutation.mutate(archiveConfirmCourse);
+            setArchiveConfirmCourse(null);
         }
     };
 
@@ -365,127 +373,173 @@ const CoursesList = () => {
                 )}
             </div>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)} />
+            {/* Modal Crear / Editar Curso */}
+            {isModalOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
+                    <div 
+                        className="absolute inset-0 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200" 
+                        onClick={() => setIsModalOpen(false)} 
+                    />
 
-                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
-                            <h3 className="text-2xl font-bold">{selectedCourse ? 'Editar Curso' : 'Crear Nuevo Curso'}</h3>
-                            <p className="text-blue-100 text-sm mt-1">{selectedCourse ? 'Modifique los detalles del curso.' : 'Complete los detalles para ofertar un nuevo curso.'}</p>
+                    <div className="bg-slate-900 text-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col border border-slate-800">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <div className="h-9 w-9 rounded-xl bg-blue-500/20 text-brand-blue border border-blue-500/30 flex items-center justify-center font-bold">
+                                    <BookOpen className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base sm:text-lg font-bold">
+                                        {selectedCourse ? 'Editar Curso' : 'Nuevo Curso'}
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                        {selectedCourse ? 'Modifica los detalles del curso.' : 'Completa los datos para crear un nuevo curso.'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                aria-label="Cerrar"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                            {errorMsg && (
-                                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium animate-shake">
-                                    {errorMsg}
-                                </div>
-                            )}
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Nombre del Curso</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
-                                        placeholder="Ej: Programación Web"
-                                        value={newCourse.name}
-                                        onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
-                                    />
-                                </div>
-
-                                {!user?.branch_id && (
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 ml-1 flex items-center">
-                                            <Building2 className="h-4 w-4 mr-1 text-slate-400" />
-                                            Sede *
-                                        </label>
-                                        <select
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
-                                            value={newCourse.branch_id}
-                                            onChange={(e) => setNewCourse({ ...newCourse, branch_id: e.target.value })}
-                                            required={!user?.branch_id}
-                                        >
-                                            <option value="">Seleccione una sede...</option>
-                                            {branches?.map((branch: any) => (
-                                                <option key={branch.id} value={branch.id}>{branch.name}</option>
-                                            ))}
-                                        </select>
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                                {errorMsg && (
+                                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium animate-shake">
+                                        {errorMsg}
                                     </div>
                                 )}
 
-                                <div>
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Descripción</label>
-                                    <textarea
-                                        rows={3}
-                                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 resize-none"
-                                        placeholder="Breve descripción del curso..."
-                                        value={newCourse.description}
-                                        onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Costo Mensual (Q)</label>
-                                    <div className="relative mt-2">
-                                        <div className="absolute left-4 top-3.5 text-slate-400 pointer-events-none font-bold">Q</div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
+                                            Nombre del Curso *
+                                        </label>
                                         <input
-                                            type="number"
+                                            type="text"
                                             required
-                                            min="1"
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
-                                            value={newCourse.monthly_fee}
-                                            onChange={(e) => setNewCourse({ ...newCourse, monthly_fee: Number(e.target.value) })}
+                                            className="w-full mt-1.5 px-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all placeholder:text-slate-500 text-sm"
+                                            placeholder="Ej: Programación Web"
+                                            value={newCourse.name}
+                                            onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
                                         />
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+
+                                    {!user?.branch_id && (
+                                        <div>
+                                            <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1 flex items-center">
+                                                <Building2 className="h-3.5 w-3.5 mr-1 text-slate-400" />
+                                                Sede *
+                                            </label>
+                                            <select
+                                                className="w-full mt-1.5 px-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"
+                                                value={newCourse.branch_id}
+                                                onChange={(e) => setNewCourse({ ...newCourse, branch_id: e.target.value })}
+                                                required={!user?.branch_id}
+                                            >
+                                                <option value="" className="bg-slate-900 text-slate-400">Seleccione una sede...</option>
+                                                {branches?.map((branch: any) => (
+                                                    <option key={branch.id} value={branch.id} className="bg-slate-900 text-white">
+                                                        {branch.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 ml-1">Fecha de Inicio</label>
-                                        <input
-                                            type="date"
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
-                                            value={newCourse.start_date}
-                                            onChange={(e) => setNewCourse({ ...newCourse, start_date: e.target.value })}
+                                        <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
+                                            Descripción
+                                        </label>
+                                        <textarea
+                                            rows={3}
+                                            className="w-full mt-1.5 px-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all placeholder:text-slate-500 text-sm resize-none"
+                                            placeholder="Breve descripción del curso..."
+                                            value={newCourse.description}
+                                            onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                                         />
-                                        <p className="text-[10px] text-slate-400 mt-1 ml-1 leading-tight">Define desde qué mes se empieza a cobrar (Morosidad).</p>
                                     </div>
+
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 ml-1">Fecha de Fin (Opcional)</label>
-                                        <input
-                                            type="date"
-                                            className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-700"
-                                            value={newCourse.end_date}
-                                            onChange={(e) => setNewCourse({ ...newCourse, end_date: e.target.value })}
-                                        />
+                                        <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
+                                            Costo Mensual (Q) *
+                                        </label>
+                                        <div className="relative mt-1.5">
+                                            <div className="absolute left-3.5 top-2.5 sm:top-3 text-slate-400 pointer-events-none font-bold text-sm">
+                                                Q
+                                            </div>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="1"
+                                                className="w-full pl-9 pr-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"
+                                                value={newCourse.monthly_fee}
+                                                onChange={(e) => setNewCourse({ ...newCourse, monthly_fee: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                        <div>
+                                            <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
+                                                Fecha de Inicio
+                                            </label>
+                                            <input
+                                                type="date"
+                                                className="w-full mt-1.5 px-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"
+                                                value={newCourse.start_date}
+                                                onChange={(e) => setNewCourse({ ...newCourse, start_date: e.target.value })}
+                                            />
+                                            <p className="text-[10px] text-slate-400 mt-1 ml-1 leading-tight">
+                                                Define desde qué mes se empieza a cobrar (Morosidad).
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
+                                                Fecha de Fin (Opcional)
+                                            </label>
+                                            <input
+                                                type="date"
+                                                className="w-full mt-1.5 px-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"
+                                                value={newCourse.end_date}
+                                                onChange={(e) => setNewCourse({ ...newCourse, end_date: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex space-x-4 pt-4">
+                            {/* Footer */}
+                            <div className="px-5 py-3.5 border-t border-slate-800 bg-slate-900/90 flex gap-3 shrink-0">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs sm:text-sm font-semibold transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={createMutation.isPending}
-                                    className="flex-1 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center space-x-2"
+                                    disabled={createMutation.isPending || updateMutation.isPending}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-95 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {createMutation.isPending || updateMutation.isPending ? (
-                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
-                                        <span>{selectedCourse ? 'Actualizar Curso' : 'Guardar Curso'}</span>
+                                        <span>{selectedCourse ? 'Actualizar' : 'Guardar Curso'}</span>
                                     )}
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Schedules Modal */}
@@ -495,6 +549,24 @@ const CoursesList = () => {
                     onClose={() => setScheduleCourse(null)}
                 />
             )}
+
+            {/* Modal de Confirmación para Archivar Curso */}
+            <ConfirmModal
+                isOpen={!!archiveConfirmCourse}
+                title="¿Archivar Curso?"
+                description={
+                    <div className="space-y-1.5">
+                        <p>¿Estás seguro de archivar el curso <strong className="text-amber-400">{archiveConfirmCourse?.name}</strong>?</p>
+                        <p className="text-[11px] text-slate-400">Dejará de estar disponible para nuevas inscripciones, pero se mantendrá su historial de estudiantes y pagos.</p>
+                    </div>
+                }
+                confirmText="Sí, Archivar"
+                cancelText="Cancelar"
+                variant="warning"
+                isLoading={archiveMutation.isPending}
+                onConfirm={confirmArchive}
+                onClose={() => setArchiveConfirmCourse(null)}
+            />
         </div>
     );
 };

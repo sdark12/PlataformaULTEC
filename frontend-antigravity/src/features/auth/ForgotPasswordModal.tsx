@@ -45,52 +45,52 @@ const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProps) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
-                <div className="bg-gradient-to-r from-brand-blue to-brand-purple p-6 flex justify-between items-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
-                    <h2 className="text-xl font-bold text-white relative z-10 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
+                <div className="bg-gradient-to-r from-brand-blue to-brand-purple p-5 sm:p-6 flex justify-between items-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                    <h2 className="text-lg sm:text-xl font-bold text-white relative z-10 flex items-center gap-2">
                         Recuperar Contraseña
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors relative z-10 text-white">
+                    <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors relative z-10 text-white" aria-label="Cerrar">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="p-6">
+                <div className="p-5 sm:p-6">
                     {successMessage ? (
-                        <div className="text-center py-6 animate-in slide-in-from-bottom-4">
-                            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-                                <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+                        <div className="text-center py-4 sm:py-6 animate-in slide-in-from-bottom-4">
+                            <div className="mx-auto w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-3">
+                                <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">¡Correo Enviado!</h3>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm">{successMessage}</p>
+                            <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white mb-1.5">¡Correo Enviado!</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">{successMessage}</p>
                             <button
                                 onClick={onClose}
-                                className="mt-8 px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors w-full"
+                                className="mt-6 px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors w-full text-sm"
                             >
                                 Entendido
                             </button>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                                Ingresa el correo electrónico asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                Ingresa el correo electrónico asociado a tu cuenta y te enviaremos las instrucciones de restablecimiento.
                             </p>
 
                             {errorMsg && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl border border-red-100 dark:border-red-900/50">
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs sm:text-sm rounded-xl font-medium">
                                     {errorMsg}
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1 block">Correo Electrónico</label>
+                            <div>
+                                <label className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block mb-1.5">Correo Electrónico</label>
                                 <div className="relative group">
-                                    <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors" />
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-slate-400 group-focus-within:text-brand-blue transition-colors pointer-events-none" />
                                     <input
                                         type="email"
                                         required
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-slate-900 dark:text-white transition-all shadow-inner"
+                                        className="w-full h-11 sm:h-12 pl-10 sm:pl-11 pr-3.5 bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                                         placeholder="usuario@ejemplo.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

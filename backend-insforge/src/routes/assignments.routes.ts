@@ -13,6 +13,16 @@ router.post(
     assignmentsController.createAssignment
 );
 
+router.put(
+    '/:id',
+    assignmentsController.updateAssignment
+);
+
+router.delete(
+    '/:id',
+    assignmentsController.deleteAssignment
+);
+
 router.get(
     '/course/:courseId',
     assignmentsController.getCourseAssignments

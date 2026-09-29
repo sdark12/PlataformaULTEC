@@ -37,15 +37,23 @@ export interface Student {
     medical_notes?: string;
     previous_school?: string;
     personal_code?: string;
+    academy_code?: string;
 }
 
 export interface Enrollment {
     id: string;
-    id_student: string; // Add if needed
-    id_course: string; // Add if needed
+    student_id?: string;
+    course_id?: string;
+    id_student?: string; // Add if needed
+    id_course?: string; // Add if needed
     student_name: string;
     course_name: string;
     enrollment_date: string;
+    monthly_fee?: number;
+    scholarship_type?: string;
+    scholarship_amount?: number;
+    scholarship_reason?: string;
+    is_active?: boolean;
 }
 
 export interface AttendanceRecord {
@@ -66,6 +74,7 @@ export interface CourseResource {
     resource_type?: string;
     created_at: string;
     created_by?: string;
+    courses?: { id: string; name: string };
     author?: { full_name: string };
 }
 
@@ -167,6 +176,11 @@ export const deleteStudent = async (id: string) => {
     return response.data;
 };
 
+export const requestStudentDeletion = async (id: string, reason: string) => {
+    const response = await api.post(`/api/students/${id}/request-deletion`, { reason });
+    return response.data;
+};
+
 export const deleteEnrollment = async (id: string) => {
     const response = await api.delete(`/api/enrollments/${id}`);
     return response.data;
@@ -193,13 +207,53 @@ export const getMyEnrolledCourses = async () => {
     return response.data;
 };
 
+export const getAllResources = async (params?: { courseId?: string; type?: string; search?: string }) => {
+    const response = await api.get<CourseResource[]>('/api/resources', { params });
+    return response.data;
+};
+
+export const getResourcesSummaryCounts = async () => {
+    const response = await api.get<{
+        countsByCourse: Record<string, number>;
+        countsByType: Record<string, number>;
+    }>('/api/resources/summary/counts');
+    return response.data;
+};
+
 export const getCourseResources = async (courseId: string) => {
     const response = await api.get<CourseResource[]>(`/api/resources/${courseId}`);
     return response.data;
 };
 
+export const uploadResourceFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<{
+        file_url: string;
+        filename: string;
+        size: number;
+        mimetype: string;
+    }>('/api/resources/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
 export const createCourseResource = async (courseId: string, data: { title: string; description: string; file_url: string; resource_type?: string }) => {
     const response = await api.post<CourseResource>(`/api/resources/${courseId}`, data);
+    return response.data;
+};
+
+export const updateCourseResource = async (resourceId: string, data: {
+    title?: string;
+    description?: string;
+    file_url?: string;
+    resource_type?: string;
+    course_id?: string;
+}) => {
+    const response = await api.put<CourseResource>(`/api/resources/resource/${resourceId}`, data);
     return response.data;
 };
 

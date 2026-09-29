@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.middleware';
 import {
     getParentLinks,
     createParentLink,
+    syncParentLinks,
     deleteParentLink,
     getMyStudents,
     getChildDashboard,
@@ -19,6 +20,7 @@ router.use(requireAuth);
 // Admin endpoints
 router.get('/links', getParentLinks);
 router.post('/links', createParentLink);
+router.post('/sync-links', syncParentLinks);
 router.delete('/links/:id', deleteParentLink);
 
 // Parent endpoints

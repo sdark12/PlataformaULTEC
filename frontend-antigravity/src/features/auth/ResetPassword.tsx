@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Lock, Loader2, ArrowRight } from 'lucide-react';
 import api from '../../services/apiClient';
+import { PasswordStrengthMeter } from '../../components/ui/PasswordStrengthMeter';
+import { validatePassword } from '../../utils/passwordValidator';
 
 const ResetPassword = () => {
     const navigate = useNavigate();
@@ -41,8 +43,9 @@ const ResetPassword = () => {
             return;
         }
 
-        if (password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres.');
+        const passwordVal = validatePassword(password);
+        if (!passwordVal.isValid) {
+            setError(passwordVal.errors[0] || 'La contraseña no cumple con la política de seguridad.');
             return;
         }
 
@@ -114,8 +117,11 @@ const ResetPassword = () => {
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        minLength={6}
+                                        minLength={8}
                                     />
+                                </div>
+                                <div className="mt-2">
+                                    <PasswordStrengthMeter password={password} />
                                 </div>
                             </div>
                             

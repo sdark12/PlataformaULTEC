@@ -3,23 +3,39 @@ import { adminClient } from '../config/insforge';
 
 // Get all incidents (filtered by branch)
 export const getIncidents = async (req: Request, res: Response) => {
-    const branchId = req.currentUser?.branch_id;
-    const { student_id, incident_type, resolved } = req.query;
+    const userRole = req.currentUser?.role;
+    const userBranchId = req.currentUser?.branch_id;
+    const {
+        student_id,
+        incident_type,
+        severity,
+        course_id,
+        resolved,
+        start_date,
+        end_date,
+        search,
+        branch_id
+    } = req.query;
 
     try {
         let query = adminClient
             .from('discipline_incidents')
             .select(`
                 *,
-                students ( id, full_name, personal_code ),
+                students ( id, full_name, personal_code, academy_code ),
                 courses ( id, name ),
                 reporter:profiles!reported_by ( full_name ),
                 resolver:profiles!resolved_by ( full_name )
             `)
             .order('incident_date', { ascending: false });
 
-        if (branchId) {
-            query = query.eq('branch_id', branchId);
+        // Branch filtering
+        if (userRole === 'superadmin') {
+            if (branch_id) {
+                query = query.eq('branch_id', branch_id);
+            }
+        } else if (userBranchId) {
+            query = query.or(`branch_id.eq.${userBranchId},branch_id.is.null`);
         }
 
         if (student_id) {
@@ -30,14 +46,46 @@ export const getIncidents = async (req: Request, res: Response) => {
             query = query.eq('incident_type', incident_type);
         }
 
+        if (severity) {
+            query = query.eq('severity', severity);
+        }
+
+        if (course_id) {
+            query = query.eq('course_id', course_id);
+        }
+
         if (resolved !== undefined && resolved !== '') {
             query = query.eq('resolved', resolved === 'true');
+        }
+
+        if (start_date) {
+            query = query.gte('incident_date', start_date);
+        }
+
+        if (end_date) {
+            query = query.lte('incident_date', end_date);
         }
 
         const { data, error } = await query;
 
         if (error) throw error;
-        res.json(data || []);
+
+        let result = data || [];
+
+        if (search && typeof search === 'string' && search.trim() !== '') {
+            const s = search.toLowerCase().trim();
+            result = result.filter((item: any) =>
+                item.title?.toLowerCase().includes(s) ||
+                item.description?.toLowerCase().includes(s) ||
+                item.action_taken?.toLowerCase().includes(s) ||
+                item.students?.full_name?.toLowerCase().includes(s) ||
+                item.students?.personal_code?.toLowerCase().includes(s) ||
+                item.students?.academy_code?.toLowerCase().includes(s) ||
+                item.courses?.name?.toLowerCase().includes(s)
+            );
+        }
+
+        res.json(result);
     } catch (error: any) {
         console.error('Error fetching discipline incidents:', error);
         res.status(500).json({ message: 'Error retrieving incidents', error: error?.message });
@@ -47,7 +95,7 @@ export const getIncidents = async (req: Request, res: Response) => {
 // Create a new incident
 export const createIncident = async (req: Request, res: Response) => {
     const userId = req.currentUser?.id;
-    const branchId = req.currentUser?.branch_id;
+    let branchId = req.currentUser?.branch_id;
     const {
         student_id,
         course_id,
@@ -65,6 +113,17 @@ export const createIncident = async (req: Request, res: Response) => {
     }
 
     try {
+        if (!branchId && student_id) {
+            const { data: student } = await adminClient
+                .from('students')
+                .select('branch_id')
+                .eq('id', student_id)
+                .maybeSingle();
+            if (student?.branch_id) {
+                branchId = student.branch_id;
+            }
+        }
+
         const { data, error } = await adminClient
             .from('discipline_incidents')
             .insert([{
@@ -82,7 +141,7 @@ export const createIncident = async (req: Request, res: Response) => {
             }])
             .select(`
                 *,
-                students ( id, full_name, personal_code ),
+                students ( id, full_name, personal_code, academy_code ),
                 courses ( id, name ),
                 reporter:profiles!reported_by ( full_name )
             `)
@@ -127,7 +186,7 @@ export const updateIncident = async (req: Request, res: Response) => {
             .eq('id', id)
             .select(`
                 *,
-                students ( id, full_name, personal_code ),
+                students ( id, full_name, personal_code, academy_code ),
                 courses ( id, name ),
                 reporter:profiles!reported_by ( full_name ),
                 resolver:profiles!resolved_by ( full_name )

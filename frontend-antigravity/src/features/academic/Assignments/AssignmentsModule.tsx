@@ -2,16 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from '../academicService';
+import { getSubgradeCategories } from '../subgradeService';
 import { assignmentsService, type Assignment } from '../../../services/assignmentsService';
 import SearchableSelect, { type SearchableOption } from '../../../components/ui/SearchableSelect';
 import { 
     Plus, Loader2, ClipboardList, Calendar, CheckCircle2, Clock, 
     Paperclip, Printer, FileBarChart, AlertCircle, X, BookOpen, 
-    Check, ArrowRight, ExternalLink, Layers, Sparkles
+    Check, ArrowRight, ExternalLink, Layers, Sparkles, Pencil, Trash2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { savePdfDoc } from '../../../utils/fileDownloader';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; badge: string }> = {
@@ -44,6 +46,8 @@ const AssignmentsModule: React.FC = () => {
     const [selectedUnit, setSelectedUnit] = useState<string>('ALL');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [reviewAssignment, setReviewAssignment] = useState<Assignment | null>(null);
+    const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+    const [deletingAssignment, setDeletingAssignment] = useState<Assignment | null>(null);
     const [activeTab, setActiveTab] = useState<'all' | 'active' | 'history' | 'report'>('all');
 
     // Filters for review modal
@@ -59,6 +63,7 @@ const AssignmentsModule: React.FC = () => {
         unit_name: 'Bimestre 1',
         max_score: 100.0,
         schedule_id: '',
+        category_id: '',
     });
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -91,6 +96,14 @@ const AssignmentsModule: React.FC = () => {
         enabled: !!selectedCourse
     });
 
+    // Fetch subgrade categories for selected course and current modal/selected unit
+    const activeUnitForCategories = newAssignment.unit_name || (selectedUnit !== 'ALL' ? selectedUnit : 'Bimestre 1');
+    const { data: subgradeCategories } = useQuery({
+        queryKey: ['subgradeCategories', selectedCourse, activeUnitForCategories],
+        queryFn: () => getSubgradeCategories(selectedCourse as string, activeUnitForCategories),
+        enabled: !!selectedCourse
+    });
+
     // Fetch assignments when a course is selected
     const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
         queryKey: ['assignments', selectedCourse, selectedSchedule, selectedUnit],
@@ -112,26 +125,82 @@ const AssignmentsModule: React.FC = () => {
         enabled: !!selectedCourse && activeTab === 'report',
     });
 
+    // Track points assigned per category in current view
+    const categoryUsage = useMemo(() => {
+        const map: Record<string, { count: number; totalPoints: number }> = {};
+        (assignments || []).forEach((a: any) => {
+            const catId = a.category_id || a.subgrade_categories?.id;
+            if (catId) {
+                if (!map[catId]) map[catId] = { count: 0, totalPoints: 0 };
+                map[catId].count += 1;
+                map[catId].totalPoints += Number(a.max_score) || 0;
+            }
+        });
+        return map;
+    }, [assignments]);
+
+    const resetNewAssignment = () => {
+        setNewAssignment({
+            title: '',
+            description: '',
+            assignment_type: 'HOMEWORK',
+            due_date: '',
+            weight_points: 1.0,
+            merit_points: 0,
+            unit_name: selectedUnit !== 'ALL' ? selectedUnit : 'Bimestre 1',
+            max_score: 100.0,
+            schedule_id: selectedSchedule || '',
+            category_id: '',
+        });
+        setEditingAssignment(null);
+        setErrorMsg('');
+    };
+
     const createMutation = useMutation({
         mutationFn: assignmentsService.createAssignment,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['assignments', selectedCourse, selectedSchedule] });
+            queryClient.invalidateQueries({ queryKey: ['assignments'] });
+            queryClient.invalidateQueries({ queryKey: ['subgrades'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
             setIsModalOpen(false);
-            setNewAssignment({
-                title: '',
-                description: '',
-                assignment_type: 'HOMEWORK',
-                due_date: '',
-                weight_points: 1.0,
-                merit_points: 0,
-                unit_name: selectedUnit !== 'ALL' ? selectedUnit : 'Bimestre 1',
-                max_score: 100.0,
-            });
-            setErrorMsg('');
+            resetNewAssignment();
         },
         onError: (err: any) => {
             console.error('Error creating assignment:', err);
             setErrorMsg(err.response?.data?.message || 'Error al crear la tarea.');
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<Assignment> }) =>
+            assignmentsService.updateAssignment(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assignments'] });
+            queryClient.invalidateQueries({ queryKey: ['subgrades'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
+            setIsModalOpen(false);
+            resetNewAssignment();
+        },
+        onError: (err: any) => {
+            console.error('Error updating assignment:', err);
+            setErrorMsg(err.response?.data?.message || 'Error al actualizar la tarea.');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => assignmentsService.deleteAssignment(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assignments'] });
+            queryClient.invalidateQueries({ queryKey: ['subgrades'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
+            queryClient.invalidateQueries({ queryKey: ['submissions'] });
+            queryClient.invalidateQueries({ queryKey: ['courseReport'] });
+            setDeletingAssignment(null);
+        },
+        onError: (err: any) => {
+            console.error('Error deleting assignment:', err);
+            alert('Error al eliminar la tarea: ' + (err.response?.data?.message || err.message));
+            setDeletingAssignment(null);
         }
     });
 
@@ -140,6 +209,8 @@ const AssignmentsModule: React.FC = () => {
             assignmentsService.gradeSubmission(submissionId, score, feedback, customMeritPoints),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['submissions', reviewAssignment?.id] });
+            queryClient.invalidateQueries({ queryKey: ['subgrades'] });
+            queryClient.invalidateQueries({ queryKey: ['grades'] });
         },
         onError: (err: any) => {
             console.error('Error grading:', err);
@@ -159,13 +230,49 @@ const AssignmentsModule: React.FC = () => {
             return;
         }
 
-        createMutation.mutate({
-            ...newAssignment,
-            merit_points: Number(newAssignment.merit_points) || 0,
-            unit_name: newAssignment.unit_name || 'Bimestre 1',
-            course_id: selectedCourse as string,
-            schedule_id: newAssignment.schedule_id || selectedSchedule || undefined
-        });
+        // Budget check if linked to category (Enfoque 1: Suma directa con presupuesto)
+        if (newAssignment.category_id) {
+            const selectedCat = subgradeCategories?.find((c: any) => c.id === newAssignment.category_id);
+            if (selectedCat) {
+                const isCurrentCatOfEditing = editingAssignment && (editingAssignment.category_id || editingAssignment.subgrade_categories?.id) === selectedCat.id;
+                const usedInOther = (categoryUsage[selectedCat.id]?.totalPoints || 0) - (isCurrentCatOfEditing ? Number(editingAssignment.max_score) : 0);
+                const catMax = Number(selectedCat.max_score) || 0;
+                const rem = Math.max(0, catMax - usedInOther);
+                const reqScore = Number(newAssignment.max_score) || 0;
+
+                if (rem <= 0) {
+                    setErrorMsg(`La categoría "${selectedCat.name}" ya tiene asignados todos sus puntos (${catMax} pts). No se pueden agregar más tareas.`);
+                    return;
+                }
+                if (reqScore > rem + 0.01) {
+                    setErrorMsg(`El punteo asignado (${reqScore} pts) supera los puntos disponibles (${rem} pts) de la categoría "${selectedCat.name}".`);
+                    return;
+                }
+            }
+        }
+
+        if (editingAssignment) {
+            updateMutation.mutate({
+                id: editingAssignment.id,
+                data: {
+                    ...newAssignment,
+                    merit_points: Number(newAssignment.merit_points) || 0,
+                    unit_name: newAssignment.unit_name || 'Bimestre 1',
+                    course_id: selectedCourse as string,
+                    schedule_id: newAssignment.schedule_id || selectedSchedule || undefined,
+                    category_id: newAssignment.category_id || null,
+                }
+            });
+        } else {
+            createMutation.mutate({
+                ...newAssignment,
+                merit_points: Number(newAssignment.merit_points) || 0,
+                unit_name: newAssignment.unit_name || 'Bimestre 1',
+                course_id: selectedCourse as string,
+                schedule_id: newAssignment.schedule_id || selectedSchedule || undefined,
+                category_id: newAssignment.category_id || undefined,
+            });
+        }
     };
 
     const handleNewAssignment = () => {
@@ -173,16 +280,23 @@ const AssignmentsModule: React.FC = () => {
             alert('Por favor, seleccione un curso primero en el menú superior.');
             return;
         }
+        resetNewAssignment();
+        setIsModalOpen(true);
+    };
+
+    const handleEditAssignment = (assignment: any) => {
+        setEditingAssignment(assignment);
         setNewAssignment({
-            title: '',
-            description: '',
-            assignment_type: 'HOMEWORK',
-            due_date: '',
-            weight_points: 1.0,
-            merit_points: 0,
-            unit_name: selectedUnit !== 'ALL' ? selectedUnit : 'Bimestre 1',
-            max_score: 100.0,
-            schedule_id: selectedSchedule || '',
+            title: assignment.title,
+            description: assignment.description || '',
+            assignment_type: assignment.assignment_type || 'HOMEWORK',
+            due_date: assignment.due_date ? assignment.due_date.slice(0, 16) : '',
+            weight_points: assignment.weight_points || 1.0,
+            merit_points: assignment.merit_points || 0,
+            unit_name: assignment.unit_name || 'Bimestre 1',
+            max_score: assignment.max_score,
+            schedule_id: assignment.schedule_id || '',
+            category_id: assignment.category_id || assignment.subgrade_categories?.id || '',
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -711,6 +825,12 @@ const AssignmentsModule: React.FC = () => {
                                                     {assignment.unit_name}
                                                 </span>
                                             )}
+                                            {(assignment.subgrade_categories?.name || assignment.category_name) && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1" title="Vinculada a subcalificaciones">
+                                                    <Layers className="w-3 h-3 text-blue-400" />
+                                                    {assignment.subgrade_categories?.name || assignment.category_name}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             {Number(assignment.merit_points) > 0 && (
@@ -746,13 +866,32 @@ const AssignmentsModule: React.FC = () => {
                                         </span>
                                     </div>
 
-                                    <button
-                                        onClick={() => { setReviewAssignment(assignment); setFilterStatus('ALL'); }}
-                                        className="w-full py-2.5 px-4 bg-slate-800 hover:bg-blue-600 active:bg-blue-700 hover:text-white text-slate-300 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer border border-slate-700/60"
-                                    >
-                                        <span>Revisar Entregas</span>
-                                        <ArrowRight className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setReviewAssignment(assignment); setFilterStatus('ALL'); }}
+                                            className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-blue-600 active:bg-blue-700 hover:text-white text-slate-300 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer border border-slate-700/60"
+                                        >
+                                            <span>Revisar Entregas</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleEditAssignment(assignment)}
+                                            className="p-2.5 bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-blue-400 rounded-xl transition-all border border-slate-700/60 shadow-sm"
+                                            title="Editar tarea y punteo"
+                                        >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeletingAssignment(assignment)}
+                                            className="p-2.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-xl transition-all border border-slate-700/60 shadow-sm"
+                                            title="Eliminar tarea"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -773,8 +912,12 @@ const AssignmentsModule: React.FC = () => {
                         {/* Header with Close Button */}
                         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 sm:p-6 text-white shrink-0 flex items-start justify-between">
                             <div>
-                                <h3 className="text-lg sm:text-xl font-bold">Crear Nueva Tarea</h3>
-                                <p className="text-blue-100 text-xs mt-1">Configura la actividad académica para los alumnos.</p>
+                                <h3 className="text-lg sm:text-xl font-bold">
+                                    {editingAssignment ? 'Editar Tarea' : 'Crear Nueva Tarea'}
+                                </h3>
+                                <p className="text-blue-100 text-xs mt-1">
+                                    {editingAssignment ? 'Modifica los parámetros, fecha o punteo de esta actividad.' : 'Configura la actividad académica para los alumnos.'}
+                                </p>
                             </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
@@ -840,7 +983,7 @@ const AssignmentsModule: React.FC = () => {
                                         <select
                                             className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
                                             value={newAssignment.unit_name || 'Bimestre 1'}
-                                            onChange={(e) => setNewAssignment({ ...newAssignment, unit_name: e.target.value })}
+                                            onChange={(e) => setNewAssignment({ ...newAssignment, unit_name: e.target.value, category_id: '' })}
                                         >
                                             <option value="Bimestre 1">Bimestre 1</option>
                                             <option value="Bimestre 2">Bimestre 2</option>
@@ -863,84 +1006,215 @@ const AssignmentsModule: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-xs font-bold text-slate-300 ml-1">Fecha y Hora Límite</label>
-                                    <input
-                                        type="datetime-local"
-                                        required
-                                        className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
-                                        value={newAssignment.due_date}
-                                        onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
-                                    />
-                                </div>
+                                {/* Category Budget & Linking (Enfoque 1: Presupuesto y Puntos Netos) */}
+                                {(() => {
+                                    const selectedCat = subgradeCategories?.find((c: any) => c.id === newAssignment.category_id);
+                                    const isCatOfEditing = editingAssignment && (editingAssignment.category_id || editingAssignment.subgrade_categories?.id) === newAssignment.category_id;
+                                    const usedInOtherAssignments = (categoryUsage[newAssignment.category_id || '']?.totalPoints || 0) - (isCatOfEditing ? Number(editingAssignment.max_score) : 0);
+                                    const catTotal = selectedCat ? Number(selectedCat.max_score) : 100;
+                                    const remainingBudget = selectedCat ? Math.max(0, catTotal - usedInOtherAssignments) : 100;
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
-                                            <span>Punteo Académico</span>
-                                            <span className="text-[10px] text-blue-400 font-normal">Cuadro de notas</span>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="100"
-                                            step="0.1"
-                                            required
-                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
-                                            value={newAssignment.max_score}
-                                            onChange={(e) => setNewAssignment({ ...newAssignment, max_score: Number(e.target.value) })}
-                                            placeholder="100"
-                                        />
-                                        <span className="text-[10px] text-slate-500 ml-1 mt-0.5 block">Valor en puntos para el promedio</span>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
-                                            <span className="flex items-center gap-1 text-amber-400">
-                                                <Sparkles className="w-3 h-3" />
-                                                Puntos de Mérito
-                                            </span>
-                                            <span className="text-[10px] text-amber-400/80 font-normal">Gamificación</span>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-amber-500/30 rounded-xl focus:ring-2 focus:ring-amber-500/40 outline-none text-amber-300 text-xs sm:text-sm font-bold"
-                                            value={newAssignment.merit_points || 0}
-                                            onChange={(e) => setNewAssignment({ ...newAssignment, merit_points: Math.max(0, parseInt(e.target.value) || 0) })}
-                                            placeholder="0"
-                                        />
-                                        <span className="text-[10px] text-slate-500 ml-1 mt-0.5 block">Puntos para la tienda escolar / canje</span>
-                                    </div>
-                                </div>
+                                    return (
+                                        <>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Layers className="w-3.5 h-3.5 text-blue-400" />
+                                                        Vincular a Subcalificación (Opcional)
+                                                    </span>
+                                                    {newAssignment.category_id && (
+                                                        <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                                            Suma Directa
+                                                        </span>
+                                                    )}
+                                                </label>
+                                                <select
+                                                    className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                                    value={newAssignment.category_id || ''}
+                                                    onChange={(e) => {
+                                                        const catId = e.target.value;
+                                                        if (catId) {
+                                                            const found = subgradeCategories?.find((c: any) => c.id === catId);
+                                                            const isCatEditing = editingAssignment && (editingAssignment.category_id || editingAssignment.subgrade_categories?.id) === catId;
+                                                            const used = (categoryUsage[catId]?.totalPoints || 0) - (isCatEditing ? Number(editingAssignment.max_score) : 0);
+                                                            const rem = found ? Math.max(0, Number(found.max_score) - used) : 100;
+                                                            setNewAssignment({
+                                                                ...newAssignment,
+                                                                category_id: catId,
+                                                                max_score: rem
+                                                            });
+                                                        } else {
+                                                            setNewAssignment({
+                                                                ...newAssignment,
+                                                                category_id: '',
+                                                                max_score: 100
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="">(Ninguna) - Actividad Libre / Independiente</option>
+                                                    {subgradeCategories?.map((cat: any) => {
+                                                        const isCatEditing = editingAssignment && (editingAssignment.category_id || editingAssignment.subgrade_categories?.id) === cat.id;
+                                                        const used = (categoryUsage[cat.id]?.totalPoints || 0) - (isCatEditing ? Number(editingAssignment.max_score) : 0);
+                                                        const rem = Math.max(0, Number(cat.max_score) - used);
+                                                        const isFull = rem <= 0;
 
-                                <div className="flex items-center gap-3 pt-3 border-t border-slate-800">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition-all text-center"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={createMutation.isPending}
-                                        className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all text-xs flex items-center justify-center space-x-2 disabled:opacity-50"
-                                    >
-                                        {createMutation.isPending ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Check className="h-4 w-4" />
-                                        )}
-                                        <span>Guardar Tarea</span>
-                                    </button>
-                                </div>
+                                                        return (
+                                                            <option key={cat.id} value={cat.id} disabled={isFull}>
+                                                                {cat.name} ({used}/{cat.max_score} pts {isFull ? '- COMPLETA 🔒' : `- Quedan ${rem} pts`})
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+
+                                                {/* Budget Progress Card */}
+                                                {selectedCat ? (
+                                                    <div className={`mt-2.5 p-3 rounded-2xl border text-xs space-y-1.5 ${
+                                                        remainingBudget > 0 
+                                                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-200' 
+                                                            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                                    }`}>
+                                                        <div className="flex items-center justify-between font-bold">
+                                                            <span>Presupuesto categoría "{selectedCat.name}":</span>
+                                                            <span className="font-extrabold">{usedInOtherAssignments} / {catTotal} pts asignados</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className={`h-full transition-all duration-300 ${
+                                                                    usedInOtherAssignments >= catTotal ? 'bg-amber-400' : 'bg-blue-500'
+                                                                }`}
+                                                                style={{ width: `${Math.min(100, (usedInOtherAssignments / catTotal) * 100)}%` }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-[11px] opacity-90 leading-tight">
+                                                            {remainingBudget > 0 ? (
+                                                                <>Puntos disponibles para esta tarea: <strong className="text-white font-bold">{remainingBudget} pts</strong>. Cada punto ganado sumará directamente al cuadro de notas.</>
+                                                            ) : (
+                                                                <>Esta categoría ya tiene todos sus puntos asignados ({catTotal} pts). No se pueden agregar más tareas.</>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-400 ml-1 mt-1 block">
+                                                        Si vinculas una categoría, el punteo se limita a los puntos disponibles de la categoría y sumará de forma directa.
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-300 ml-1">Fecha y Hora Límite</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    required
+                                                    className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                                    value={newAssignment.due_date}
+                                                    onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
+                                                        <span>Punteo Académico</span>
+                                                        {selectedCat && (
+                                                            <span className="text-[10px] text-blue-400 font-semibold">
+                                                                Máx: {remainingBudget} pts
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="0.1"
+                                                        max={selectedCat ? remainingBudget : 100}
+                                                        step="0.1"
+                                                        required
+                                                        className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/40 outline-none text-slate-100 text-xs sm:text-sm font-medium"
+                                                        value={newAssignment.max_score}
+                                                        onChange={(e) => setNewAssignment({ ...newAssignment, max_score: Number(e.target.value) })}
+                                                        placeholder={selectedCat ? String(remainingBudget) : '100'}
+                                                    />
+                                                    <span className="text-[10px] text-slate-500 ml-1 mt-0.5 block">
+                                                        {selectedCat ? `Máximo permitido: ${remainingBudget} pts disponibles` : 'Valor en puntos para el promedio'}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
+                                                        <span className="flex items-center gap-1 text-amber-400">
+                                                            <Sparkles className="w-3 h-3" />
+                                                            Puntos de Mérito
+                                                        </span>
+                                                        <span className="text-[10px] text-amber-400/80 font-normal">Gamificación</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        className="w-full mt-1.5 px-3.5 py-2.5 bg-slate-950 border border-amber-500/30 rounded-xl focus:ring-2 focus:ring-amber-500/40 outline-none text-amber-300 text-xs sm:text-sm font-bold"
+                                                        value={newAssignment.merit_points || 0}
+                                                        onChange={(e) => setNewAssignment({ ...newAssignment, merit_points: Math.max(0, parseInt(e.target.value) || 0) })}
+                                                        placeholder="0"
+                                                    />
+                                                    <span className="text-[10px] text-slate-500 ml-1 mt-0.5 block">Puntos para la tienda escolar / canje</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 pt-3 border-t border-slate-800">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsModalOpen(false)}
+                                                    className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-750 active:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition-all text-center"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={createMutation.isPending || updateMutation.isPending || (Boolean(selectedCat) && remainingBudget <= 0 && (!editingAssignment || Number(newAssignment.max_score) <= 0))}
+                                                    className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all text-xs flex items-center justify-center space-x-2 disabled:opacity-50"
+                                                >
+                                                    {(createMutation.isPending || updateMutation.isPending) ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Check className="h-4 w-4" />
+                                                    )}
+                                                    <span>{editingAssignment ? 'Guardar Cambios' : 'Guardar Tarea'}</span>
+                                                </button>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </form>
                         </div>
                     </div>
                 </div>,
                 document.body
             )}
+
+            {/* Confirm Delete Modal */}
+            {deletingAssignment && (
+                <ConfirmModal
+                    isOpen={!!deletingAssignment}
+                    variant="danger"
+                    title="¿Eliminar Tarea?"
+                    description={
+                        <div className="space-y-2">
+                            <p>
+                                ¿Estás seguro de que deseas eliminar la tarea <strong className="text-white">"{deletingAssignment.title}"</strong> ({deletingAssignment.max_score} pts)?
+                            </p>
+                            {deletingAssignment.category_id && (
+                                <p className="text-amber-400 text-[11px] bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 leading-relaxed">
+                                    ⚠️ Al eliminarla, se liberarán {deletingAssignment.max_score} pts en la categoría de subcalificaciones y las notas bimestrales se recalcularán automáticamente.
+                                </p>
+                            )}
+                        </div>
+                    }
+                    confirmText="Sí, Eliminar"
+                    cancelText="Cancelar"
+                    isLoading={deleteMutation.isPending}
+                    onConfirm={() => deleteMutation.mutate(deletingAssignment.id)}
+                    onClose={() => setDeletingAssignment(null)}
+                />
+            )}
+
 
             {/* Review / Grading Modal (Rendered with createPortal at Root Level) */}
             {reviewAssignment && createPortal(
@@ -968,7 +1242,22 @@ const AssignmentsModule: React.FC = () => {
                                         <span className="text-slate-300 font-bold">
                                             Nota Máx: {reviewAssignment.max_score} pts
                                         </span>
+                                        {(reviewAssignment.subgrade_categories?.name || reviewAssignment.category_name) && (
+                                            <>
+                                                <span>&bull;</span>
+                                                <span className="text-blue-400 font-bold flex items-center gap-1">
+                                                    <Layers className="w-3 h-3" />
+                                                    {reviewAssignment.subgrade_categories?.name || reviewAssignment.category_name}
+                                                </span>
+                                            </>
+                                        )}
                                     </p>
+                                    {(reviewAssignment.subgrade_categories?.name || reviewAssignment.category_name) && (
+                                        <div className="mt-2 text-[11px] text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1.5 w-fit">
+                                            <Sparkles className="w-3 h-3 text-blue-400" />
+                                            <span>Vinculada a subcalificaciones: las notas se sincronizan automáticamente con el cuadro bimestral.</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={() => setReviewAssignment(null)}

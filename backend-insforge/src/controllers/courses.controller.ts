@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
 
 export const getCourses = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
-    const db = req.dbUserClient || client;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
         let query = db
@@ -47,7 +47,7 @@ export const createCourse = async (req: Request, res: Response) => {
     const finalEndDate = end_date === '' ? null : end_date;
     const finalDescription = description === '' ? null : description;
 
-    const db = req.dbUserClient || client;
+    const db = req.dbUserClient || adminClient || client;
 
     console.log('createCourse:', { branchId: finalBranchId, bodyName: name });
 
@@ -76,7 +76,7 @@ export const updateCourse = async (req: Request, res: Response) => {
     const finalEndDate = end_date === '' ? null : end_date;
     const finalDescription = description === '' ? null : description;
 
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = req.dbUserClient || adminClient || client;
 
     const branchId = req.currentUser?.branch_id;
 
@@ -103,7 +103,7 @@ export const updateCourse = async (req: Request, res: Response) => {
 
 export const deleteCourse = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = req.dbUserClient || adminClient || client;
 
     const branchId = req.currentUser?.branch_id;
 
@@ -140,7 +140,7 @@ export const deleteCourse = async (req: Request, res: Response) => {
 
 export const getCourseSchedules = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
         const { data, error } = await db
@@ -160,7 +160,7 @@ export const getCourseSchedules = async (req: Request, res: Response) => {
 export const createCourseSchedule = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { grade, day_of_week, start_time, end_time } = req.body;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
         const { data, error } = await db
@@ -179,7 +179,7 @@ export const createCourseSchedule = async (req: Request, res: Response) => {
 
 export const deleteCourseSchedule = async (req: Request, res: Response) => {
     const { scheduleId } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
         const { error } = await db

@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 import { broadcastNotification } from '../services/notification.service';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../services/email.service';
 
 const linkOrCreateParent = async (studentId: string, email: string, fullName: string, relationship: string, createdBy: string | undefined) => {
     try {
-        const { data: existingProfile } = await client
+        const db = adminClient || client;
+        const { data: existingProfile } = await db
             .from('profiles')
             .select('id')
             .eq('email', email)
@@ -29,7 +30,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
 
             parentUserId = authData.user.id;
             
-            const { error: profileError } = await client
+            const { error: profileError } = await db
                 .from('profiles')
                 .upsert({
                     id: parentUserId,
@@ -46,7 +47,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
             sendWelcomeEmail(email, fullName || 'Encargado', 'parent', password);
         }
 
-        const { data: existingLink } = await client
+        const { data: existingLink } = await db
             .from('parent_student_links')
             .select('id')
             .eq('parent_user_id', parentUserId)
@@ -54,7 +55,7 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
             .maybeSingle();
 
         if (!existingLink) {
-            await client
+            await db
                 .from('parent_student_links')
                 .insert({
                     parent_user_id: parentUserId,
@@ -70,12 +71,12 @@ const linkOrCreateParent = async (studentId: string, email: string, fullName: st
 
 export const getStudents = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
-    const db = req.dbUserClient || client;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
         let query = db
             .from('students')
-            .select('*', { count: 'exact' })
+            .select('*, branches(id, name)', { count: 'exact' })
             .order('full_name');
 
         if (branchId) {
@@ -85,8 +86,8 @@ export const getStudents = async (req: Request, res: Response) => {
         const { page, limit, search } = req.query;
 
         if (search) {
-            // Unir varios campos en una búsqueda general o limitar a full_name
-            query = query.or(`full_name.ilike.%${search}%,personal_code.ilike.%${search}%`);
+            const cleanSearch = String(search).trim();
+            query = query.or(`full_name.ilike.%${cleanSearch}%,personal_code.ilike.%${cleanSearch}%,academy_code.ilike.%${cleanSearch}%,identification_document.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%,guardian_name.ilike.%${cleanSearch}%`);
         }
 
         if (page && limit) {
@@ -150,6 +151,7 @@ export const createStudent = async (req: Request, res: Response) => {
         medical_notes,
         previous_school,
         personal_code,
+        academy_code,
         user_id, // Check for user link
         branch_id // Front-end passed branch_id
     } = req.body;
@@ -158,8 +160,9 @@ export const createStudent = async (req: Request, res: Response) => {
     const finalBranchId = (branch_id === '' ? null : branch_id) || req.currentUser?.branch_id;
     const finalBirthDate = birth_date === '' ? null : birth_date;
     const finalUserId = user_id === '' ? null : user_id;
+    const finalAcademyCode = academy_code === '' ? null : academy_code;
 
-    const db = req.dbUserClient || client;
+    const db = req.dbUserClient || adminClient || client;
 
     console.log('createStudent:', { branchId: finalBranchId, bodyName: full_name });
 
@@ -184,6 +187,7 @@ export const createStudent = async (req: Request, res: Response) => {
                 medical_notes,
                 previous_school,
                 personal_code,
+                academy_code: finalAcademyCode,
                 user_id: finalUserId
             }])
             .select()
@@ -219,7 +223,7 @@ export const updateStudent = async (req: Request, res: Response) => {
     }
 
     const branchId = req.currentUser?.branch_id;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
         let query = db
@@ -247,12 +251,113 @@ export const updateStudent = async (req: Request, res: Response) => {
     }
 };
 
+export const requestStudentDeletion = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const caller = req.currentUser;
+
+    if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: 'El motivo de la solicitud de eliminación es obligatorio.' });
+    }
+
+    try {
+        // 1. Check if student exists
+        const { data: student, error: stErr } = await adminClient
+            .from('students')
+            .select('id, full_name, personal_code, branch_id')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (stErr || !student) {
+            return res.status(404).json({ message: 'Estudiante no encontrado.' });
+        }
+
+        // 2. Check if there is already a pending request
+        const { data: existingRecords, error: existErr } = await adminClient
+            .from('document_authorizations')
+            .select('id')
+            .eq('student_id', id)
+            .eq('document_type', 'STUDENT_DELETION')
+            .eq('status', 'PENDING');
+
+        if (existErr) throw existErr;
+
+        if (existingRecords && existingRecords.length > 0) {
+            return res.status(400).json({ message: 'Ya existe una solicitud pendiente de eliminación para este estudiante.' });
+        }
+
+        const { data: inserted, error: insertErr } = await adminClient
+            .from('document_authorizations')
+            .insert([{
+                student_id: id,
+                document_type: 'STUDENT_DELETION',
+                status: 'PENDING',
+                reason: reason.trim(),
+                requested_by: caller?.id || null,
+                requested_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (insertErr) throw insertErr;
+
+        // 3. Notify administrators
+        try {
+            const { data: adminProfiles } = await adminClient
+                .from('profiles')
+                .select('id')
+                .in('role', ['admin', 'superadmin']);
+
+            if (adminProfiles && adminProfiles.length > 0) {
+                const notifs = adminProfiles.map((adm: any) => ({
+                    user_id: adm.id,
+                    title: '⚠️ Solicitud de Eliminación de Estudiante',
+                    message: `Secretaría ha solicitado autorización para eliminar a ${student.full_name} (${student.personal_code || 'S/C'}). Motivo: "${reason.trim()}".`,
+                    type: 'SYSTEM',
+                    is_read: false
+                }));
+                await adminClient.from('notifications').insert(notifs);
+            }
+        } catch (notifErr) {
+            console.error('Error notifying admins about student deletion request:', notifErr);
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Solicitud de eliminación enviada a la Administración.',
+            request: inserted
+        });
+    } catch (error: any) {
+        console.error('Error in requestStudentDeletion:', error);
+        res.status(500).json({ message: 'Error al solicitar la eliminación del estudiante', error: error?.message });
+    }
+};
+
 export const deleteStudent = async (req: Request, res: Response) => {
     const { id } = req.params;
     const branchId = req.currentUser?.branch_id;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const userRole = req.currentUser?.role;
+    const db = req.dbUserClient || adminClient || client;
 
     try {
+        // Security check: if secretary, check if there is an approved deletion request
+        if (userRole === 'secretary') {
+            const { data: authCheck, error: authCheckErr } = await adminClient
+                .from('document_authorizations')
+                .select('id')
+                .eq('student_id', id)
+                .eq('document_type', 'STUDENT_DELETION')
+                .eq('status', 'APPROVED')
+                .order('authorized_at', { ascending: false })
+                .limit(1);
+
+            if (authCheckErr || !authCheck || authCheck.length === 0) {
+                return res.status(403).json({ 
+                    message: 'La eliminación de estudiantes por parte de secretaría requiere la aprobación previa de la Administración.' 
+                });
+            }
+        }
+
         let query = db
             .from('students')
             .delete()
@@ -265,6 +370,17 @@ export const deleteStudent = async (req: Request, res: Response) => {
         const { error } = await query;
 
         if (error) throw error;
+
+        // Clean up or archive authorization record
+        try {
+            await adminClient
+                .from('document_authorizations')
+                .delete()
+                .eq('student_id', id)
+                .eq('document_type', 'STUDENT_DELETION');
+        } catch (cleanupErr) {
+            console.warn('Could not cleanup document authorization after delete:', cleanupErr);
+        }
 
         if (branchId) {
             await broadcastNotification(
@@ -280,5 +396,81 @@ export const deleteStudent = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Error deleting student:", error);
         res.status(500).json({ message: 'Error deleting student', error: (error as any).message });
+    }
+};
+
+// ==========================================
+// PUBLIC STUDENT CREDENTIAL VERIFICATION
+// ==========================================
+export const verifyStudentPublic = async (req: Request, res: Response) => {
+    const { identifier } = req.params;
+
+    if (!identifier) {
+        return res.status(400).json({ valid: false, message: 'Identificador de estudiante requerido' });
+    }
+
+    try {
+        const cleanId = String(identifier).trim();
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
+        let query = adminClient
+            .from('students')
+            .select(`
+                id,
+                user_id,
+                full_name,
+                personal_code,
+                academy_code,
+                status,
+                created_at,
+                branches:branch_id ( id, name, address, phone ),
+                enrollments (
+                    id,
+                    is_active,
+                    courses:course_id ( id, name, description )
+                )
+            `);
+
+        if (isUUID) {
+            query = query.or(`id.eq.${cleanId},user_id.eq.${cleanId}`);
+        } else {
+            query = query.or(`personal_code.eq.${cleanId},academy_code.eq.${cleanId}`);
+        }
+
+        const { data: student, error } = await query.maybeSingle();
+
+        if (error) throw error;
+
+        if (!student) {
+            return res.status(404).json({
+                valid: false,
+                message: 'Estudiante no encontrado en los registros oficiales de ULTEC.'
+            });
+        }
+
+        const activeCourses = (student.enrollments || [])
+            .filter((e: any) => e.is_active && e.courses)
+            .map((e: any) => e.courses.name);
+
+        const isRegularActive = student.status === 'active' || student.status === 'activo' || (activeCourses.length > 0);
+        const studentCode = student.personal_code || student.academy_code || `UT-${new Date().getFullYear()}-${student.id.slice(0, 4).toUpperCase()}`;
+
+        res.json({
+            valid: true,
+            student_id: student.id,
+            full_name: student.full_name,
+            student_code: studentCode,
+            status: isRegularActive ? 'ACTIVO' : 'INACTIVO',
+            is_active: isRegularActive,
+            branch_name: (student.branches as any)?.name || 'Sede Central',
+            branch_address: (student.branches as any)?.address || '',
+            courses: activeCourses,
+            cycle: `Ciclo Lectivo ${new Date().getFullYear()}`,
+            issued_at: student.created_at,
+            verified_at: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error verifying student public:', error);
+        res.status(500).json({ valid: false, message: 'Error interno al verificar credencial estudiantil' });
     }
 };

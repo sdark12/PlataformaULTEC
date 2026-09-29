@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getIncidents, createIncident, updateIncident, resolveIncident, deleteIncident, type DisciplineIncident } from './disciplineService';
 import { getCourses, getStudents, type Course } from './academicService';
 import {
     Loader2, ShieldAlert, Plus, X, Search, CheckCircle2, AlertTriangle, AlertOctagon, Star,
-    Trash2, MessageSquare, Calendar, User, BookOpen, Check
+    Trash2, MessageSquare, Calendar, User, BookOpen, Check, Filter, RotateCcw, Clock
 } from 'lucide-react';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 const INCIDENT_TYPES: Record<string, { label: string; color: string; bg: string; icon: any }> = {
     positive: { label: 'Positivo', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800', icon: Star },
@@ -31,9 +33,16 @@ const DisciplineModule = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('');
+    const [filterSeverity, setFilterSeverity] = useState('');
+    const [filterCourse, setFilterCourse] = useState('');
     const [filterResolved, setFilterResolved] = useState('');
+    const [datePreset, setDatePreset] = useState<'all' | 'this_month' | 'last_3_months' | 'this_year' | 'custom'>('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [showDateInputs, setShowDateInputs] = useState(false);
     const [resolveModal, setResolveModal] = useState<string | null>(null);
     const [resolveNotes, setResolveNotes] = useState('');
+    const [deleteConfirmIncidentId, setDeleteConfirmIncidentId] = useState<string | null>(null);
 
     // Form state
     const [form, setForm] = useState({
@@ -52,10 +61,64 @@ const DisciplineModule = () => {
         setShowForm(false);
     };
 
+    const handleDatePresetChange = (preset: 'all' | 'this_month' | 'last_3_months' | 'this_year' | 'custom') => {
+        setDatePreset(preset);
+        const now = new Date();
+        if (preset === 'all') {
+            setStartDate('');
+            setEndDate('');
+            setShowDateInputs(false);
+        } else if (preset === 'this_month') {
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const firstDay = `${year}-${month}-01`;
+            const lastDay = new Date(year, now.getMonth() + 1, 0).toISOString().split('T')[0];
+            setStartDate(firstDay);
+            setEndDate(lastDay);
+            setShowDateInputs(false);
+        } else if (preset === 'last_3_months') {
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 90);
+            setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
+            setEndDate(now.toISOString().split('T')[0]);
+            setShowDateInputs(false);
+        } else if (preset === 'this_year') {
+            const year = now.getFullYear();
+            setStartDate(`${year}-01-01`);
+            setEndDate(`${year}-12-31`);
+            setShowDateInputs(false);
+        } else if (preset === 'custom') {
+            setShowDateInputs(true);
+        }
+    };
+
+    const resetFilters = () => {
+        setSearchTerm('');
+        setFilterType('');
+        setFilterSeverity('');
+        setFilterCourse('');
+        setFilterResolved('');
+        setDatePreset('all');
+        setStartDate('');
+        setEndDate('');
+        setShowDateInputs(false);
+    };
+
+    const hasActiveFilters = Boolean(
+        searchTerm || filterType || filterSeverity || filterCourse || filterResolved || startDate || endDate || datePreset !== 'all'
+    );
+
     // Queries
     const { data: incidents, isLoading } = useQuery({
-        queryKey: ['discipline-incidents', filterType, filterResolved],
-        queryFn: () => getIncidents({ incident_type: filterType || undefined, resolved: filterResolved || undefined }),
+        queryKey: ['discipline-incidents', filterType, filterResolved, filterSeverity, filterCourse, startDate, endDate],
+        queryFn: () => getIncidents({
+            incident_type: filterType || undefined,
+            resolved: filterResolved || undefined,
+            severity: filterSeverity || undefined,
+            course_id: filterCourse || undefined,
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+        }),
     });
 
     const { data: students } = useQuery({
@@ -116,21 +179,57 @@ const DisciplineModule = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('¿Estás seguro de eliminar esta incidencia? Esta acción no se puede deshacer.')) {
-            deleteMutation.mutate(id);
+        setDeleteConfirmIncidentId(id);
+    };
+
+    const confirmDelete = () => {
+        if (deleteConfirmIncidentId) {
+            deleteMutation.mutate(deleteConfirmIncidentId);
+            setDeleteConfirmIncidentId(null);
         }
     };
 
-    // Filter incidents by search term
     const studentsList = Array.isArray(students) ? students : (students as any)?.data || [];
 
+    // Filter incidents with client-side reactive guard
     const filteredIncidents = incidents?.filter((inc) => {
-        const matchSearch = !searchTerm || 
-            inc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inc.students?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inc.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchSearch;
+        // Date range safety
+        if (startDate && inc.incident_date && inc.incident_date < startDate) return false;
+        if (endDate && inc.incident_date && inc.incident_date > endDate) return false;
+
+        // Type filter safety
+        if (filterType && inc.incident_type !== filterType) return false;
+
+        // Severity filter safety
+        if (filterSeverity && inc.severity !== filterSeverity) return false;
+
+        // Course filter safety
+        if (filterCourse && inc.course_id !== filterCourse) return false;
+
+        // Resolved filter safety
+        if (filterResolved !== '') {
+            const isResolved = filterResolved === 'true';
+            if (Boolean(inc.resolved) !== isResolved) return false;
+        }
+
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase().trim();
+        return (
+            inc.title?.toLowerCase().includes(term) ||
+            inc.students?.full_name?.toLowerCase().includes(term) ||
+            inc.students?.personal_code?.toLowerCase().includes(term) ||
+            inc.students?.academy_code?.toLowerCase().includes(term) ||
+            inc.description?.toLowerCase().includes(term) ||
+            inc.action_taken?.toLowerCase().includes(term) ||
+            inc.courses?.name?.toLowerCase().includes(term)
+        );
     });
+
+    // KPI Summary Metrics
+    const totalIncidents = filteredIncidents?.length || 0;
+    const pendingIncidents = filteredIncidents?.filter(i => !i.resolved).length || 0;
+    const resolvedIncidents = filteredIncidents?.filter(i => i.resolved).length || 0;
+    const majorIncidents = filteredIncidents?.filter(i => ['major', 'suspension'].includes(i.incident_type) || ['high', 'critical'].includes(i.severity)).length || 0;
 
     const formatDate = (d: string) => {
         if (!d) return '—';
@@ -139,10 +238,11 @@ const DisciplineModule = () => {
 
     return (
         <div className="max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Disciplina e Incidencias</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión de reportes de conducta, advertencias e incidentes estudiantiles.</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión integral de reportes de conducta, advertencias e historial disciplinario.</p>
                 </div>
                 <button
                     onClick={() => { resetForm(); setShowForm(true); }}
@@ -152,47 +252,223 @@ const DisciplineModule = () => {
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-                <div className="relative flex-1 min-w-[200px] max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por título, estudiante..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Reportes</span>
+                        <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                            <ShieldAlert className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{totalIncidents}</p>
+                    <span className="text-[11px] text-slate-400">Historial consultado</span>
                 </div>
-                <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
-                    className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none cursor-pointer"
-                >
-                    <option value="">Todos los tipos</option>
-                    {Object.entries(INCIDENT_TYPES).map(([key, val]) => (
-                        <option key={key} value={key}>{val.label}</option>
-                    ))}
-                </select>
-                <select
-                    value={filterResolved}
-                    onChange={(e) => setFilterResolved(e.target.value)}
-                    className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none cursor-pointer"
-                >
-                    <option value="">Todos</option>
-                    <option value="false">Pendientes</option>
-                    <option value="true">Resueltas</option>
-                </select>
+
+                <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Pendientes</span>
+                        <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                            <Clock className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2">{pendingIncidents}</p>
+                    <span className="text-[11px] text-slate-400">Requieren seguimiento</span>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Resueltas</span>
+                        <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{resolvedIncidents}</p>
+                    <span className="text-[11px] text-slate-400">Casos concluidos</span>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">Faltas Mayores / Críticas</span>
+                        <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                            <AlertOctagon className="w-4 h-4" />
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-2">{majorIncidents}</p>
+                    <span className="text-[11px] text-slate-400">Atención prioritaria</span>
+                </div>
+            </div>
+
+            {/* Enhanced Filter Panel */}
+            <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-5 mb-6 shadow-sm space-y-4">
+                {/* Row 1: Search & Date Presets */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                    {/* Search */}
+                    <div className="relative flex-1 min-w-[240px]">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por estudiante, código, título o descripción..."
+                            className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Date Presets */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+                        <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" /> Fechas:
+                        </span>
+                        {[
+                            { id: 'all', label: 'Todo el historial' },
+                            { id: 'this_month', label: 'Este Mes' },
+                            { id: 'last_3_months', label: 'Últimos 3 Meses' },
+                            { id: 'this_year', label: 'Año 2026' },
+                            { id: 'custom', label: 'Rango...' }
+                        ].map(preset => (
+                            <button
+                                key={preset.id}
+                                onClick={() => handleDatePresetChange(preset.id as any)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                                    datePreset === preset.id
+                                        ? 'bg-brand-blue text-white shadow-sm shadow-blue-500/20'
+                                        : 'bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                }`}
+                            >
+                                {preset.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Custom Date Inputs */}
+                {(showDateInputs || datePreset === 'custom' || startDate || endDate) && (
+                    <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-slate-500">Desde:</span>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => { setStartDate(e.target.value); setDatePreset('custom'); }}
+                                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none focus:ring-1 focus:ring-brand-blue"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-slate-500">Hasta:</span>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => { setEndDate(e.target.value); setDatePreset('custom'); }}
+                                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none focus:ring-1 focus:ring-brand-blue"
+                            />
+                        </div>
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={() => { setStartDate(''); setEndDate(''); setDatePreset('all'); setShowDateInputs(false); }}
+                                className="text-xs text-rose-500 hover:underline font-medium ml-1"
+                            >
+                                Quitar fechas
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Row 2: Dropdown Filters & Reset */}
+                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                        <Filter className="w-3.5 h-3.5" /> Filtros:
+                    </div>
+
+                    {/* Type Filter */}
+                    <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none cursor-pointer focus:ring-1 focus:ring-brand-blue"
+                    >
+                        <option value="">Todos los tipos</option>
+                        {Object.entries(INCIDENT_TYPES).map(([key, val]) => (
+                            <option key={key} value={key}>{val.label}</option>
+                        ))}
+                    </select>
+
+                    {/* Severity Filter */}
+                    <select
+                        value={filterSeverity}
+                        onChange={(e) => setFilterSeverity(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none cursor-pointer focus:ring-1 focus:ring-brand-blue"
+                    >
+                        <option value="">Todas las severidades</option>
+                        {Object.entries(SEVERITY_LEVELS).map(([key, val]) => (
+                            <option key={key} value={key}>{val.label}</option>
+                        ))}
+                    </select>
+
+                    {/* Course Filter */}
+                    <select
+                        value={filterCourse}
+                        onChange={(e) => setFilterCourse(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none cursor-pointer focus:ring-1 focus:ring-brand-blue max-w-[200px]"
+                    >
+                        <option value="">Todos los cursos</option>
+                        {courses?.map((c: Course) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+
+                    {/* Status Filter */}
+                    <select
+                        value={filterResolved}
+                        onChange={(e) => setFilterResolved(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs outline-none cursor-pointer focus:ring-1 focus:ring-brand-blue"
+                    >
+                        <option value="">Todos los estados</option>
+                        <option value="false">Pendientes</option>
+                        <option value="true">Resueltas</option>
+                    </select>
+
+                    {/* Reset Filters button */}
+                    {hasActiveFilters && (
+                        <button
+                            onClick={resetFilters}
+                            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 rounded-lg text-xs font-semibold transition-all"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" /> Limpiar Filtros
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Incidents List */}
             {isLoading ? (
                 <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-blue" /></div>
             ) : !filteredIncidents || filteredIncidents.length === 0 ? (
-                <div className="text-center py-20 glass-card">
+                <div className="text-center py-16 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-8">
                     <ShieldAlert className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">No hay incidencias registradas</h3>
-                    <p className="text-sm text-slate-500 mt-2">Los reportes de conducta aparecerán aquí.</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {hasActiveFilters ? 'No se encontraron incidencias' : 'No hay incidencias registradas'}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
+                        {hasActiveFilters
+                            ? 'Intenta ajustar los filtros de fecha, tipo o búsqueda para ver más reportes.'
+                            : 'Los reportes de conducta y disciplina aparecerán aquí cuando sean registrados.'}
+                    </p>
+                    {hasActiveFilters && (
+                        <button
+                            onClick={resetFilters}
+                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white text-xs font-bold rounded-xl hover:bg-blue-600 transition-all shadow-sm"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" /> Restablecer filtros
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -201,7 +477,7 @@ const DisciplineModule = () => {
                         const sevStyle = getSeverityStyle(incident.severity);
                         const TypeIcon = typeStyle.icon;
                         return (
-                            <div key={incident.id} className={`bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden transition-all hover:shadow-md ${incident.resolved ? 'opacity-70' : ''}`}>
+                            <div key={incident.id} className={`bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 shadow-sm overflow-hidden transition-all hover:shadow-md ${incident.resolved ? 'opacity-75' : ''}`}>
                                 <div className="p-5 flex items-start gap-4">
                                     {/* Icon */}
                                     <div className={`p-3 rounded-xl border shrink-0 ${typeStyle.bg}`}>
@@ -227,11 +503,34 @@ const DisciplineModule = () => {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
-                                                    <span className="flex items-center gap-1"><User className="w-3 h-3" /> {incident.students?.full_name || 'Sin estudiante'}</span>
-                                                    {incident.courses && <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" /> {incident.courses.name}</span>}
-                                                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(incident.incident_date)}</span>
-                                                    {incident.reporter && <span>Reportado por: {incident.reporter.full_name}</span>}
+                                                <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
+                                                    <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                                                        <User className="w-3.5 h-3.5 text-brand-blue" />
+                                                        {incident.students?.full_name || 'Sin estudiante'}
+                                                    </span>
+                                                    {incident.students?.academy_code && (
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                            {incident.students.academy_code}
+                                                        </span>
+                                                    )}
+                                                    {incident.students?.personal_code && (
+                                                        <span className="text-[11px] text-slate-400">
+                                                            ({incident.students.personal_code})
+                                                        </span>
+                                                    )}
+                                                    {incident.courses && (
+                                                        <span className="flex items-center gap-1">
+                                                            <BookOpen className="w-3 h-3 text-slate-400" /> {incident.courses.name}
+                                                        </span>
+                                                    )}
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="w-3 h-3 text-slate-400" /> {formatDate(incident.incident_date)}
+                                                    </span>
+                                                    {incident.reporter && (
+                                                        <span className="text-slate-400">
+                                                            Reportado por: <strong className="text-slate-600 dark:text-slate-400">{incident.reporter.full_name}</strong>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             {/* Actions */}
@@ -291,8 +590,8 @@ const DisciplineModule = () => {
             )}
 
             {/* Create / Edit Modal */}
-            {showForm && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            {showForm && createPortal(
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
                         <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-700 shrink-0">
                             <h3 className="text-xl font-bold text-slate-800 dark:text-white">
@@ -315,7 +614,9 @@ const DisciplineModule = () => {
                                 >
                                     <option value="">Seleccionar estudiante...</option>
                                     {studentsList?.map((s: any) => (
-                                        <option key={s.id} value={s.id}>{s.full_name} {s.personal_code ? `(${s.personal_code})` : ''}</option>
+                                        <option key={s.id} value={s.id}>
+                                            {s.full_name} {s.academy_code ? `[${s.academy_code}]` : ''} {s.personal_code ? `(${s.personal_code})` : ''}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -448,12 +749,13 @@ const DisciplineModule = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Resolve Modal */}
-            {resolveModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            {resolveModal && createPortal(
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-700">
                             <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -489,8 +791,22 @@ const DisciplineModule = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
+
+            {/* Modal de Confirmación para Eliminar Incidencia */}
+            <ConfirmModal
+                isOpen={!!deleteConfirmIncidentId}
+                title="¿Eliminar Incidencia Disciplinaria?"
+                description="¿Estás seguro de eliminar esta incidencia? Esta acción no se puede deshacer y borrará el historial disciplinario registrado."
+                confirmText="Sí, Eliminar"
+                cancelText="Cancelar"
+                variant="danger"
+                isLoading={deleteMutation.isPending}
+                onConfirm={confirmDelete}
+                onClose={() => setDeleteConfirmIncidentId(null)}
+            />
         </div>
     );
 };

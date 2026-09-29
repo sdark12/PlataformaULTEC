@@ -129,6 +129,30 @@ export const updateSettings = async (req: Request, res: Response) => {
     }
 
     try {
+        // Check if grade_unit_names is being updated, to synchronize existing grades & subgrades
+        if (updates.grade_unit_names !== undefined) {
+            const oldUnitNamesStr = await getSetting('grade_unit_names');
+            const oldUnitNames = oldUnitNamesStr.split(',').map(s => s.trim()).filter(Boolean);
+            const newUnitNames = String(updates.grade_unit_names).split(',').map(s => s.trim()).filter(Boolean);
+
+            for (let i = 0; i < Math.min(oldUnitNames.length, newUnitNames.length); i++) {
+                const oldName = oldUnitNames[i];
+                const newName = newUnitNames[i];
+                if (oldName && newName && oldName !== newName) {
+                    console.log(`[settings] Renaming evaluative unit "${oldName}" -> "${newName}" in grades and subgrades`);
+                    await adminClient
+                        .from('grades')
+                        .update({ unit_name: newName })
+                        .eq('unit_name', oldName);
+
+                    await adminClient
+                        .from('subgrade_categories')
+                        .update({ unit_name: newName })
+                        .eq('unit_name', oldName);
+                }
+            }
+        }
+
         // Upsert each setting
         const entries = Object.entries(updates);
         for (const [key, value] of entries) {

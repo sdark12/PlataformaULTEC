@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 export const getBranches = async (req: Request, res: Response) => {
-    const db = req.dbUserClient || client;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     try {
         const { data, error } = await db
@@ -24,7 +24,7 @@ export const getBranches = async (req: Request, res: Response) => {
 
 export const createBranch = async (req: Request, res: Response) => {
     const { name, address, phone, email } = req.body;
-    const db = req.dbUserClient || client;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     try {
         const { data, error } = await db
@@ -51,7 +51,7 @@ export const createBranch = async (req: Request, res: Response) => {
 export const updateBranch = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, address, phone, email } = req.body;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     try {
         const { data, error } = await db
@@ -77,7 +77,7 @@ export const updateBranch = async (req: Request, res: Response) => {
 
 export const deleteBranch = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const db = req.dbUserClient ? req.dbUserClient : client;
+    const db = (req as any).dbUserClient || adminClient || client;
 
     try {
         const { error } = await db

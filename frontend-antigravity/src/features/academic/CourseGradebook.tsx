@@ -1,16 +1,35 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from './academicService';
-import { getCourseGradebook } from './gradeService';
-import { Loader2, BookOpen, Printer, Award } from 'lucide-react';
+import { getCourseGradebook, getCourseActaAuthStatus, requestCourseActaAuth } from './gradeService';
+import { getCurrentUser } from '../../features/auth/authService';
+import { Loader2, BookOpen, Printer, Award, ShieldAlert, Clock } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { savePdfDoc } from '../../utils/fileDownloader';
+import SearchableSelect, { type SearchableOption } from '../../components/ui/SearchableSelect';
 
 const CourseGradebook = () => {
     const [selectedCourse, setSelectedCourse] = useState<string>('');
     const [selectedSchedule, setSelectedSchedule] = useState<string>('');
 
     const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
+
+    const courseOptions = useMemo<SearchableOption[]>(() => {
+        if (!courses) return [];
+        return courses.map((c: any) => ({
+            value: c.id,
+            label: c.name,
+            subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes` : undefined,
+        }));
+    }, [courses]);
+
+    // Auto-select first course if none selected
+    useEffect(() => {
+        if (courses && courses.length > 0 && !selectedCourse) {
+            setSelectedCourse(courses[0].id);
+        }
+    }, [courses, selectedCourse]);
 
     const { data: schedules } = useQuery({
         queryKey: ['course_schedules', selectedCourse],
@@ -24,7 +43,35 @@ const CourseGradebook = () => {
         enabled: !!selectedCourse,
     });
 
-    const generatePDF = () => {
+    const user = getCurrentUser();
+    const isSecretary = user?.role === 'secretary';
+    const [isRequestingAuth, setIsRequestingAuth] = useState(false);
+
+    const { data: authData, refetch: refetchAuth } = useQuery({
+        queryKey: ['course_acta_auth', selectedCourse],
+        queryFn: () => getCourseActaAuthStatus(selectedCourse),
+        enabled: !!selectedCourse && isSecretary,
+        refetchInterval: 10000,
+    });
+
+    const isActaApproved = authData?.status === 'APPROVED';
+    const isActaPending = authData?.status === 'PENDING';
+
+    const handleRequestActaAuth = async () => {
+        if (!selectedCourse) return;
+        setIsRequestingAuth(true);
+        try {
+            await requestCourseActaAuth(selectedCourse);
+            alert('Solicitud enviada a la Administración. Cuando sea aprobada por Dirección, se habilitará la descarga e impresión del Acta en PDF.');
+            refetchAuth();
+        } catch (err: any) {
+            alert(err?.response?.data?.message || 'Error al solicitar autorización para el acta');
+        } finally {
+            setIsRequestingAuth(false);
+        }
+    };
+
+    const generatePDF = async () => {
         if (!gradebook) return;
 
         const doc = new jsPDF({ orientation: 'landscape', format: 'letter' });
@@ -50,7 +97,10 @@ const CourseGradebook = () => {
             'No.',
             'Nombre del Estudiante',
             ...gradebook.units,
-            'Promedio Final'
+            'Prom. Ordinario',
+            'Recuperación',
+            'Nota Final',
+            'Resultado'
         ];
 
         // Map Table Rows
@@ -62,10 +112,18 @@ const CourseGradebook = () => {
 
             gradebook.units.forEach((unitName: string) => {
                 const unitData = student.units[unitName];
-                row.push(unitData && unitData.score !== null ? unitData.score : '-');
+                row.push(unitData && unitData.score !== null && unitData.score !== undefined ? unitData.score : '-');
             });
 
-            row.push(Number(student.average) > 0 ? student.average : '--');
+            row.push(student.ordinary_average !== null && student.ordinary_average !== undefined ? student.ordinary_average : '--');
+
+            const recup = student.recuperation_score !== null && student.recuperation_score !== undefined
+                ? student.recuperation_score
+                : (student.units['Recuperación']?.score ?? '-');
+            row.push(recup !== null && recup !== undefined ? recup : '-');
+
+            row.push(student.final_score !== null && student.final_score !== undefined ? student.final_score : (Number(student.average) > 0 ? student.average : '--'));
+            row.push(student.status_label || (Number(student.average) >= 60 ? 'Aprobado' : 'Reprobado'));
             return row;
         });
 
@@ -89,8 +147,8 @@ const CourseGradebook = () => {
                 cellPadding: 1 // High density padding
             },
             columnStyles: {
-                0: { halign: 'center', minCellWidth: 10 },
-                1: { halign: 'left', fontStyle: 'bold', minCellWidth: 45 }
+                0: { halign: 'center', minCellWidth: 8 },
+                1: { halign: 'left', fontStyle: 'bold', minCellWidth: 40 }
             },
             styles: {
                 overflow: 'linebreak',
@@ -149,7 +207,7 @@ const CourseGradebook = () => {
         doc.text('Sello y Firma Catedrático', pageWidth - 65, pageHeight - 18);
 
         // Trigger Download
-        doc.save(`Acta_de_Curso_${gradebook.course_name.replace(/\s+/g, '_')}.pdf`);
+        await savePdfDoc(doc, `Acta_de_Curso_${gradebook.course_name.replace(/\s+/g, '_')}.pdf`);
     };
 
     return (
@@ -163,25 +221,19 @@ const CourseGradebook = () => {
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 mb-8 max-w-2xl flex flex-col sm:flex-row gap-4 items-end">
-                    <div className="flex-1 w-full">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 mb-8 max-w-2xl flex flex-col sm:flex-row gap-4 items-end relative z-30 overflow-visible">
+                    <div className="flex-1 w-full relative z-40 overflow-visible">
                         <label className="block text-sm font-semibold text-slate-700 mb-2">Seleccionar Curso</label>
-                        <div className="relative">
-                            <select
-                                className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none outline-none font-medium"
-                                value={selectedCourse}
-                                onChange={(e) => {
-                                    setSelectedCourse(e.target.value);
-                                    setSelectedSchedule('');
-                                }}
-                            >
-                                <option value="">-- Elige un curso --</option>
-                                {courses?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-500">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                        </div>
+                        <SearchableSelect
+                            options={courseOptions}
+                            value={selectedCourse}
+                            onChange={(val) => {
+                                setSelectedCourse(val);
+                                setSelectedSchedule('');
+                            }}
+                            placeholder="-- Elige un curso --"
+                            searchPlaceholder="Buscar curso..."
+                        />
                     </div>
 
                     <div className="flex-1 w-full relative">
@@ -205,16 +257,67 @@ const CourseGradebook = () => {
                     </div>
 
                     {selectedCourse && gradebook && !isFetching && !isLoading && (
-                        <button
-                            onClick={generatePDF}
-                            className="flex items-center justify-center space-x-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
-                        >
-                            <Printer className="w-5 h-5" />
-                            <span>Exportar PDF</span>
-                        </button>
+                        isSecretary ? (
+                            isActaApproved ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-emerald-500/20">
+                                        <Award className="w-3.5 h-3.5" /> Acta Autorizada
+                                    </span>
+                                    <button
+                                        onClick={generatePDF}
+                                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap"
+                                    >
+                                        <Printer className="w-5 h-5" />
+                                        <span>Exportar PDF</span>
+                                    </button>
+                                </div>
+                            ) : isActaPending ? (
+                                <button
+                                    disabled
+                                    className="flex items-center justify-center space-x-2 px-5 py-3 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold rounded-xl border border-amber-500/30 cursor-not-allowed whitespace-nowrap text-xs shadow-sm"
+                                >
+                                    <Clock className="w-4 h-4 animate-spin text-amber-600" />
+                                    <span>Solicitud Pendiente de Dirección</span>
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleRequestActaAuth}
+                                    disabled={isRequestingAuth}
+                                    className="flex items-center justify-center space-x-2 px-5 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(217,119,6,0.3)] transition-all active:scale-95 whitespace-nowrap text-xs"
+                                >
+                                    {isRequestingAuth ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
+                                    <span>Solicitar Aprobación para Descargar</span>
+                                </button>
+                            )
+                        ) : (
+                            <button
+                                onClick={generatePDF}
+                                className="flex items-center justify-center space-x-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
+                            >
+                                <Printer className="w-5 h-5" />
+                                <span>Exportar PDF</span>
+                            </button>
+                        )
                     )}
                 </div>
             </div>
+
+            {/* Banner de Seguridad para Secretaría */}
+            {isSecretary && selectedCourse && gradebook && !isActaApproved && (
+                <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between gap-3 shadow-sm print:hidden">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-500/20 rounded-xl text-amber-600 shrink-0">
+                            <ShieldAlert className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-sm text-amber-950 dark:text-amber-100">Filtro de Seguridad Institucional: Descarga de Actas Oficiales</p>
+                            <p className="text-slate-600 dark:text-slate-300 mt-0.5">
+                                Puedes auditar y revisar las notas del curso en pantalla. Para exportar el archivo PDF o imprimir el acta oficial, presiona <strong>"Solicitar Aprobación para Descargar"</strong> para que Dirección la habilite.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Document / Report to Print */}
             {isLoading || isFetching ? (
@@ -252,38 +355,99 @@ const CourseGradebook = () => {
                                     {gradebook.units.map((unitName: string) => (
                                         <th key={unitName} className="px-4 py-3 font-bold text-slate-700 text-center bg-slate-50/50 border-x border-slate-100">{unitName}</th>
                                     ))}
-                                    <th className="px-4 py-3 font-black text-indigo-700 text-center text-base bg-indigo-50 border-l-2 border-indigo-200 border-r-2">PROMEDIO FINAL</th>
+                                    <th className="px-4 py-3 font-bold text-blue-800 text-center bg-blue-50/60 border-x border-blue-100">Prom. Ordinario</th>
+                                    <th className="px-4 py-3 font-bold text-amber-800 text-center bg-amber-50/60 border-x border-amber-100">Recuperación</th>
+                                    <th className="px-4 py-3 font-black text-indigo-700 text-center text-base bg-indigo-50 border-l-2 border-indigo-200 border-r-2">NOTA FINAL</th>
+                                    <th className="px-4 py-3 font-bold text-slate-700 text-center bg-slate-50/50">Resultado</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {gradebook.students.map((student: any, idx: number) => (
-                                    <tr key={student.student_id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-3 text-slate-500 text-center">{idx + 1}</td>
-                                        <td className="px-4 py-3 font-bold text-slate-800">{student.student_name}</td>
+                                {gradebook.students.map((student: any, idx: number) => {
+                                    const recup = student.recuperation_score ?? (student.units['Recuperación']?.score ?? null);
+                                    const finalScore = student.final_score ?? (Number(student.average) > 0 ? student.average : null);
+                                    const isPass = finalScore !== null && Number(finalScore) >= 60;
+                                    const status = student.status;
+                                    const label = student.status_label || (isPass ? 'Aprobado' : 'Reprobado');
 
-                                        {/* Dynamic Unit Cells */}
-                                        {gradebook.units.map((unitName: string) => {
-                                            const unitData = student.units[unitName];
-                                            const score = unitData ? unitData.score : null;
-                                            return (
-                                                <td key={unitName} className="px-4 py-3 text-center border-x border-slate-100 font-medium">
-                                                    {score !== null ? (
-                                                        <span className={Number(score) >= 60 ? 'text-emerald-600' : 'text-rose-600 font-bold'}>
-                                                            {score}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-300">-</span>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
+                                    return (
+                                        <tr key={student.student_id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-4 py-3 text-slate-500 text-center">{idx + 1}</td>
+                                            <td className="px-4 py-3 font-bold text-slate-800">{student.student_name}</td>
 
-                                        {/* Final Average Cell */}
-                                        <td className={`px-4 py-3 text-center border-l-2 border-indigo-200 border-r-2 font-black text-lg ${Number(student.average) >= 60 ? 'text-emerald-700 bg-emerald-50/30' : 'text-rose-700 bg-rose-50/30'}`}>
-                                            {Number(student.average) > 0 ? student.average : '--'}
-                                        </td>
-                                    </tr>
-                                ))}
+                                            {/* Dynamic Unit Cells */}
+                                            {gradebook.units.map((unitName: string) => {
+                                                const unitData = student.units[unitName];
+                                                const score = unitData ? unitData.score : null;
+                                                return (
+                                                    <td key={unitName} className="px-4 py-3 text-center border-x border-slate-100 font-medium">
+                                                        {score !== null ? (
+                                                            <span className={Number(score) >= 60 ? 'text-emerald-600' : 'text-rose-600 font-bold'}>
+                                                                {score}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-slate-300">-</span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+
+                                            {/* Promedio Ordinario */}
+                                            <td className="px-4 py-3 text-center border-x border-blue-100 font-semibold bg-blue-50/20 text-slate-700">
+                                                {student.ordinary_average !== null && student.ordinary_average !== undefined ? student.ordinary_average : '--'}
+                                            </td>
+
+                                            {/* Recuperación */}
+                                            <td className="px-4 py-3 text-center border-x border-amber-100 font-semibold bg-amber-50/20">
+                                                {recup !== null && recup !== undefined ? (
+                                                    <span className={Number(recup) >= 60 ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold'}>
+                                                        {recup}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-300">-</span>
+                                                )}
+                                            </td>
+
+                                            {/* Final Score Cell */}
+                                            <td className={`px-4 py-3 text-center border-l-2 border-indigo-200 border-r-2 font-black text-lg ${isPass ? 'text-emerald-700 bg-emerald-50/30' : 'text-rose-700 bg-rose-50/30'}`}>
+                                                {finalScore !== null ? finalScore : '--'}
+                                            </td>
+
+                                            {/* Resultado / Status */}
+                                            <td className="px-4 py-3 text-center font-medium">
+                                                {status === 'APROBADO' && (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                        Aprobado
+                                                    </span>
+                                                )}
+                                                {status === 'APROBADO_RECUPERACION' && (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-300">
+                                                        Aprobado (Recup.)
+                                                    </span>
+                                                )}
+                                                {status === 'REPROBADO' && (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                                        Reprobado
+                                                    </span>
+                                                )}
+                                                {status === 'REQUIERE_RECUPERACION' && (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                                        En Recuperación
+                                                    </span>
+                                                )}
+                                                {status === 'EN_RIESGO' && (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300">
+                                                        En Riesgo
+                                                    </span>
+                                                )}
+                                                {(!status || status === 'PENDIENTE') && (
+                                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                                                        {label}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

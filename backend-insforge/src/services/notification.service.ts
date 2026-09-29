@@ -1,4 +1,4 @@
-import client from '../config/insforge';
+import client, { adminClient } from '../config/insforge';
 
 /**
  * Creates a notification for a specific user.
@@ -15,8 +15,9 @@ export const createNotification = async (
     message: string,
     type: 'PAYMENT' | 'ENROLLMENT' | 'DELETE' | 'SYSTEM'
 ) => {
+    const effectiveDb = (dbClient === client || !dbClient) ? (adminClient || client) : dbClient;
     try {
-        const { error } = await dbClient
+        const { error } = await effectiveDb
             .from('notifications')
             .insert([{
                 user_id: userId,
@@ -46,9 +47,10 @@ export const broadcastNotification = async (
     type: 'PAYMENT' | 'ENROLLMENT' | 'DELETE' | 'SYSTEM',
     role: string = 'admin'
 ) => {
+    const effectiveDb = (dbClient === client || !dbClient) ? (adminClient || client) : dbClient;
     try {
         // Find all admins in the branch
-        const { data: profiles, error: profileError } = await dbClient
+        const { data: profiles, error: profileError } = await effectiveDb
             .from('profiles')
             .select('id')
             .eq('branch_id', branchId)
@@ -69,7 +71,7 @@ export const broadcastNotification = async (
         }));
 
         if (notificationsToInsert.length > 0) {
-            const { error: insertError } = await dbClient
+            const { error: insertError } = await effectiveDb
                 .from('notifications')
                 .insert(notificationsToInsert);
 
