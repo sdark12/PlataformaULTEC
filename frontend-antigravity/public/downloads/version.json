@@ -1,17 +1,17 @@
 {
-    "version":  "1.1.13",
-    "versionCode":  23,
+    "version":  "1.1.14",
+    "versionCode":  24,
     "minVersion":  "1.0.0",
     "releaseDate":  "2026-09-28",
     "downloadUrl":  "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     "fileName":  "PlataformaULTEC.apk",
     "fileSize":  54651711,
-    "title":  "Actualización v1.1.13 - Optimización, Paginación e Indexación",
+    "title":  "Actualización v1.1.14 - Seguridad, Gobernanza y Modo Mantenimiento",
     "releaseNotes":  [
-                         "Índices B-Tree y GIN Trigram en base de datos para consultas ultrarrápidas y búsquedas instantáneas.",
-                         "Endpoint de estadísticas globales (/api/users/stats) con agregación instantánea sin sobrecarga de red.",
-                         "Buscador de usuarios inteligente con debounce de 300ms y búsqueda multi-campo (nombre, correo y teléfono).",
-                         "Exportación a Excel bajo demanda y paginación server-side optimizada para alta concurrencia."
+                         "Segregación estricta de privilegios: Parámetros institucionales y de acceso restringidos exclusivamente al Superadministrador.",
+                         "Modo Mantenimiento institucional con mensaje personalizado y pantalla informativa para la comunidad escolar.",
+                         "Trazabilidad de configuración con auditoría diferencial (DIFFs) de valores anteriores y nuevos en audit_logs.",
+                         "Protección de jerarquía en gestión de usuarios: Bloqueo de escalamiento de privilegios y protección de cuentas de administración."
                      ],
     "isCritical":  false
 }
