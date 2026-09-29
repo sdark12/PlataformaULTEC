@@ -53,9 +53,11 @@ Todos los servicios se ejecutan en contenedores Docker gestionados mediante Dock
 - **Empaquetado Móvil:** Capacitor Android 7 (`com.plataformaultec.app`), compatible con PWA (Service Worker autogenerado vía `vite-plugin-pwa`).
 - **Cliente HTTP Central:** [`apiClient.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/services/apiClient.ts) — Interceptor de Axios que agrega automáticamente el token Bearer y la cabecera `X-Branch-Id` desde `BranchContext`.
 - **Contextos Clave:**
-  - `BranchContext.tsx`: Gestión global de sedes, alternancia de ámbito para SuperAdmin y refresco automático de consultas.
+  - `BranchContext.tsx`: Gestión global de sedes, alternancia de ámbito para SuperAdmin y refresco automático de consultas. La consulta de sedes está estrictamente protegida con `enabled: hasAuth` (`!!token && !!user`) para no dispararse en páginas públicas o antes del inicio de sesión.
   - `UpdateContext.tsx`: Detección en segundo plano de nuevas versiones del APK y modal de actualización para Android.
   - `IdleTimerContext.tsx`: Cierre de sesión automático por inactividad tras 20 minutos de inactividad.
+- **Blindaje Anti-Bucles de Redirección (Auth Guard):**
+  - En `apiClient.ts`: Los interceptores de error `401` y `403` validan `isPublicPath` (`/login`, `/reset-password`, `/verify`) antes de ejecutar `window.location.href`. Nunca se redirige a `/login` si el usuario ya se encuentra en una ruta pública de autenticación o verificación, previniendo recargas infinitas.
 
 ### 3.2 Backend (`backend-insforge/`)
 - **Core:** Node.js + Express + TypeScript compilado con `tsc` a la carpeta `dist/`.
