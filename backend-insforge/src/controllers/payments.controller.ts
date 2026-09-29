@@ -93,7 +93,7 @@ export const createPayment = async (req: Request, res: Response) => {
     const { student_id, enrollment_id, enrollment_ids, amount, method, reference_number, description, tuition_month, payment_type = 'TUITION', discount = 0, courses, branch_id } = req.body;
     const user = req.currentUser;
     const userId = user?.id;
-    const finalBranchId = user?.role === 'superadmin'
+    let finalBranchId = user?.role === 'superadmin'
         ? (branch_id || getEffectiveBranchId(req))
         : (user?.branch_id || null);
     const db = (req as any).dbUserClient || adminClient || client;
@@ -103,6 +103,31 @@ export const createPayment = async (req: Request, res: Response) => {
 
         if (!student_id) {
             return res.status(400).json({ message: 'Se requiere el student_id para unificar recibos.' });
+        }
+
+        // Si la sede no está definida, obtenerla del perfil del estudiante
+        if (!finalBranchId && student_id) {
+            const { data: stdBranch } = await db.from('students').select('branch_id').eq('id', student_id).maybeSingle();
+            if (stdBranch?.branch_id) {
+                finalBranchId = stdBranch.branch_id;
+            }
+        }
+
+        // Buscar si existe un turno de caja abierto en la sede para asociar el cobro
+        let activeCashShiftId: string | null = null;
+        if (finalBranchId) {
+            const { data: openShift } = await db
+                .from('cash_shifts')
+                .select('id')
+                .eq('branch_id', finalBranchId)
+                .eq('status', 'OPEN')
+                .order('opened_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (openShift) {
+                activeCashShiftId = openShift.id;
+            }
         }
 
         // Determinar la lista de cursos a procesar (nueva estructura vs antigua)
@@ -134,7 +159,8 @@ export const createPayment = async (req: Request, res: Response) => {
                     tuition_month: payment_type === 'TUITION' ? tuition_month : null,
                     payment_type,
                     discount: course.discount || 0,
-                    created_by: userId
+                    created_by: userId,
+                    cash_shift_id: activeCashShiftId
                 }])
                 .select()
                 .single();
@@ -179,13 +205,32 @@ export const createPayment = async (req: Request, res: Response) => {
                     tuition_month: payment_type === 'TUITION' ? tuition_month : null,
                     payment_type,
                     discount: discount || 0,
-                    created_by: userId
+                    created_by: userId,
+                    cash_shift_id: activeCashShiftId
                 }])
                 .select()
                 .single();
 
             if (paymentError) throw paymentError;
             firstPaymentRecord = payment;
+        }
+
+        // Actualizar acumulados del turno de caja activo si aplica
+        if (activeCashShiftId) {
+            const isCash = String(method || '').trim().toLowerCase() === 'cash' || String(method || '').trim().toLowerCase() === 'efectivo';
+            const grandTotal = totalAmount || amount || 0;
+            const { data: curShift } = await db.from('cash_shifts').select('opening_balance, cash_inflow, other_inflow, expenses_outflow').eq('id', activeCashShiftId).maybeSingle();
+            if (curShift) {
+                const newCashInflow = (Number(curShift.cash_inflow) || 0) + (isCash ? Number(grandTotal) : 0);
+                const newOtherInflow = (Number(curShift.other_inflow) || 0) + (!isCash ? Number(grandTotal) : 0);
+                const openBal = Number(curShift.opening_balance) || 0;
+                const expOut = Number(curShift.expenses_outflow) || 0;
+                await db.from('cash_shifts').update({
+                    cash_inflow: newCashInflow,
+                    other_inflow: newOtherInflow,
+                    expected_cash: openBal + newCashInflow - expOut
+                }).eq('id', activeCashShiftId);
+            }
         }
 
 
@@ -373,11 +418,16 @@ export const deletePayment = async (req: Request, res: Response) => {
     const branchId = req.currentUser?.branch_id;
 
     try {
+        let paymentToAdjust: any = null;
         if (branchId) {
-            const { data: payCheck } = await db.from('payments').select('students (branch_id)').eq('id', id).maybeSingle();
+            const { data: payCheck } = await db.from('payments').select('id, amount, method, cash_shift_id, students (branch_id)').eq('id', id).maybeSingle();
             if (!payCheck || payCheck.students?.branch_id !== branchId) {
                 return res.status(403).json({ message: 'Forbidden: Payment does not belong to your branch.' });
             }
+            paymentToAdjust = payCheck;
+        } else {
+            const { data: payCheck } = await db.from('payments').select('id, amount, method, cash_shift_id').eq('id', id).maybeSingle();
+            paymentToAdjust = payCheck;
         }
 
         const { error } = await db
@@ -386,6 +436,24 @@ export const deletePayment = async (req: Request, res: Response) => {
             .eq('id', id);
 
         if (error) throw error;
+
+        // Si el pago estaba vinculado a un turno de caja, descontar de los acumulados
+        if (paymentToAdjust?.cash_shift_id) {
+            const isCash = String(paymentToAdjust.method || '').trim().toLowerCase() === 'cash' || String(paymentToAdjust.method || '').trim().toLowerCase() === 'efectivo';
+            const amt = Number(paymentToAdjust.amount) || 0;
+            const { data: curShift } = await db.from('cash_shifts').select('opening_balance, cash_inflow, other_inflow, expenses_outflow').eq('id', paymentToAdjust.cash_shift_id).maybeSingle();
+            if (curShift) {
+                const newCashInflow = Math.max(0, (Number(curShift.cash_inflow) || 0) - (isCash ? amt : 0));
+                const newOtherInflow = Math.max(0, (Number(curShift.other_inflow) || 0) - (!isCash ? amt : 0));
+                const openBal = Number(curShift.opening_balance) || 0;
+                const expOut = Number(curShift.expenses_outflow) || 0;
+                await db.from('cash_shifts').update({
+                    cash_inflow: newCashInflow,
+                    other_inflow: newOtherInflow,
+                    expected_cash: openBal + newCashInflow - expOut
+                }).eq('id', paymentToAdjust.cash_shift_id);
+            }
+        }
 
         if (branchId) {
             await broadcastNotification(

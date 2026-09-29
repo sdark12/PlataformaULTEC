@@ -10,6 +10,7 @@ import EnrollmentsList from './features/academic/EnrollmentsList';
 import ResetPassword from './features/auth/ResetPassword';
 import PaymentsList from './features/finance/PaymentsList';
 import InvoicesList from './features/finance/InvoicesList';
+import CashRegisterPage from './features/finance/CashRegisterPage';
 import Attendance from './features/academic/Attendance';
 import ReportsHub from './features/finance/ReportsHub';
 import AcademicGradesHub from './features/academic/AcademicGradesHub';
@@ -71,6 +72,7 @@ function App() {
                 <Route path="/enrollments" element={<EnrollmentsList />} />
                 <Route path="/promotions" element={<PromotionsManager />} />
                 <Route path="/payments" element={<PaymentsList />} />
+                <Route path="/cash-register" element={<CashRegisterPage />} />
                 <Route path="/invoices" element={<InvoicesList />} />
                 <Route path="/reports" element={<ReportsHub />} />
                 <Route path="/student-reports" element={<ReportsHub defaultTab="students" />} />

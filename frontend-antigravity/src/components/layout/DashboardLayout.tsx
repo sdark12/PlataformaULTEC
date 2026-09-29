@@ -25,7 +25,8 @@ import {
     Menu,
     X,
     Building2,
-    Sparkles
+    Sparkles,
+    Coins
 } from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
@@ -251,6 +252,7 @@ const DashboardLayout = () => {
                             <>
                                 <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 mt-5">Finanzas</p>
                                 <SidebarItem to="/payments" icon={DollarSign} label="Pagos" onClick={() => setIsMobileMenuOpen(false)} />
+                                <SidebarItem to="/cash-register" icon={Coins} label="Caja y Arqueo" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem to="/invoices" icon={FileText} label="Facturas" onClick={() => setIsMobileMenuOpen(false)} />
                             </>
                         )}

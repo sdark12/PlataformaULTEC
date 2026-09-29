@@ -4,18 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.18",
-    versionCode: 28,
+    version: "1.1.19",
+    versionCode: 29,
     minVersion: "1.0.0",
     releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.18 - Sistema Automatizado de Respaldos y Disaster Recovery",
+    title: "Actualización v1.1.19 - Módulo de Caja Chica y Arqueo Diario por Sede",
     releaseNotes: [
-        "Copias de Seguridad Automatizadas: Respaldos programados de base de datos PostgreSQL con compresión Gzip nivel 9 y checksums SHA-256.",
-        "Disaster Recovery en Panel DevOps: Generación manual inmediata, historial de descargas y comando oficial de restauración de emergencia.",
-        "Política de Retención Inteligente: Depuración automática rotativa manteniendo los últimos 7 respaldos diarios para optimizar disco."
+        "Caja Chica y Arqueo de Turnos: Apertura de caja con fondo base, seguimiento de efectivo en gaveta y arqueo de cierre con cálculo automático de diferencias.",
+        "Control de Egresos Menores: Registro categorizado de gastos operativos de sede con soporte de número de factura o comprobante físico.",
+        "Comprobantes Oficiales de Corte: Generación e impresión de actas de conciliación de turno con firmas de secretaría y dirección.",
+        "Auditoría Multisede: Supervisión e historial permanente de arqueos con visado administrativo para directores y SuperAdmin."
     ],
     isCritical: false
 };

@@ -30,6 +30,7 @@ import settingsRoutes from './routes/settings.routes';
 import meritsRoutes from './routes/merits.routes';
 import promotionsRoutes from './routes/promotions.routes';
 import devopsRoutes from './routes/devops.routes';
+import cashRegisterRoutes from './routes/cashRegister.routes';
 import { verifyInvoicePublic } from './controllers/invoices.controller';
 
 import { verifyStudentPublic } from './controllers/students.controller';
@@ -100,6 +101,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/merits', meritsRoutes);
 app.use('/api', promotionsRoutes);
 app.use('/api/devops', devopsRoutes);
+app.use('/api', cashRegisterRoutes);
 
 
 

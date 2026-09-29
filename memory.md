@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.18` (Build 28)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.1.19` (Build 29)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -212,7 +212,32 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 
 ---
 
-## 10. Hoja de Ruta de Fases y Estado
+---
+
+## 10. Módulo de Caja Chica y Arqueo Diario por Sede (v1.1.19)
+
+- **Ciclo de Vida de Turnos (`cash_shifts`):**
+  - Estados: `'OPEN'`, `'CLOSED'`, `'AUDITED'`.
+  - Regla de Negocio: Solo puede haber **un turno activo simultáneamente por sede**.
+  - Fondo Inicial: Se registra al momento de la apertura física de la caja.
+- **Enlace de Cobros y Conciliación:**
+  - Columna `cash_shift_id` en la tabla `payments`.
+  - Toda recepción de pago (`createPayment` o `createBulkGroupPayment`) detecta si la sede tiene un turno en `'OPEN'` y enlaza la transacción automáticamente.
+  - El backend mantiene acumulados en vivo: `cash_inflow` (cobros en efectivo/gaveta) y `other_inflow` (transferencias bancarias, tarjetas o depósitos que no entran a gaveta física).
+  - Al anular o eliminar un pago (`deletePayment`), se descuenta de los acumulados de la caja activa.
+- **Gastos Menores / Egresos de Sede (`cash_expenses`):**
+  - Registro de compras operativas (suministros, papelería, aseo, transporte, servicios).
+  - Soporte de número de comprobante físico / factura.
+  - Bloqueo de seguridad: No se pueden eliminar egresos de turnos cerrados o auditados.
+- **Arqueo y Cierre Ciego / Guiado:**
+  - Fórmula matemática de control: `expected_cash = opening_balance + cash_inflow - expenses_outflow`.
+  - Cálculo en tiempo real de la diferencia física: `difference = actual_cash - expected_cash` (Exacto, Sobrante o Faltante).
+  - Generación de comprobante oficial imprimible con desglose de conciliación y áreas de firma para Cajero(a) y Dirección.
+  - Visado y auditoría por administradores y SuperAdmin con notas inmutables.
+
+---
+
+## 11. Hoja de Ruta de Fases y Estado
 
 - [x] **Fase 1: Panel DevOps y Telemetría en Vivo de Infraestructura** (v1.1.16)
   - Métricas en tiempo real de CPU, RAM, disco y base de datos PostgreSQL.
@@ -226,13 +251,14 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Motor de respaldo `pg_dump` con compresión gzip nivel 9 y checksums SHA-256.
   - Interfaz de gestión y descarga directa desde el Panel DevOps.
   - Cron inteligente de respaldo diario y rotación de retención de 7 días.
-- [ ] **Fase 3.2: Módulo de Caja Chica y Arqueo Diario por Sede** (Siguiente objetivo sugerido)
+- [x] **Fase 3.2: Módulo de Caja Chica y Arqueo Diario por Sede** (v1.1.19)
   - Apertura y cierre de turnos de caja para secretaría / administración.
-  - Control de efectivo vs pagos electrónicos y transferencias bancarias.
+  - Control de efectivo en gaveta vs pagos electrónicos y transferencias bancarias.
   - Registro de egresos y gastos operativos menores de sede con comprobante.
-  - Corte diario consolidado y reporte descargable / imprimible.
+  - Corte diario consolidado con acta imprimible y visado de auditoría.
 - [ ] **Fase 3.3: Centro de Notificaciones Push Nativas y Alertas Escolares** (FCM / Web Push)
   - Alertas automáticas para pagos aprobados, boletas listas para entrega física y avisos de asistencia.
 - [ ] **Fase 3.4: Modo Offline-First para Registro de Asistencia y Calificaciones** (Docentes)
   - Almacenamiento local IndexedDB para aulas sin conectividad y sincronización background.
+
 
