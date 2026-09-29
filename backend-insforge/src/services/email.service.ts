@@ -182,3 +182,67 @@ export const sendWelcomeEmail = async (
         return null; // Silent catch
     }
 };
+
+export const verifySmtpConnection = async (): Promise<{ ok: boolean; message: string; host?: string; port?: number }> => {
+    try {
+        const t = await initTransporter();
+        await t.verify();
+        return {
+            ok: true,
+            message: 'Conexión SMTP activa y autenticada correctamente.',
+            host: process.env.SMTP_HOST || 'smtp.ethereal.email (Modo Pruebas)',
+            port: Number(process.env.SMTP_PORT) || 587
+        };
+    } catch (error: any) {
+        return {
+            ok: false,
+            message: error.message || 'Error al conectar con el servidor SMTP',
+            host: process.env.SMTP_HOST || 'Desconocido',
+            port: Number(process.env.SMTP_PORT) || 587
+        };
+    }
+};
+
+export const sendTestEmail = async (to: string): Promise<{ ok: boolean; messageId?: string; previewUrl?: string; error?: string }> => {
+    try {
+        const t = await initTransporter();
+        const info = await t.sendMail({
+            from: '"Ultra Tecnología" <soporte@ultratecnologia.edu>',
+            to,
+            subject: 'Prueba de Conexión SMTP - Plataforma ULTEC',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <div style="background: linear-gradient(135deg, #0d59f2, #10b981); padding: 24px; text-align: center; color: white;">
+                        <h1 style="margin: 0; font-size: 22px; font-weight: bold;">Plataforma ULTEC</h1>
+                        <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">Diagnóstico Oficial del Servidor de Correo</p>
+                    </div>
+                    <div style="padding: 24px; color: #1e293b; background-color: #ffffff;">
+                        <h2 style="font-size: 16px; color: #0f172a; margin-top: 0;">¡Conexión SMTP Exitosa!</h2>
+                        <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+                            Este correo de prueba confirma que el servicio de mensajería y notificaciones de <strong>Plataforma ULTEC</strong> está configurado y funcionando correctamente.
+                        </p>
+                        <div style="background-color: #f8fafc; border-left: 4px solid #10b981; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; font-size: 13px; line-height: 1.6;">
+                            <div><strong>Servidor SMTP:</strong> ${process.env.SMTP_HOST || 'smtp.ethereal.email (Pruebas)'}</div>
+                            <div><strong>Puerto:</strong> ${process.env.SMTP_PORT || '587'}</div>
+                            <div><strong>Destinatario de prueba:</strong> ${to}</div>
+                            <div><strong>Fecha de verificación:</strong> ${new Date().toLocaleString()}</div>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">
+                            Las notificaciones automáticas de credenciales a nuevos alumnos, restablecimiento de contraseña y avisos académicos están operativas.
+                        </p>
+                    </div>
+                </div>
+            `
+        });
+
+        let previewUrl: string | undefined;
+        if (info.messageId && !process.env.SMTP_HOST) {
+            previewUrl = nodemailer.getTestMessageUrl(info) || undefined;
+        }
+
+        return { ok: true, messageId: info.messageId, previewUrl };
+    } catch (error: any) {
+        return { ok: false, error: error.message || 'Error al enviar el correo de prueba' };
+    }
+};
+

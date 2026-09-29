@@ -25,3 +25,22 @@ export const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
 };
+
+export const fetchCurrentUser = async () => {
+    try {
+        const response = await api.get('/auth/me');
+        if (response.data) {
+            const current = getCurrentUser() || {};
+            const updated = {
+                ...current,
+                ...response.data
+            };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+        }
+    } catch (err) {
+        console.error('Error fetching current user profile:', err);
+    }
+    return null;
+};
+

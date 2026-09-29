@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { adminClient } from '../config/insforge';
+import { verifySmtpConnection, sendTestEmail } from '../services/email.service';
 
 // ─── In-memory cache ───
 let settingsCache: Record<string, string> | null = null;
@@ -41,6 +42,8 @@ export const SETTING_LABELS: Record<string, string> = {
     institution_phone: 'Teléfono Institucional',
     institution_email: 'Email Institucional',
     institution_address: 'Dirección Institucional',
+    institution_logo_url: 'Logo Institucional',
+    institution_seal_url: 'Sello / Firma de Dirección',
     total_grade_units: 'Total de Unidades Evaluativas',
     grade_unit_names: 'Nombres de Unidades',
     grade_unit_cutoff_months: 'Meses de Corte por Unidad',
@@ -72,6 +75,8 @@ const DEFAULTS: Record<string, string> = {
     institution_phone: '',
     institution_email: '',
     institution_address: '',
+    institution_logo_url: '',
+    institution_seal_url: '',
 
     // Academic
     total_grade_units: '4',
@@ -341,3 +346,129 @@ export const updateSettings = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error updating settings' });
     }
 };
+
+/**
+ * POST /api/settings/upload-branding
+ * Uploads institutional logo or director's digital seal.
+ */
+export const uploadBrandingAsset = async (req: Request, res: Response) => {
+    const role = req.currentUser?.role;
+    if (!role || !['admin', 'superadmin'].includes(role)) {
+        return res.status(403).json({ message: 'No autorizado para subir elementos de identidad institucional' });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ message: 'No se subió ningún archivo' });
+    }
+
+    const type = req.body.type === 'seal' ? 'seal' : 'logo';
+    const key = type === 'seal' ? 'institution_seal_url' : 'institution_logo_url';
+    const label = type === 'seal' ? 'Sello / Firma de Dirección' : 'Logo Institucional';
+    const fileUrl = `/api/uploads/${req.file.filename}`;
+
+    try {
+        const currentSettings = await loadSettings();
+        const oldVal = currentSettings[key] || '';
+
+        const { error } = await adminClient
+            .from('system_settings')
+            .upsert(
+                { key, value: fileUrl, updated_at: new Date().toISOString() },
+                { onConflict: 'key' }
+            );
+
+        if (error) throw error;
+
+        // Invalidate cache
+        settingsCache = null;
+        cacheTimestamp = 0;
+
+        // Audit Log
+        const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || 'unknown';
+        const ipAddress = rawIp.replace(/^::ffff:/, '');
+
+        try {
+            await adminClient.from('audit_logs').insert([{
+                user_id: req.currentUser?.id || null,
+                branch_id: req.currentUser?.branch_id || null,
+                action: 'SETTINGS_UPDATE',
+                entity: 'system_settings',
+                entity_id: key,
+                old_data: { [key]: oldVal },
+                new_data: { [key]: fileUrl },
+                ip_address: ipAddress,
+                metadata: {
+                    type,
+                    label,
+                    filename: req.file.filename,
+                    user_email: req.currentUser?.email
+                }
+            }]);
+        } catch (auditErr) {
+            console.error('[AUDIT] Error logging branding upload:', auditErr);
+        }
+
+        res.json({
+            ok: true,
+            key,
+            url: fileUrl,
+            message: `${label} actualizado exitosamente.`
+        });
+    } catch (err: any) {
+        console.error('Error updating branding asset:', err);
+        res.status(500).json({ message: 'Error al guardar la imagen institucional', error: err?.message });
+    }
+};
+
+/**
+ * GET /api/settings/smtp-status
+ * Checks the live connectivity and authentication state of the SMTP server.
+ */
+export const getSmtpStatus = async (req: Request, res: Response) => {
+    const role = req.currentUser?.role;
+    if (!role || !['admin', 'superadmin'].includes(role)) {
+        return res.status(403).json({ message: 'No autorizado' });
+    }
+
+    try {
+        const status = await verifySmtpConnection();
+        res.json(status);
+    } catch (err: any) {
+        console.error('Error checking SMTP status:', err);
+        res.status(500).json({ ok: false, message: err?.message || 'Error al comprobar servidor SMTP' });
+    }
+};
+
+/**
+ * POST /api/settings/test-email
+ * Sends a live diagnostic test email. SuperAdmin only.
+ */
+export const testEmailDiagnostic = async (req: Request, res: Response) => {
+    const role = req.currentUser?.role;
+    if (role !== 'superadmin') {
+        return res.status(403).json({ message: 'Solo superadministradores pueden ejecutar pruebas del servidor de correo' });
+    }
+
+    const recipient = (req.body.recipientEmail || req.currentUser?.email || '').trim();
+    if (!recipient || !recipient.includes('@')) {
+        return res.status(400).json({ message: 'Dirección de correo electrónico inválida' });
+    }
+
+    try {
+        const result = await sendTestEmail(recipient);
+        if (!result.ok) {
+            return res.status(500).json({ ok: false, message: result.error || 'Error al enviar correo de prueba' });
+        }
+
+        res.json({
+            ok: true,
+            message: `Correo de prueba enviado exitosamente a ${recipient}`,
+            messageId: result.messageId,
+            previewUrl: result.previewUrl
+        });
+    } catch (err: any) {
+        console.error('Error in testEmailDiagnostic:', err);
+        res.status(500).json({ ok: false, message: err?.message || 'Error interno al procesar correo de prueba' });
+    }
+};
+

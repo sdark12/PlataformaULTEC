@@ -19,6 +19,10 @@ export interface SystemSettings {
     allow_parent_portal: string;
     default_currency_symbol: string;
 
+    // Institución
+    institution_logo_url?: string;
+    institution_seal_url?: string;
+
     // Gobernanza y Modo Mantenimiento
     system_maintenance_mode: string;
     system_maintenance_message: string;
@@ -29,6 +33,20 @@ export interface SystemSettings {
     merit_points_grade_good: string;
     merit_enable_auto_attendance: string;
     merit_enable_auto_grades: string;
+}
+
+export interface SmtpStatusResponse {
+    ok: boolean;
+    message: string;
+    host?: string;
+    port?: number;
+}
+
+export interface TestEmailResponse {
+    ok: boolean;
+    message: string;
+    messageId?: string;
+    previewUrl?: string;
 }
 
 export interface SettingsDiffItem {
@@ -76,3 +94,24 @@ export const getSettingsAuditHistory = async (): Promise<SettingsAuditLog[]> => 
     const response = await api.get('/api/settings/audit-history');
     return response.data;
 };
+
+export const uploadBrandingAsset = async (file: File, type: 'logo' | 'seal'): Promise<{ ok: boolean; key: string; url: string; message: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+    const response = await api.post('/api/settings/upload-branding', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};
+
+export const getSmtpStatus = async (): Promise<SmtpStatusResponse> => {
+    const response = await api.get('/api/settings/smtp-status');
+    return response.data;
+};
+
+export const sendTestEmail = async (recipientEmail: string): Promise<TestEmailResponse> => {
+    const response = await api.post('/api/settings/test-email', { recipientEmail });
+    return response.data;
+};
+

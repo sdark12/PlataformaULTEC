@@ -60,6 +60,8 @@ app.use(morgan('dev'));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+
 
 // Global API protection
 app.use('/api', apiRateLimiter);
@@ -67,6 +69,7 @@ app.use('/api', auditLogger);
 
 // Auth routes (have their own rate limiter)
 app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Public routes (no auth required)
 app.get('/api/invoices/verify/:invoiceNumber', verifyInvoicePublic);

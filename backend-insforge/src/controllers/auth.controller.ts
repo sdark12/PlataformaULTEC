@@ -346,3 +346,35 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 };
 
+export const getMe = async (req: Request, res: Response) => {
+    try {
+        const userId = req.currentUser?.id;
+        if (!userId) {
+            return res.status(401).json({ message: 'No autenticado', code: 'UNAUTHORIZED' });
+        }
+
+        const { data: profile, error } = await adminClient
+            .from('profiles')
+            .select('id, email, full_name, role, branch_id, active')
+            .eq('id', userId)
+            .single();
+
+        if (error || !profile) {
+            return res.status(404).json({ message: 'Perfil no encontrado', code: 'NOT_FOUND' });
+        }
+
+        res.json({
+            id: profile.id,
+            email: profile.email,
+            role: profile.role,
+            branch_id: profile.branch_id,
+            full_name: profile.full_name,
+            active: profile.active
+        });
+    } catch (err: any) {
+        console.error('Error fetching current user in getMe:', err);
+        res.status(500).json({ message: 'Error retrieving user' });
+    }
+};
+
+

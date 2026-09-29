@@ -4,22 +4,22 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.14",
-    versionCode: 24,
+    version: "1.1.15",
+    versionCode: 25,
     minVersion: "1.0.0",
     releaseDate: "2026-09-28",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.14 - Seguridad, Gobernanza y Modo Mantenimiento",
+    title: "Actualización v1.1.15 - Identidad Institucional, Diagnóstico SMTP y Sincronización de Sesión",
     releaseNotes: [
-        "Segregación estricta de privilegios: Parámetros institucionales y de acceso restringidos exclusivamente al Superadministrador.",
-        "Modo Mantenimiento institucional con mensaje personalizado y pantalla informativa para la comunidad escolar.",
-        "Trazabilidad de configuración con auditoría diferencial (DIFFs) de valores anteriores y nuevos en audit_logs.",
-        "Protección de jerarquía en gestión de usuarios: Bloqueo de escalamiento de privilegios y protección de cuentas de administración."
+        "Sincronización automática de perfil y sesión: Actualización en vivo de roles de usuario desde la base de datos sin requerir cerrar sesión.",
+        "Gestión de Marca e Identidad Institucional: Subida y previsualización de Logo Oficial y Sello / Firma Digital de Dirección.",
+        "Herramienta de Diagnóstico SMTP en vivo: Verificación de estado del servidor de correos y envío de correos de prueba institucionales."
     ],
     isCritical: false
 };
+
 
 /**
  * Consulta pública de la versión más reciente de la aplicación

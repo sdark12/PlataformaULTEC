@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
+import { fetchCurrentUser, getCurrentUser } from '../../features/auth/authService';
 
 const SidebarItem = ({ 
     to, 
@@ -90,14 +91,19 @@ const DashboardLayout = () => {
         window.location.href = '/login';
     };
 
-    let currentUser = null;
-    try {
-        const userStr = localStorage.getItem('user');
-        currentUser = userStr ? JSON.parse(userStr) : null;
-    } catch (e) {
-        console.error('Error parsing user data:', e);
-    }
+    const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+
+    useEffect(() => {
+        // Silently synchronize current user profile and role from the server
+        fetchCurrentUser().then(user => {
+            if (user) {
+                setCurrentUser(user);
+            }
+        });
+    }, []);
+
     const role = currentUser?.role || 'student';
+
 
     const roleBadges: Record<string, string> = {
         superadmin: 'SuperAdmin',

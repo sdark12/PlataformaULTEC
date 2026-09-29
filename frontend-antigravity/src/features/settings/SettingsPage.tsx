@@ -1,24 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getSettings, updateSettings, getSettingsAuditHistory } from './settingsService';
-import type { SystemSettings, SettingsAuditLog } from './settingsService';
+import { 
+    getSettings, 
+    updateSettings, 
+    getSettingsAuditHistory, 
+    uploadBrandingAsset, 
+    getSmtpStatus, 
+    sendTestEmail,
+    type SystemSettings, 
+    type SettingsAuditLog,
+    type SmtpStatusResponse,
+    type TestEmailResponse 
+} from './settingsService';
 import { 
     Settings, Save, Loader2, Building2, GraduationCap, 
     DollarSign, ToggleLeft, Award, User, Phone, Mail, 
     MapPin, CheckCircle2, AlertCircle, Shield, Sparkles,
     Smartphone, Download, RefreshCw, CheckCircle,
-    Lock, ShieldAlert, ShieldCheck, Wrench, History, Clock, ArrowRight
+    Lock, ShieldAlert, ShieldCheck, Wrench, History, Clock, ArrowRight,
+    Upload, Image as ImageIcon, Send, ExternalLink, FileCheck
 } from 'lucide-react';
+
 import UserProfile from '../../pages/UserProfile';
 import { useAppUpdate } from '../../context/UpdateContext';
-import { getCurrentUser } from '../auth/authService';
+import { getCurrentUser, fetchCurrentUser } from '../auth/authService';
 
 const SettingsPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const tabParam = searchParams.get('tab');
     const activeTab = tabParam === 'profile' ? 'profile' : tabParam === 'updates' ? 'updates' : 'system';
     
-    const currentUser = getCurrentUser();
+    const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
     const isSuperAdmin = currentUser?.role === 'superadmin';
 
     const { 
@@ -39,6 +51,29 @@ const SettingsPage: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
+    // Branding upload states
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingSeal, setUploadingSeal] = useState(false);
+
+    // SMTP Diagnostic state
+    const [smtpStatus, setSmtpStatus] = useState<SmtpStatusResponse | null>(null);
+    const [checkingSmtp, setCheckingSmtp] = useState(false);
+    const [testEmailRecipient, setTestEmailRecipient] = useState(currentUser?.email || '');
+    const [sendingTestEmail, setSendingTestEmail] = useState(false);
+    const [testEmailResult, setTestEmailResult] = useState<TestEmailResponse | null>(null);
+
+    // Silent profile refresh from DB
+    useEffect(() => {
+        fetchCurrentUser().then(user => {
+            if (user) {
+                setCurrentUser(user);
+                if (!testEmailRecipient) {
+                    setTestEmailRecipient(user.email || '');
+                }
+            }
+        });
+    }, []);
+
     const fetchAuditHistory = async () => {
         setLoadingAudit(true);
         try {
@@ -48,6 +83,66 @@ const SettingsPage: React.FC = () => {
             console.error("Error loading settings audit history:", err);
         } finally {
             setLoadingAudit(false);
+        }
+    };
+
+    const handleCheckSmtp = async () => {
+        setCheckingSmtp(true);
+        try {
+            const status = await getSmtpStatus();
+            setSmtpStatus(status);
+        } catch (err: any) {
+            setSmtpStatus({ ok: false, message: err?.message || 'Error al conectar con servidor SMTP' });
+        } finally {
+            setCheckingSmtp(false);
+        }
+    };
+
+    const handleSendTestEmail = async () => {
+        const email = testEmailRecipient.trim();
+        if (!email || !email.includes('@')) {
+            showNotification('Ingresa un correo electrónico válido', 'error');
+            return;
+        }
+        setSendingTestEmail(true);
+        setTestEmailResult(null);
+        try {
+            const result = await sendTestEmail(email);
+            setTestEmailResult(result);
+            if (result.ok) {
+                showNotification(`Correo de prueba enviado con éxito a ${email}`, 'success');
+            } else {
+                showNotification(result.message || 'Error al enviar el correo', 'error');
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Error al enviar correo de prueba';
+            setTestEmailResult({ ok: false, message: msg });
+            showNotification(msg, 'error');
+        } finally {
+            setSendingTestEmail(false);
+        }
+    };
+
+    const handleBrandingUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'seal') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (type === 'logo') setUploadingLogo(true);
+        else setUploadingSeal(true);
+
+        try {
+            const res = await uploadBrandingAsset(file, type);
+            if (res.ok) {
+                setSettings(prev => prev ? { ...prev, [res.key]: res.url } : null);
+                showNotification(res.message, 'success');
+                fetchAuditHistory();
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Error al subir la imagen institucional';
+            showNotification(msg, 'error');
+        } finally {
+            if (type === 'logo') setUploadingLogo(false);
+            else setUploadingSeal(false);
         }
     };
 
@@ -65,7 +160,9 @@ const SettingsPage: React.FC = () => {
         };
         fetchSettings();
         fetchAuditHistory();
+        handleCheckSmtp();
     }, []);
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
@@ -406,6 +503,16 @@ const SettingsPage: React.FC = () => {
                         </button>
                         <button
                             type="button"
+                            onClick={() => scrollToSection('sec-smtp')}
+                            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-brand-blue/40 shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95 transition-all"
+                        >
+                            <Mail className="w-3.5 h-3.5 text-blue-500" />
+                            <span>Servidor SMTP</span>
+                            {!isSuperAdmin && <Lock className="w-2.5 h-2.5 text-amber-500" />}
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => scrollToSection('sec-gamification')}
                             className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-brand-blue/40 shadow-sm shrink-0 flex items-center gap-1.5 active:scale-95 transition-all"
                         >
@@ -502,9 +609,106 @@ const SettingsPage: React.FC = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Identidad Visual y Documental */}
+                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                    <ImageIcon className="w-4 h-4 text-brand-blue" />
+                                    <span>Identidad Visual y Documental</span>
+                                </h3>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Logo Institucional */}
+                                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col justify-between">
+                                        <div>
+                                            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                Logo Institucional
+                                            </span>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3 leading-snug">
+                                                Aparece en barra de navegación, correos y diplomas.
+                                            </p>
+                                            <div className="w-full h-24 rounded-xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center p-2 mb-3 overflow-hidden">
+                                                {settings.institution_logo_url ? (
+                                                    <img
+                                                        src={settings.institution_logo_url}
+                                                        alt="Logo Institucional"
+                                                        className="max-h-full max-w-full object-contain"
+                                                    />
+                                                ) : (
+                                                    <div className="flex flex-col items-center text-slate-400">
+                                                        <ImageIcon className="w-6 h-6 mb-1" />
+                                                        <span className="text-[10px]">Sin logo subido</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <label className={`w-full py-2 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                                            uploadingLogo ? 'opacity-50 cursor-wait' : 'cursor-pointer active:scale-95'
+                                        }`}>
+                                            {uploadingLogo ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                <Upload className="w-3.5 h-3.5 text-brand-blue" />
+                                            )}
+                                            <span>{uploadingLogo ? 'Subiendo...' : 'Subir Nuevo Logo'}</span>
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp"
+                                                disabled={uploadingLogo}
+                                                className="hidden"
+                                                onChange={(e) => handleBrandingUpload(e, 'logo')}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {/* Sello y Firma Digital */}
+                                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col justify-between">
+                                        <div>
+                                            <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                Sello / Firma de Dirección
+                                            </span>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3 leading-snug">
+                                                Impreso en Certificados, Boletas de Notas y Recibos.
+                                            </p>
+                                            <div className="w-full h-24 rounded-xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center p-2 mb-3 overflow-hidden">
+                                                {settings.institution_seal_url ? (
+                                                    <img
+                                                        src={settings.institution_seal_url}
+                                                        alt="Sello Institucional"
+                                                        className="max-h-full max-w-full object-contain"
+                                                    />
+                                                ) : (
+                                                    <div className="flex flex-col items-center text-slate-400">
+                                                        <FileCheck className="w-6 h-6 mb-1" />
+                                                        <span className="text-[10px]">Sin sello subido</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <label className={`w-full py-2 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                                            uploadingSeal ? 'opacity-50 cursor-wait' : 'cursor-pointer active:scale-95'
+                                        }`}>
+                                            {uploadingSeal ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                                            )}
+                                            <span>{uploadingSeal ? 'Subiendo...' : 'Subir Sello/Firma'}</span>
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp"
+                                                disabled={uploadingSeal}
+                                                className="hidden"
+                                                onChange={(e) => handleBrandingUpload(e, 'seal')}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
 
                 {/* ─── ACADÉMICO ─── */}
                 <div id="sec-academic" className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-800/90 p-5 sm:p-6 overflow-hidden relative group transition-all">
@@ -897,6 +1101,138 @@ const SettingsPage: React.FC = () => {
                                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs sm:text-sm text-slate-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed resize-none"
                                 />
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Este mensaje se mostrará en pantalla completa a los usuarios durante el mantenimiento.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── SERVIDOR SMTP Y DIAGNÓSTICO DE CORREOS ─── */}
+                <div id="sec-smtp" className="bg-white dark:bg-slate-900/90 rounded-3xl shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-800/90 p-5 sm:p-6 overflow-hidden relative group transition-all">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 text-blue-500">
+                        <Mail className="w-32 h-32" />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-brand-blue flex items-center justify-center">
+                                    <Mail className="w-4 h-4" />
+                                </div>
+                                <span>Diagnóstico y Servidor SMTP</span>
+                            </h2>
+                            {!isSuperAdmin && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 text-[11px] font-black">
+                                    <Lock className="w-3 h-3" />
+                                    <span>SuperAdmin</span>
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Live SMTP Status Badge */}
+                            <div className={`p-4 rounded-2xl border flex items-start justify-between gap-3 ${
+                                smtpStatus?.ok
+                                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-900 dark:text-emerald-200'
+                                    : 'bg-rose-500/10 border-rose-500/25 text-rose-900 dark:text-rose-200'
+                            }`}>
+                                <div className="flex items-start gap-3">
+                                    {smtpStatus?.ok ? (
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                                    ) : (
+                                        <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                                    )}
+                                    <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-xs sm:text-sm">
+                                                {smtpStatus?.ok ? 'Conexión SMTP Activa' : 'Fallo en Conexión SMTP'}
+                                            </span>
+                                            {smtpStatus?.host && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-black/10 dark:bg-white/10 font-mono">
+                                                    {smtpStatus.host}:{smtpStatus.port || 587}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] opacity-90 mt-0.5 leading-snug">
+                                            {smtpStatus?.message || 'Comprobando estado del servidor de correos...'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCheckSmtp}
+                                    disabled={checkingSmtp}
+                                    title="Reverificar conectividad SMTP"
+                                    className="p-2 rounded-xl bg-white/60 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-black/5 dark:border-white/10 shrink-0 active:scale-95 disabled:opacity-50 transition-all"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${checkingSmtp ? 'animate-spin text-brand-blue' : ''}`} />
+                                </button>
+                            </div>
+
+                            {/* Test Email Section */}
+                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+                                <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                                    <Send className="w-3.5 h-3.5 text-brand-blue" />
+                                    <span>Enviar Correo de Prueba en Vivo</span>
+                                </h3>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                                    Verifica que los correos de bienvenida, contraseñas y avisos institucionales lleguen sin problemas.
+                                </p>
+
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <div className="relative flex-1">
+                                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="email"
+                                            value={testEmailRecipient}
+                                            onChange={(e) => setTestEmailRecipient(e.target.value)}
+                                            placeholder="destinatario@correo.com"
+                                            disabled={!isSuperAdmin || sendingTestEmail}
+                                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue disabled:opacity-60 disabled:cursor-not-allowed"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSendTestEmail}
+                                        disabled={!isSuperAdmin || sendingTestEmail}
+                                        className="bg-brand-blue hover:bg-brand-blue/90 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                    >
+                                        {sendingTestEmail ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Send className="w-3.5 h-3.5" />
+                                        )}
+                                        <span>{sendingTestEmail ? 'Enviando...' : 'Enviar Prueba'}</span>
+                                    </button>
+                                </div>
+
+                                {testEmailResult && (
+                                    <div className={`mt-3 p-3 rounded-xl text-xs flex items-start gap-2 ${
+                                        testEmailResult.ok
+                                            ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 border border-emerald-500/20'
+                                            : 'bg-rose-500/10 text-rose-800 dark:text-rose-200 border border-rose-500/20'
+                                    }`}>
+                                        {testEmailResult.ok ? (
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                                        ) : (
+                                            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                                        )}
+                                        <div className="flex-1">
+                                            <span>{testEmailResult.message}</span>
+                                            {testEmailResult.previewUrl && (
+                                                <div className="mt-1">
+                                                    <a
+                                                        href={testEmailResult.previewUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 font-bold text-brand-blue underline"
+                                                    >
+                                                        <span>Abrir vista previa de correo en Ethereal</span>
+                                                        <ExternalLink className="w-3 h-3" />
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
