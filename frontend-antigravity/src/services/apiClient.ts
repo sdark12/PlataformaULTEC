@@ -32,10 +32,19 @@ api.interceptors.response.use(
         const isLoginRequest = error.config?.url?.includes('/auth/login');
         const errorCode = error.response?.data?.code;
 
+        // Evitar bucle infinito de redirecciones si ya nos encontramos en una ruta pública/auth
+        const isPublicPath = typeof window !== 'undefined' && (
+            window.location.pathname.startsWith('/login') ||
+            window.location.pathname.startsWith('/reset-password') ||
+            window.location.pathname.startsWith('/verify')
+        );
+
         // Revocación inmediata: Cuenta desactivada por administración
         if (error.response?.status === 403 && errorCode === 'ACCOUNT_DEACTIVATED') {
             localStorage.clear();
-            window.location.href = '/login?reason=deactivated';
+            if (!isPublicPath) {
+                window.location.href = '/login?reason=deactivated';
+            }
             return Promise.reject(error);
         }
 
@@ -44,16 +53,20 @@ api.interceptors.response.use(
             const msg = error.response?.data?.message || '';
             if (msg) sessionStorage.setItem('maintenance_message', msg);
             localStorage.clear();
-            const reason = errorCode === 'MAINTENANCE_MODE' ? 'maintenance' : 'portal_disabled';
-            window.location.href = `/login?reason=${reason}`;
+            if (!isPublicPath) {
+                const reason = errorCode === 'MAINTENANCE_MODE' ? 'maintenance' : 'portal_disabled';
+                window.location.href = `/login?reason=${reason}`;
+            }
             return Promise.reject(error);
         }
 
         // Sesión expirada o no autorizada
         if (error.response?.status === 401 && !isLoginRequest) {
             localStorage.clear();
-            const reason = errorCode === 'TOKEN_EXPIRED' ? 'session_expired' : 'unauthorized';
-            window.location.href = `/login?reason=${reason}`;
+            if (!isPublicPath) {
+                const reason = errorCode === 'TOKEN_EXPIRED' ? 'session_expired' : 'unauthorized';
+                window.location.href = `/login?reason=${reason}`;
+            }
             return Promise.reject(error);
         }
 

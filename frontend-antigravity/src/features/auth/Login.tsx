@@ -22,6 +22,7 @@ const Login = () => {
         onSuccess: (data: any) => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
+            window.dispatchEvent(new Event('auth-changed'));
             navigate('/');
         },
         onError: (err: any) => {

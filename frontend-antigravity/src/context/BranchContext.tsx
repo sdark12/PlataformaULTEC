@@ -19,11 +19,29 @@ const BranchContext = createContext<BranchContextType | undefined>(undefined);
 
 export const BranchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const queryClient = useQueryClient();
-    const currentUser = getCurrentUser();
-    const isSuperAdmin = currentUser?.role === 'superadmin';
-    const userBranchId = currentUser?.branch_id || null;
+    const [user, setUser] = useState<any>(() => getCurrentUser());
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+    const isSuperAdmin = user?.role === 'superadmin';
+    const userBranchId = user?.branch_id || null;
+    const hasAuth = !!token && !!user;
 
-    // Fetch branches list
+    // Escuchar cambios de autenticación (login / logout) en la ventana actual y entre pestañas
+    useEffect(() => {
+        const handleAuthChange = () => {
+            const updatedUser = getCurrentUser();
+            const updatedToken = localStorage.getItem('token');
+            setUser(updatedUser);
+            setToken(updatedToken);
+        };
+        window.addEventListener('auth-changed', handleAuthChange);
+        window.addEventListener('storage', handleAuthChange);
+        return () => {
+            window.removeEventListener('auth-changed', handleAuthChange);
+            window.removeEventListener('storage', handleAuthChange);
+        };
+    }, []);
+
+    // Consultar lista de sedes ÚNICAMENTE cuando el usuario está autenticado
     const { 
         data: branches = [], 
         isLoading: isLoadingBranches, 
@@ -31,10 +49,11 @@ export const BranchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } = useQuery({
         queryKey: ['branches-global-list'],
         queryFn: getBranches,
+        enabled: hasAuth,
         staleTime: 5 * 60 * 1000, // 5 min cache
     });
 
-    // Initial branch determination
+    // Determinación inicial de sede
     const [selectedBranchId, setSelectedBranchIdState] = useState<string>(() => {
         if (isSuperAdmin) {
             return localStorage.getItem('selected_branch_id') || 'all';
@@ -42,14 +61,21 @@ export const BranchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return userBranchId || 'all';
     });
 
-    // Synchronize if user changes role or branch
+    // Sincronizar si cambia de usuario, rol o sede asignada
     useEffect(() => {
+        if (!hasAuth) {
+            setSelectedBranchIdState('all');
+            return;
+        }
         if (!isSuperAdmin) {
             const forcedBranch = userBranchId || 'all';
             setSelectedBranchIdState(forcedBranch);
             localStorage.setItem('selected_branch_id', forcedBranch);
+        } else {
+            const savedBranch = localStorage.getItem('selected_branch_id') || 'all';
+            setSelectedBranchIdState(savedBranch);
         }
-    }, [isSuperAdmin, userBranchId]);
+    }, [hasAuth, isSuperAdmin, userBranchId]);
 
     const setSelectedBranchId = useCallback((newId: string) => {
         if (!isSuperAdmin) {
