@@ -8,7 +8,7 @@ import SearchableSelect, { type SearchableOption } from '../../../components/ui/
 import { 
     Plus, Loader2, ClipboardList, Calendar, CheckCircle2, Clock, 
     Paperclip, Printer, FileBarChart, AlertCircle, X, BookOpen, 
-    Check, ArrowRight, ExternalLink, Layers, Sparkles, Pencil, Trash2
+    Check, ArrowRight, ExternalLink, Layers, Sparkles, Pencil, Trash2, FileUp
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -64,8 +64,31 @@ const AssignmentsModule: React.FC = () => {
         max_score: 100.0,
         schedule_id: '',
         category_id: '',
+        attachment_url: null,
     });
+    const [isUploadingGuide, setIsUploadingGuide] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    const handleGuideFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 15 * 1024 * 1024) {
+            alert('El archivo supera el tamaño máximo permitido de 15 MB.');
+            return;
+        }
+
+        try {
+            setIsUploadingGuide(true);
+            const uploadedUrl = await assignmentsService.uploadAssignmentFile(file);
+            setNewAssignment(prev => ({ ...prev, attachment_url: uploadedUrl }));
+        } catch (err: any) {
+            console.error('Error uploading guide file:', err);
+            alert(err?.response?.data?.message || 'Error al subir la guía digital.');
+        } finally {
+            setIsUploadingGuide(false);
+        }
+    };
 
     // Fetch courses for the dropdown
     const { data: courses, isLoading: isLoadingCourses } = useQuery({
@@ -151,6 +174,7 @@ const AssignmentsModule: React.FC = () => {
             max_score: 100.0,
             schedule_id: selectedSchedule || '',
             category_id: '',
+            attachment_url: null,
         });
         setEditingAssignment(null);
         setErrorMsg('');
@@ -261,6 +285,7 @@ const AssignmentsModule: React.FC = () => {
                     course_id: selectedCourse as string,
                     schedule_id: newAssignment.schedule_id || selectedSchedule || undefined,
                     category_id: newAssignment.category_id || null,
+                    attachment_url: newAssignment.attachment_url || null,
                 }
             });
         } else {
@@ -271,6 +296,7 @@ const AssignmentsModule: React.FC = () => {
                 course_id: selectedCourse as string,
                 schedule_id: newAssignment.schedule_id || selectedSchedule || undefined,
                 category_id: newAssignment.category_id || undefined,
+                attachment_url: newAssignment.attachment_url || null,
             });
         }
     };
@@ -297,6 +323,7 @@ const AssignmentsModule: React.FC = () => {
             max_score: assignment.max_score,
             schedule_id: assignment.schedule_id || '',
             category_id: assignment.category_id || assignment.subgrade_categories?.id || '',
+            attachment_url: assignment.attachment_url || null,
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -853,6 +880,20 @@ const AssignmentsModule: React.FC = () => {
                                         <p className="text-slate-400 text-xs mt-1.5 line-clamp-2 leading-relaxed">
                                             {assignment.description || 'Sin instrucciones adicionales.'}
                                         </p>
+                                        {assignment.attachment_url && (
+                                            <div className="mt-2.5">
+                                                <a
+                                                    href={`${import.meta.env.VITE_API_URL || 'https://plataformaultec.duckdns.org'}${assignment.attachment_url}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-purple-400 bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/40 transition-colors"
+                                                >
+                                                    <Paperclip className="w-3.5 h-3.5 text-purple-400" />
+                                                    <span>Guía de Trabajo Adjunta</span>
+                                                    <ExternalLink className="w-3 h-3 text-purple-400/70" />
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1158,6 +1199,72 @@ const AssignmentsModule: React.FC = () => {
                                                 </div>
                                             </div>
 
+                                            {/* Digital Guide / Resource Attachment for Teacher */}
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-300 ml-1 flex items-center justify-between">
+                                                    <span className="flex items-center gap-1.5 text-purple-400">
+                                                        <Paperclip className="w-3.5 h-3.5" />
+                                                        Guía de Estudio o Material de Apoyo (Opcional)
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400">PDF, Word, Excel, ZIP, Img (Máx 15MB)</span>
+                                                </label>
+                                                
+                                                <div className="mt-1.5 flex flex-col gap-2">
+                                                    {newAssignment.attachment_url ? (
+                                                        <div className="flex items-center justify-between p-2.5 bg-purple-950/30 border border-purple-800/50 rounded-xl text-xs">
+                                                            <div className="flex items-center gap-2 truncate">
+                                                                <Paperclip className="w-4 h-4 text-purple-400 shrink-0" />
+                                                                <span className="text-purple-200 truncate font-mono text-[11px]">{newAssignment.attachment_url.split('/').pop()}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <a
+                                                                    href={`${import.meta.env.VITE_API_URL || 'https://plataformaultec.duckdns.org'}${newAssignment.attachment_url}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="px-2 py-1 text-[10px] font-bold text-purple-400 hover:text-purple-300 bg-purple-900/40 rounded-lg border border-purple-700/40"
+                                                                >
+                                                                    Ver
+                                                                </a>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setNewAssignment({ ...newAssignment, attachment_url: null })}
+                                                                    className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-900/20 rounded-lg"
+                                                                    title="Quitar archivo"
+                                                                >
+                                                                    <X className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="file"
+                                                                id="teacher-guide-upload"
+                                                                className="hidden"
+                                                                onChange={handleGuideFileUpload}
+                                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg,.webp"
+                                                            />
+                                                            <label
+                                                                htmlFor="teacher-guide-upload"
+                                                                className="flex-1 py-2 px-3 border border-dashed border-slate-700 hover:border-purple-500/50 bg-slate-950 hover:bg-purple-950/20 rounded-xl cursor-pointer text-center text-xs font-semibold text-slate-400 hover:text-purple-300 transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                {isUploadingGuide ? (
+                                                                    <>
+                                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                                                                        <span>Subiendo guía digital...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <FileUp className="w-3.5 h-3.5 text-purple-400" />
+                                                                        <span>Adjuntar archivo o guía de la tarea</span>
+                                                                    </>
+                                                                )}
+                                                            </label>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
                                             <div className="flex items-center gap-3 pt-3 border-t border-slate-800">
                                                 <button
                                                     type="button"
@@ -1256,6 +1363,20 @@ const AssignmentsModule: React.FC = () => {
                                         <div className="mt-2 text-[11px] text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1.5 w-fit">
                                             <Sparkles className="w-3 h-3 text-blue-400" />
                                             <span>Vinculada a subcalificaciones: las notas se sincronizan automáticamente con el cuadro bimestral.</span>
+                                        </div>
+                                    )}
+                                    {reviewAssignment.attachment_url && (
+                                        <div className="mt-2">
+                                            <a
+                                                href={`${import.meta.env.VITE_API_URL || 'https://plataformaultec.duckdns.org'}${reviewAssignment.attachment_url}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-purple-400 bg-purple-950/40 hover:bg-purple-900/50 border border-purple-800/40 transition-colors"
+                                            >
+                                                <Paperclip className="w-3.5 h-3.5" />
+                                                <span>Ver Guía / Material de la Tarea</span>
+                                                <ExternalLink className="w-3 h-3 text-purple-400/70" />
+                                            </a>
                                         </div>
                                     )}
                                 </div>

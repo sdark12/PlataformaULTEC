@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Users, CalendarCheck, BookOpen, AlertCircle, ChevronDown, ChevronUp, Receipt, CreditCard, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Clock, ClipboardCheck, GraduationCap, FileCheck, ShieldAlert, AlertTriangle, Phone, ShieldCheck } from 'lucide-react';
+import { Loader2, Users, CalendarCheck, BookOpen, AlertCircle, ChevronDown, ChevronUp, Receipt, CreditCard, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Clock, ClipboardCheck, GraduationCap, FileCheck, ShieldAlert, AlertTriangle, Phone, ShieldCheck, Paperclip } from 'lucide-react';
 import api from '../services/apiClient';
 
 interface StudentLink {
@@ -15,7 +15,7 @@ interface AttendanceRecord { date: string; status: string; }
 interface PaymentRecord { id: string; payment_date: string; amount: number; discount: number; payment_type: string; method: string; description: string; tuition_month: string; receipt_number: string; course_name: string; }
 interface CourseBreakdown { course_name: string; monthly_fee: number; months_charged: number; total_due: number; total_paid: number; pending_amount: number; saldo_a_favor: number; }
 interface GradesReport { courses: { course_name: string; average: number; units: { unit_name: string; score: number; remarks: string }[] }[]; general_average: number; }
-interface AssignmentInfo { assignment_id: string; title: string; description: string; assignment_type: string; due_date: string; max_score: number; course_name: string; status: string; submission_date: string | null; score: number | null; feedback: string; }
+interface AssignmentInfo { assignment_id: string; title: string; description: string; assignment_type: string; due_date: string; max_score: number; course_name: string; status: string; submission_date: string | null; score: number | null; feedback: string; attachment_url?: string | null; guide_url?: string | null; }
 interface DisciplineRecord { id: string; incident_type: string; severity: string; title: string; description: string | null; action_taken: string | null; incident_date: string; parent_notified: boolean; resolved: boolean; resolution_notes: string | null; resolved_at: string | null; courses?: { name: string } | null; reporter?: { full_name: string } | null; }
 interface StudentDashboardInfo { attendance_percentage: number; attendance_records: AttendanceRecord[]; average_grade: number; total_courses: number; courses: string[]; pending_payment: number; saldo_a_favor: number; inscription_paid: boolean; course_breakdown: CourseBreakdown[]; payment_history: PaymentRecord[]; }
 
@@ -406,6 +406,32 @@ const ChildView = ({ student, autoExpand, activeTab: controlledTab, onTabChange 
                                                                             {task.due_date && <><span className="w-1 h-1 rounded-full bg-slate-300" /><span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'}`}><Clock className="w-3 h-3" />{formatDate(task.due_date)}{isOverdue && ' (Vencida)'}</span></>}
                                                                         </div>
                                                                         {task.feedback && <p className="text-xs text-slate-500 mt-1 italic">💬 {task.feedback}</p>}
+                                                                        {(task.guide_url || task.attachment_url) && (
+                                                                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/50 flex-wrap">
+                                                                                {task.guide_url && (
+                                                                                    <a
+                                                                                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${task.guide_url}`}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-2.5 py-1 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800/40"
+                                                                                    >
+                                                                                        <BookOpen className="w-3.5 h-3.5" />
+                                                                                        <span>Guía de Tarea</span>
+                                                                                    </a>
+                                                                                )}
+                                                                                {task.attachment_url && (
+                                                                                    <a
+                                                                                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${task.attachment_url}`}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue dark:text-blue-400 bg-brand-blue/5 dark:bg-brand-blue/15 hover:bg-brand-blue/10 px-2.5 py-1 rounded-lg transition-colors border border-brand-blue/20"
+                                                                                    >
+                                                                                        <Paperclip className="w-3.5 h-3.5" />
+                                                                                        <span>Ver Entrega</span>
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex flex-col items-end gap-1 shrink-0">

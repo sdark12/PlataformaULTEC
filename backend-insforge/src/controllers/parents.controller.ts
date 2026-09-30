@@ -748,7 +748,9 @@ export const getChildAssignments = async (req: Request, res: Response) => {
                     status: sub?.status || 'PENDING',
                     submission_date: sub?.submission_date || null,
                     score: sub?.score ?? null,
-                    feedback: sub?.feedback || ''
+                    feedback: sub?.feedback || '',
+                    attachment_url: sub?.attachment_url || null,
+                    guide_url: a.attachment_url || null
                 };
             }) || [];
 

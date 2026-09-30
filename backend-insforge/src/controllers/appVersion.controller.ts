@@ -4,20 +4,20 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.22",
-    versionCode: 32,
+    version: "1.1.23",
+    versionCode: 33,
     minVersion: "1.0.0",
     releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.22 - Portal del Estudiante y Tutor Móvil Optimizado (PWA / App)",
+    title: "Actualización v1.1.23 - Módulo LMS: Guías Digitales, Entregas y Retroalimentación",
     releaseNotes: [
-        "Navegación Móvil Personalizada para Estudiantes y Tutores: Dock inferior y barra lateral optimizados con accesos rápidos directos.",
-        "Acceso Inmediato a Calificaciones (/my-grades): Vista integral de boleta de notas para estudiantes con cálculo de promedios.",
-        "Selector de Hijos para Padres con Múltiples Estudiantes: Selector horizontal táctil para alternar fluidamente entre hijos.",
-        "Tarjetas Financieras Móviles Responsivas: Historial de pagos y desglose con verificación digital inmediata de recibos.",
-        "Soporte Safe-Area Inset: Adaptabilidad completa para dispositivos con barra de gestos o notch."
+        "Materiales y Guías de Estudio para Docentes: Capacidad de adjuntar guías PDF y documentos digitales directos a cada tarea.",
+        "Experiencia de Entrega para Alumnos: Descarga directa de material de clase, previsualización de evidencias y soporte hasta 15MB.",
+        "Seguimiento para Tutores y Padres: Visualización de las guías de estudio asignadas y de las evidencias entregadas por sus hijos.",
+        "Retroalimentación Académica: Calificación detallada y retroalimentación personalizada visible para alumnos y tutores.",
+        "Optimización de Almacenamiento: Servicio Nginx estático para entrega ágil de materiales multimedia y documentos."
     ],
     isCritical: false
 };

@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.22` (Build 32)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.1.23` (Build 33)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -324,8 +324,33 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Sincronización bidireccional de pestañas con parámetros URL (`?tab=grades`, `assignments`, `attendance`, `finance`, `discipline`, `summary`).
   - Tarjetas financieras móviles responsivas para historial de pagos y desglose por curso con enlace directo a verificación digital de recibos (`/verify-receipt/:receiptNumber`).
   - Barras visuales de progreso de rendimiento académico por materia.
-- [ ] **Fase 5: Módulo de Tareas, Recursos Digitales y Entrega de Actividades (LMS)**
-  - Carga de guías de trabajo, tareas estudiantiles y retroalimentación docente.
+- [x] **Fase 5: Módulo de Tareas, Recursos Digitales y Entrega de Actividades (LMS)** (v1.1.23)
+  - Extensión relacional de base de datos con columna `attachment_url` en tabla `assignments` para guías docentes.
+  - Subida directa de guías de trabajo y material de apoyo en modal de creación/edición de tareas para docentes (`AssignmentsModule.tsx`).
+  - Botón de descarga/visualización de material de estudio y comprobantes en tarjetas de tareas y modal de entrega para alumnos (`StudentAssignments.tsx`).
+  - Soporte de subida de evidencias para estudiantes con formatos extendidos (PDF, imágenes, Word, Excel, PowerPoint, ZIP) hasta 15MB.
+  - Monitoreo integral para tutores y padres de familia en `ParentDashboard.tsx` con acceso directo a guías asignadas y comprobantes entregados.
+  - Almacenamiento seguro en contenedor y entrega ágil de archivos estáticos vía Nginx `/uploads/`.
+
+---
+
+## 14. Módulo de Tareas, Recursos Digitales y Entrega de Actividades (LMS) (v1.1.23)
+
+- **Esquema de Base de Datos y Separación de Recursos:**
+  - `assignments.attachment_url`: Almacena la ruta del recurso, guía de estudio o material didáctico adjunto por el docente.
+  - `assignment_submissions.attachment_url`: Almacena el archivo de evidencia o tarea entregada por el estudiante.
+  - Compatibilidad garantizada en controladores `assignments.controller.ts` y `parents.controller.ts` exponiendo `guide_url` y `attachment_url`.
+- **Experiencia de Usuario Docente (`AssignmentsModule.tsx`):**
+  - Selector de archivos en modal de asignación con indicador de carga y estado de subida.
+  - Badge visual de guía adjunta en tarjetas de tareas y enlace de revisión en el modal de calificaciones.
+- **Experiencia de Usuario Estudiante (`StudentAssignments.tsx`):**
+  - Acceso directo a guía de estudio con botón `Ver Guía / Material Adjunto` en tarjeta.
+  - Modal de entrega enriquecido con previsualización del material de referencia, tamaño de archivo, opción para remover archivo seleccionado y soporte hasta 15MB.
+  - Notificación de puntos de mérito otorgables por cumplimiento puntual.
+- **Supervisión para Padres y Tutores (`ParentDashboard.tsx`):**
+  - En la pestaña de Tareas, cada actividad muestra enlaces para revisar tanto la guía oficial proporcionada por el docente como el archivo entregado por el estudiante.
+  - Visualización transparente de retroalimentación docente (`feedback`) y punteos obtenidos.
+
 
 
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentsService } from '../../../services/assignmentsService';
 import type { StudentAssignment } from '../../../services/assignmentsService';
-import { Loader2, Clock, CheckCircle2, AlertCircle, Send, Paperclip, X, FileText, Sparkles } from 'lucide-react';
+import { Loader2, Clock, CheckCircle2, AlertCircle, Send, Paperclip, X, FileText, Sparkles, BookOpen } from 'lucide-react';
 import ConfirmModal from '../../../components/ui/ConfirmModal';
 
 // A simple hook to calculate time left
@@ -132,6 +132,21 @@ const AssignmentCard = ({ assignment, onOpenSubmitModal }: { assignment: Student
                 <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-sm leading-relaxed line-clamp-3">
                     {assignment.description || 'Sin instrucciones adicionales provistas para esta asignación.'}
                 </p>
+
+                {/* Study Guide / Handout Attachment */}
+                {assignment.guide_url && (
+                    <div className="mt-3">
+                        <a
+                            href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${assignment.guide_url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800/60 transition-all shadow-sm group/btn"
+                        >
+                            <BookOpen className="w-3.5 h-3.5 shrink-0 text-indigo-500 group-hover/btn:scale-110 transition-transform" />
+                            <span>Ver Guía / Material Adjunto</span>
+                        </a>
+                    </div>
+                )}
 
                 {/* Graded feedback & earned merits */}
                 {isGraded && (
@@ -292,9 +307,9 @@ const StudentAssignments = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            // Enforce size limit 10MB approx
-            if (file.size > 10 * 1024 * 1024) {
-                alert('El archivo excede el tamaño máximo permitido (10MB).');
+            // Enforce size limit 15MB
+            if (file.size > 15 * 1024 * 1024) {
+                alert('El archivo excede el tamaño máximo permitido (15MB).');
                 return;
             }
             setSelectedFile(file);
@@ -660,6 +675,29 @@ const StudentAssignments = () => {
                                 <strong>Nota:</strong> Al presionar confirmar, esta tarea quedará marcada como "Entregada" de forma oficial, registrando la fecha y hora exactas actuales.
                             </div>
 
+                            {/* Reference guide if available */}
+                            {selectedAssignment.guide_url && (
+                                <div className="p-3.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                                            <BookOpen className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">Guía / Material de la Tarea</p>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Consulta las indicaciones oficiales antes de enviar</p>
+                                        </div>
+                                    </div>
+                                    <a
+                                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${selectedAssignment.guide_url}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-sm shrink-0"
+                                    >
+                                        Abrir Guía
+                                    </a>
+                                </div>
+                            )}
+
                             {Number(selectedAssignment.merit_points) > 0 && (
                                 <div className="bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5">
                                     <Sparkles className="w-5 h-5 shrink-0 text-amber-500" />
@@ -668,14 +706,25 @@ const StudentAssignments = () => {
                             )}
 
                             <div className="space-y-3">
-                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Evidencia Adjunta (Opcional)</label>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Sube un PDF, imagen o documento de captura de tu evidencia.</p>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Evidencia Adjunta (Opcional)</label>
+                                    {selectedFile && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedFile(null)}
+                                            className="text-xs text-rose-500 hover:text-rose-600 font-semibold flex items-center gap-1 transition-colors"
+                                        >
+                                            <X className="w-3.5 h-3.5" /> Quitar archivo
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Sube un PDF, imagen o documento de captura de tu evidencia (máx. 15MB).</p>
 
                                 <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-center group">
                                     <input
                                         type="file"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        accept="image/*,.pdf,.doc,.docx"
+                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
                                         onChange={handleFileChange}
                                         disabled={isUploading}
                                     />
@@ -692,7 +741,7 @@ const StudentAssignments = () => {
                                         ) : (
                                             <div>
                                                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Haz clic o arrastra un archivo aquí</p>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">PDF, JPG, PNG, DOC (Max: 10MB)</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">PDF, Imágenes, Word, Excel, ZIP (Max: 15MB)</p>
                                             </div>
                                         )}
                                     </div>

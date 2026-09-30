@@ -19,6 +19,7 @@ export interface Assignment {
         name: string;
         max_score: number;
     };
+    attachment_url?: string | null;
     created_by?: string;
     created_at?: string;
 }
@@ -35,6 +36,8 @@ export interface StudentAssignment extends Assignment {
     merit_points_awarded?: number;
     feedback?: string;
     attachment_url?: string;
+    guide_url?: string | null;
+    submission_attachment_url?: string | null;
 }
 
 export interface AssignmentSubmissionInfo {

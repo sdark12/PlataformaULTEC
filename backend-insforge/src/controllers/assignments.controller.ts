@@ -116,7 +116,8 @@ export const assignmentsController = {
                 schedule_id,
                 merit_points = 0,
                 unit_name = 'Bimestre 1',
-                category_id = null
+                category_id = null,
+                attachment_url = null
             } = req.body;
             const created_by = req.currentUser?.id;
             const db = adminClient; // Use service role to bypass RLS since we verify manually
@@ -170,6 +171,7 @@ export const assignmentsController = {
                     merit_points: Number(merit_points) || 0,
                     unit_name: unit_name || 'Bimestre 1',
                     category_id: category_id || null,
+                    attachment_url: attachment_url || null,
                     created_by 
                 }])
                 .select('*, subgrade_categories(id, name, max_score)')
@@ -370,7 +372,8 @@ export const assignmentsController = {
                 schedule_id,
                 merit_points,
                 unit_name,
-                category_id
+                category_id,
+                attachment_url
             } = req.body;
             const db = adminClient;
             const userId = req.currentUser?.id;
@@ -425,6 +428,7 @@ export const assignmentsController = {
             if (merit_points !== undefined) updatePayload.merit_points = Number(merit_points) || 0;
             if (unit_name !== undefined) updatePayload.unit_name = unit_name || 'Bimestre 1';
             if (category_id !== undefined) updatePayload.category_id = category_id || null;
+            if (attachment_url !== undefined) updatePayload.attachment_url = attachment_url || null;
 
             const { data: updated, error: updateErr } = await db
                 .from('assignments')
@@ -701,6 +705,7 @@ export const assignmentsController = {
                         category_id: a.category_id || null,
                         category_name: a.subgrade_categories?.name || null,
                         max_score: a.max_score,
+                        guide_url: a.attachment_url || null,
                         course_name: Array.isArray(enr?.courses) ? enr?.courses[0]?.name : (enr?.courses as any)?.name || '',
                         submission_id: sub?.id,
                         status: sub?.status || 'PENDING',
@@ -708,7 +713,8 @@ export const assignmentsController = {
                         score: sub?.score,
                         merit_points_awarded: sub?.id ? (meritMap.get(sub.id) || 0) : 0,
                         feedback: sub?.feedback || '',
-                        attachment_url: sub?.attachment_url
+                        attachment_url: sub?.attachment_url || null,
+                        submission_attachment_url: sub?.attachment_url || null
                     };
                 });
 
