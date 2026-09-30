@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, getCourseSchedules } from './academicService';
 import { getAttendance, markAttendance, getJustifications } from './attendanceService';
@@ -6,13 +6,15 @@ import type { AttendanceRecord } from './attendanceService';
 import { 
     Loader2, Save, Users, CheckCircle2, XCircle, Clock, Download, FileSpreadsheet, 
     ChevronLeft, ChevronRight, Calendar, Search, CheckCheck, Check, X, ShieldCheck, 
-    BookOpen, QrCode, MessageSquare, Grid
+    BookOpen, QrCode, MessageSquare, Grid, WifiOff, Database
 } from 'lucide-react';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 import QrAttendanceScannerModal from './components/QrAttendanceScannerModal';
 import AttendanceMatrixView from './components/AttendanceMatrixView';
 import JustificationReviewModal from './components/JustificationReviewModal';
+import { offlineStorage } from '../../services/offlineStorage';
+import { offlineSyncService } from '../../services/offlineSyncService';
 
 const STATUS_CONFIG = {
     PRESENT: {
@@ -59,6 +61,21 @@ const Attendance = () => {
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     
+    // Estados Offline
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [isFromCache, setIsFromCache] = useState(false);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOffline(false);
+        const handleOffline = () => setIsOffline(true);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
     // Modales
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [isJustificationModalOpen, setIsJustificationModalOpen] = useState(false);
@@ -68,16 +85,32 @@ const Attendance = () => {
         queryFn: getCourses 
     });
 
+    // Catálogo con fallback offline
+    const effectiveCourses = useMemo(() => {
+        if (courses && courses.length > 0) return courses;
+        try {
+            const cached = localStorage.getItem('ultec_cached_courses_catalog');
+            if (cached) return JSON.parse(cached);
+        } catch (e) {}
+        return [];
+    }, [courses]);
+
+    useEffect(() => {
+        if (courses && courses.length > 0) {
+            localStorage.setItem('ultec_cached_courses_catalog', JSON.stringify(courses));
+        }
+    }, [courses]);
+
     // Validar si el curso guardado en localStorage todavía existe en la lista de cursos activos
     useEffect(() => {
-        if (courses && courses.length > 0 && selectedCourse) {
-            const exists = courses.some((c: any) => c.id === selectedCourse);
+        if (effectiveCourses && effectiveCourses.length > 0 && selectedCourse) {
+            const exists = effectiveCourses.some((c: any) => c.id === selectedCourse);
             if (!exists) {
                 setSelectedCourse('');
                 localStorage.removeItem('last_attendance_course');
             }
         }
-    }, [courses, selectedCourse]);
+    }, [effectiveCourses, selectedCourse]);
 
     const handleCourseChange = (courseId: string) => {
         setSelectedCourse(courseId);
@@ -101,11 +134,52 @@ const Attendance = () => {
         enabled: !!selectedCourse && !!selectedDate && viewMode === 'daily',
     });
 
+    // Sincronizar datos de asistencia online con IndexedDB
     useEffect(() => {
-        if (fetchedAttendance) {
+        if (fetchedAttendance && fetchedAttendance.length > 0) {
             setAttendanceData(fetchedAttendance);
+            setIsFromCache(false);
+            if (selectedCourse) {
+                const currentCourseName = effectiveCourses.find((c: any) => c.id === selectedCourse)?.name || 'Curso';
+                offlineStorage.saveRoster(selectedCourse, currentCourseName, fetchedAttendance).catch(console.error);
+                offlineStorage.saveLocalAttendance(selectedCourse, selectedDate, fetchedAttendance).catch(console.error);
+            }
         }
-    }, [fetchedAttendance]);
+    }, [fetchedAttendance, selectedCourse, selectedDate, effectiveCourses]);
+
+    // Si no hay conexión o falla la red, cargar desde IndexedDB
+    useEffect(() => {
+        if ((isOffline || !navigator.onLine) && selectedCourse) {
+            const loadOffline = async () => {
+                try {
+                    const localAtt = await offlineStorage.getLocalAttendance(selectedCourse, selectedDate);
+                    if (localAtt && localAtt.students && localAtt.students.length > 0) {
+                        setAttendanceData(localAtt.students);
+                        setIsFromCache(true);
+                        return;
+                    }
+                    const cachedRoster = await offlineStorage.getRoster(selectedCourse);
+                    if (cachedRoster && cachedRoster.students && cachedRoster.students.length > 0) {
+                        setAttendanceData(cachedRoster.students.map((s: any) => ({
+                            student_id: s.student_id,
+                            student_name: s.student_name,
+                            student_code: s.student_code || '',
+                            phone: s.phone || '',
+                            guardian_phone: s.guardian_phone || '',
+                            date: selectedDate,
+                            status: 'PENDING',
+                            remarks: '',
+                            is_recorded: false
+                        })));
+                        setIsFromCache(true);
+                    }
+                } catch (e) {
+                    console.error('Error cargando datos offline de asistencia:', e);
+                }
+            };
+            loadOffline();
+        }
+    }, [isOffline, selectedCourse, selectedDate]);
 
     // Contador de justificaciones pendientes para este curso
     const { data: pendingJustifications } = useQuery({
@@ -173,7 +247,7 @@ const Attendance = () => {
             targetPhone = `502${targetPhone}`; // Prefijo Guatemala por defecto si son 8 dígitos
         }
 
-        const currentCourseName = courses?.find((c: any) => c.id === selectedCourse)?.name || 'su curso';
+        const currentCourseName = effectiveCourses?.find((c: any) => c.id === selectedCourse)?.name || 'su curso';
         const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('es-ES', {
             weekday: 'long',
             day: 'numeric',
@@ -186,16 +260,57 @@ const Attendance = () => {
         window.open(url, '_blank');
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedCourse) return;
+        const currentCourseName = effectiveCourses?.find((c: any) => c.id === selectedCourse)?.name || 'Curso';
+        const payloadStudents = attendanceData.map(a => ({
+            student_id: a.student_id,
+            status: a.status === 'PENDING' ? 'ABSENT' : a.status,
+            remarks: a.remarks || ''
+        }));
+
+        // Si estamos sin conexión a internet, encolar localmente
+        if (!navigator.onLine || isOffline) {
+            try {
+                await offlineSyncService.queueAttendance(selectedCourse, currentCourseName, selectedDate, payloadStudents);
+                setAttendanceData(prev => prev.map(p => ({
+                    ...p,
+                    status: p.status === 'PENDING' ? 'ABSENT' : p.status,
+                    is_recorded: true
+                })));
+                setToastMessage(`💾 Guardado en tu dispositivo (${payloadStudents.length} alumnos). Se enviará al servidor al reconectar.`);
+                setTimeout(() => setToastMessage(null), 4500);
+            } catch (err: any) {
+                alert('Error al guardar localmente: ' + err.message);
+            }
+            return;
+        }
+
+        // Si hay conexión, intentar enviar vía API
         mutation.mutate({
             course_id: selectedCourse,
             date: selectedDate,
-            students: attendanceData.map(a => ({
-                student_id: a.student_id,
-                status: a.status === 'PENDING' ? 'ABSENT' : a.status,
-                remarks: a.remarks || ''
-            }))
+            students: payloadStudents
+        }, {
+            onError: async (err: any) => {
+                const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network');
+                if (isNetworkError) {
+                    try {
+                        await offlineSyncService.queueAttendance(selectedCourse, currentCourseName, selectedDate, payloadStudents);
+                        setAttendanceData(prev => prev.map(p => ({
+                            ...p,
+                            status: p.status === 'PENDING' ? 'ABSENT' : p.status,
+                            is_recorded: true
+                        })));
+                        setToastMessage(`💾 Red inestable. Guardado localmente (${payloadStudents.length} alumnos). Se enviará al reconectar.`);
+                        setTimeout(() => setToastMessage(null), 4500);
+                    } catch (qErr: any) {
+                        alert('Error al guardar en cola offline: ' + qErr.message);
+                    }
+                } else {
+                    alert(err.response?.data?.message || 'Error al guardar asistencia');
+                }
+            }
         });
     };
 
@@ -249,7 +364,7 @@ const Attendance = () => {
         return matchesSearch && matchesStatus;
     });
 
-    const currentCourseObj = courses?.find((c: any) => c.id === selectedCourse);
+    const currentCourseObj = effectiveCourses?.find((c: any) => c.id === selectedCourse);
 
     return (
         <div className="max-w-7xl mx-auto pb-28 md:pb-12 animate-in fade-in duration-300">
@@ -258,6 +373,28 @@ const Attendance = () => {
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[110] px-4 py-3 bg-emerald-600 text-white text-sm font-bold rounded-2xl shadow-2xl shadow-emerald-950/60 border border-emerald-400/30 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>{toastMessage}</span>
+                </div>
+            )}
+
+            {/* Banner Informativo Offline */}
+            {isOffline && (
+                <div className="mb-5 p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                            <WifiOff className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-amber-300">Modo Sin Conexión Activo</p>
+                            <p className="text-[11px] text-amber-400/90 mt-0.5">
+                                Puedes tomar asistencia con total normalidad. Se guardará de forma segura en este equipo y se sincronizará automáticamente al volver el internet.
+                            </p>
+                        </div>
+                    </div>
+                    {isFromCache && (
+                        <span className="shrink-0 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[10px] flex items-center gap-1.5 self-end sm:self-center">
+                            <Database className="w-3 h-3" /> Nómina Local
+                        </span>
+                    )}
                 </div>
             )}
 
@@ -321,7 +458,7 @@ const Attendance = () => {
                                 disabled={isLoadingCourses}
                             >
                                 <option value="" className="bg-slate-900 text-slate-400">-- Selecciona un curso --</option>
-                                {courses?.map((c: any) => (
+                                {effectiveCourses?.map((c: any) => (
                                     <option key={c.id} value={c.id} className="bg-slate-900 text-slate-100">
                                         {c.name}
                                     </option>

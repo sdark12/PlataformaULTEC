@@ -31,6 +31,7 @@ import {
 import NotificationsPopover from './NotificationsPopover';
 import ProfilePopover from './ProfilePopover';
 import BranchSwitcher from './BranchSwitcher';
+import { NetworkStatusBar, NetworkIndicatorBadge } from '../common/NetworkStatusBar';
 import { fetchCurrentUser, getCurrentUser } from '../../features/auth/authService';
 
 const SidebarItem = ({ 
@@ -321,6 +322,9 @@ const DashboardLayout = () => {
                         {/* Global Regional Scope / Branch Switcher */}
                         <BranchSwitcher />
 
+                        {/* Network Status & Sync Badge */}
+                        <NetworkIndicatorBadge />
+
                         <button
                             onClick={toggleTheme}
                             className="p-1.5 sm:p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors shadow-sm shrink-0"
@@ -334,6 +338,9 @@ const DashboardLayout = () => {
                         <ProfilePopover />
                     </div>
                 </header>
+
+                {/* Network Offline / Sync Status Bar */}
+                <NetworkStatusBar />
 
                 {/* Page Content */}
                 <main className="flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible p-3 sm:p-4 md:p-8 pb-24 md:pb-8 relative z-10 custom-scrollbar">

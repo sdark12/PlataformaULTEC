@@ -4,19 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.20",
-    versionCode: 30,
+    version: "1.1.21",
+    versionCode: 31,
     minVersion: "1.0.0",
     releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.20 - Centro de Notificaciones Push Nativas y Alertas Escolares",
+    title: "Actualización v1.1.21 - Modo Offline-First para Registro de Asistencia y Calificaciones",
     releaseNotes: [
-        "Notificaciones Push en Tiempo Real: Entrega instantánea de alertas a celulares y computadoras mediante el estándar W3C Web Push y VAPID.",
-        "Alertas Escolares Automáticas: Despacho push automático al registrarse o aprobarse pagos de colegiatura, emisión de boletas y avisos institucionales.",
-        "Gestión de Dispositivos: Activación de alertas con un clic desde el menú de notificaciones y sección de preferencias en el perfil de usuario.",
-        "Pruebas de Dispositivo y Alertas Masivas: Herramienta de testeo con sonido/vibración y módulo administrativo de alertas institucionales urgentes."
+        "Modo Offline-First para Docentes: Registro ágil de asistencia y notas en aulas o laboratorios sin conexión o con Wi-Fi inestable.",
+        "Almacenamiento Local Seguro en IndexedDB: Persistencia en el dispositivo de nóminas de estudiantes, asistencias diarias y notas por unidad.",
+        "Cola de Salida (Outbox Pattern) y Sincronización Automática: Detección inteligente de red y sincronización en segundo plano al recuperar señal.",
+        "Centro de Control y Monitoreo Offline: Barra de estado con contador en tiempo real, banner informativo y modal de gestión de pendientes."
     ],
     isCritical: false
 };

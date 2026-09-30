@@ -6,11 +6,14 @@ import { getGrades, saveGrades } from './gradeService';
 import { getSettings } from '../settings/settingsService';
 import { 
     Loader2, Save, Users, Award, TrendingUp, TrendingDown, AlignJustify, ListChecks, 
-    Download, FileSpreadsheet, Search, CheckCircle2, BookOpen, Clock, ShieldCheck, Check
+    Download, FileSpreadsheet, Search, CheckCircle2, BookOpen, Clock, ShieldCheck, Check,
+    WifiOff, Database
 } from 'lucide-react';
 import SubGrades from './SubGrades';
 import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 import SearchableSelect, { type SearchableOption } from '../../components/ui/SearchableSelect';
+import { offlineStorage } from '../../services/offlineStorage';
+import { offlineSyncService } from '../../services/offlineSyncService';
 
 const DEFAULT_SPECIAL_UNITS = ['Recuperación'];
 
@@ -51,26 +54,57 @@ const Grades = () => {
         }
     }, [selectedUnit, activeTab]);
 
+    // Estados Offline
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [isFromCache, setIsFromCache] = useState(false);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOffline(false);
+        const handleOffline = () => setIsOffline(true);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
     const { data: courses, isLoading: isLoadingCourses } = useQuery({ 
         queryKey: ['courses'], 
         queryFn: getCourses 
     });
 
+    // Catálogo con fallback offline
+    const effectiveCourses = useMemo(() => {
+        if (courses && courses.length > 0) return courses;
+        try {
+            const cached = localStorage.getItem('ultec_cached_courses_catalog');
+            if (cached) return JSON.parse(cached);
+        } catch (e) {}
+        return [];
+    }, [courses]);
+
+    useEffect(() => {
+        if (courses && courses.length > 0) {
+            localStorage.setItem('ultec_cached_courses_catalog', JSON.stringify(courses));
+        }
+    }, [courses]);
+
     const courseOptions = useMemo<SearchableOption[]>(() => {
-        if (!courses) return [];
-        return courses.map((c: any) => ({
+        if (!effectiveCourses) return [];
+        return effectiveCourses.map((c: any) => ({
             value: c.id,
             label: c.name,
             subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes` : undefined,
         }));
-    }, [courses]);
+    }, [effectiveCourses]);
 
     // Auto-seleccionar primer curso cuando esté disponible
     useEffect(() => {
-        if (courses && courses.length > 0 && !selectedCourse) {
-            setSelectedCourse(courses[0].id);
+        if (effectiveCourses && effectiveCourses.length > 0 && !selectedCourse) {
+            setSelectedCourse(effectiveCourses[0].id);
         }
-    }, [courses, selectedCourse]);
+    }, [effectiveCourses, selectedCourse]);
 
     const { data: schedules } = useQuery({
         queryKey: ['course_schedules', selectedCourse],
@@ -84,11 +118,49 @@ const Grades = () => {
         enabled: !!selectedCourse && !!selectedUnit,
     });
 
+    // Sincronizar calificaciones online con IndexedDB
     useEffect(() => {
-        if (fetchedGrades) {
+        if (fetchedGrades && fetchedGrades.length > 0) {
             setGradesData(fetchedGrades);
+            setIsFromCache(false);
+            if (selectedCourse) {
+                const currentCourseName = effectiveCourses.find((c: any) => c.id === selectedCourse)?.name || 'Curso';
+                offlineStorage.saveRoster(selectedCourse, currentCourseName, fetchedGrades).catch(console.error);
+                if (selectedUnit) {
+                    offlineStorage.saveLocalGrades(selectedCourse, selectedUnit, fetchedGrades).catch(console.error);
+                }
+            }
         }
-    }, [fetchedGrades]);
+    }, [fetchedGrades, selectedCourse, selectedUnit, effectiveCourses]);
+
+    // Si estamos sin conexión o falla la red, cargar desde IndexedDB
+    useEffect(() => {
+        if ((isOffline || !navigator.onLine) && selectedCourse && selectedUnit) {
+            const loadOfflineGrades = async () => {
+                try {
+                    const localGrades = await offlineStorage.getLocalGrades(selectedCourse, selectedUnit);
+                    if (localGrades && localGrades.students && localGrades.students.length > 0) {
+                        setGradesData(localGrades.students);
+                        setIsFromCache(true);
+                        return;
+                    }
+                    const cachedRoster = await offlineStorage.getRoster(selectedCourse);
+                    if (cachedRoster && cachedRoster.students && cachedRoster.students.length > 0) {
+                        setGradesData(cachedRoster.students.map((s: any) => ({
+                            student_id: s.student_id,
+                            student_name: s.student_name,
+                            score: '',
+                            remarks: ''
+                        })));
+                        setIsFromCache(true);
+                    }
+                } catch (e) {
+                    console.error('Error cargando calificaciones offline:', e);
+                }
+            };
+            loadOfflineGrades();
+        }
+    }, [isOffline, selectedCourse, selectedUnit]);
 
     const mutation = useMutation({
         mutationFn: saveGrades,
@@ -129,16 +201,45 @@ const Grades = () => {
         setGradesData(prev => prev.map(p => p.student_id === studentId ? { ...p, score } : p));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedCourse || !selectedUnit) return;
+        const currentCourseName = effectiveCourses?.find((c: any) => c.id === selectedCourse)?.name || 'Curso';
+        const payloadStudents = gradesData.map(g => ({
+            student_id: g.student_id,
+            score: g.score,
+            remarks: g.remarks
+        }));
+
+        if (!navigator.onLine || isOffline) {
+            try {
+                await offlineSyncService.queueGrades(selectedCourse, currentCourseName, selectedUnit, payloadStudents);
+                setToastMessage(`💾 Calificaciones guardadas en tu equipo (${payloadStudents.length} alumnos). Se sincronizarán al reconectar.`);
+                setTimeout(() => setToastMessage(null), 4500);
+            } catch (err: any) {
+                alert('Error al guardar localmente: ' + err.message);
+            }
+            return;
+        }
+
         mutation.mutate({
             course_id: selectedCourse,
             unit_name: selectedUnit,
-            students: gradesData.map(g => ({
-                student_id: g.student_id,
-                score: g.score,
-                remarks: g.remarks
-            }))
+            students: payloadStudents
+        }, {
+            onError: async (err: any) => {
+                const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network');
+                if (isNetworkError) {
+                    try {
+                        await offlineSyncService.queueGrades(selectedCourse, currentCourseName, selectedUnit, payloadStudents);
+                        setToastMessage(`💾 Red inestable. Calificaciones guardadas localmente. Se sincronizarán al reconectar.`);
+                        setTimeout(() => setToastMessage(null), 4500);
+                    } catch (qErr: any) {
+                        alert('Error al guardar en cola offline: ' + qErr.message);
+                    }
+                } else {
+                    alert(err.response?.data?.message || 'Error al guardar calificaciones');
+                }
+            }
         });
     };
 
@@ -203,6 +304,28 @@ const Grades = () => {
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[110] px-4 py-3 bg-emerald-600 text-white text-sm font-bold rounded-2xl shadow-2xl shadow-emerald-950/60 border border-emerald-400/30 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-200">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>{toastMessage}</span>
+                </div>
+            )}
+
+            {/* Banner Informativo Offline */}
+            {isOffline && (
+                <div className="mb-5 p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                            <WifiOff className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-amber-300">Modo Sin Conexión Activo</p>
+                            <p className="text-[11px] text-amber-400/90 mt-0.5">
+                                Puedes calificar a tus estudiantes normalmente. Las notas se guardarán en este equipo y se subirán al servidor en cuanto se restablezca la conexión.
+                            </p>
+                        </div>
+                    </div>
+                    {isFromCache && (
+                        <span className="shrink-0 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[10px] flex items-center gap-1.5 self-end sm:self-center">
+                            <Database className="w-3 h-3" /> Datos Locales
+                        </span>
+                    )}
                 </div>
             )}
 

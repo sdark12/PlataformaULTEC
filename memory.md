@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.20` (Build 30)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.1.21` (Build 31)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -265,7 +265,31 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 
 ---
 
-## 12. Hoja de Ruta de Fases y Estado
+## 12. Modo Offline-First para Registro de Asistencia y Calificaciones (v1.1.21)
+
+- **Persistencia Nativa en IndexedDB (`UltecOfflineDB` v1):**
+  - Implementación con la API nativa de `window.indexedDB` (cero dependencias pesadas de terceros, óptimo para WebViews de Capacitor Android y navegadores de escritorio/móvil).
+  - Almacenes de objetos (`ObjectStores`):
+    - `cached_rosters`: Nóminas completas de estudiantes por curso (`course_id`) con marcas temporales.
+    - `cached_attendance`: Registros diarios de asistencia en local indexados por `${course_id}_${date}`.
+    - `cached_grades`: Registros de notas por unidad indexados por `${course_id}_${unit_name}`.
+    - `sync_outbox`: Cola transaccional de salida (Outbox Pattern) con índices por `status` y `createdAt`.
+- **Patrón Outbox (`sync_outbox`) y Resiliencia Transaccional:**
+  - Registro de mutaciones pendientes (`ATTENDANCE`, `GRADES`, `SUBGRADES`) con método, payload, reintentos y descripción legible.
+  - Estados: `'PENDING'`, `'SYNCING'`, `'FAILED'` con registro detallado de `lastError`.
+  - Idempotencia garantizada: El backend de Plataforma ULTEC utiliza `UPSERT` relacional sobre claves compuestas `(course_id, student_id, date)` y `(student_id, course_id, unit_name)`, eliminando cualquier riesgo de registros duplicados al reintentar la sincronización.
+- **Detección Reactiva de Red (`useNetworkStatus.ts`):**
+  - Monitoreo continuo de eventos `online` y `offline` en el navegador.
+  - Sincronización automática no intrusiva: al restablecerse la conexión a internet, se dispara una sincronización en segundo plano tras un periodo de gracia de 1.5 segundos.
+- **Componentes Visuales de Conectividad y Experiencia Docente:**
+  - `NetworkStatusBar.tsx`: Barra informativa superior visible solo cuando se pierde la conexión a internet, alertando que el modo local está activo y permitiendo ver los registros pendientes.
+  - `NetworkIndicatorBadge`: Pastilla interactiva en el encabezado global (junto al selector de sedes) que muestra el conteo de pendientes y animación durante la sincronización activa.
+  - `OfflineSyncModal.tsx`: Centro de sincronización donde el docente puede auditar cada transacción pendiente guardada en su dispositivo, reintentar manualmente o descartar registros erróneos.
+  - Integración en `Attendance.tsx` y `Grades.tsx`: Fallback automático a nóminas locales cuando no hay señal, persistencia local inmediata y conmutación transparente si la red se interrumpe durante el guardado.
+
+---
+
+## 13. Hoja de Ruta de Fases y Estado
 
 - [x] **Fase 1: Panel DevOps y Telemetría en Vivo de Infraestructura** (v1.1.16)
   - Métricas en tiempo real de CPU, RAM, disco y base de datos PostgreSQL.
@@ -289,8 +313,14 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Persistencia de suscripciones de dispositivos en tabla `push_subscriptions` con RLS.
   - Despacho automático de alertas para pagos aprobados, avisos de boletas y comunicados.
   - Controles de activación rápida y pruebas en `NotificationsPopover` y `UserProfile`.
-- [ ] **Fase 3.4: Modo Offline-First para Registro de Asistencia y Calificaciones** (Docentes)
+- [x] **Fase 3.4: Modo Offline-First para Registro de Asistencia y Calificaciones** (v1.1.21)
   - Almacenamiento local IndexedDB para aulas sin conectividad y sincronización background.
+  - Patrón Outbox con idempotencia para asistencia y calificaciones.
+  - Indicadores reactivos de red, banner contextual y centro de sincronización.
+- [ ] **Fase 4: Portal del Estudiante y Tutor Móvil Optimizado (PWA / App)**
+  - Experiencia optimizada para smartphones y tablets de alumnos y padres.
+- [ ] **Fase 5: Módulo de Tareas, Recursos Digitales y Entrega de Actividades (LMS)**
+  - Carga de guías de trabajo, tareas estudiantiles y retroalimentación docente.
 
 
 
