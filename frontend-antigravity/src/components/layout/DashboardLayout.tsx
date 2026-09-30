@@ -229,6 +229,11 @@ const DashboardLayout = () => {
                             <SidebarItem to="/documents" icon={FileBadge} label="Documentos" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
 
+                        {/* Carnets Oficiales para Personal Administrativo */}
+                        {['admin', 'superadmin', 'secretary'].includes(role) && (
+                            <SidebarItem to="/credentials" icon={ShieldCheck} label="Carnets y Credenciales" onClick={() => setIsMobileMenuOpen(false)} />
+                        )}
+
                         {role === 'student' && (
                             <>
                                 <SidebarItem to="/my-grades" icon={GraduationCap} label="Mis Calificaciones" onClick={() => setIsMobileMenuOpen(false)} />

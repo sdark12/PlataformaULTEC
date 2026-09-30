@@ -173,6 +173,25 @@ export const VerifyStudent: React.FC = () => {
                                 )}
                             </div>
 
+                            {/* Physical Card Stamping */}
+                            {data.physical_card?.is_delivered ? (
+                                <div className="p-3.5 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center gap-3">
+                                    <ShieldCheck className="w-5 h-5 text-teal-400 shrink-0" />
+                                    <div>
+                                        <p className="text-xs font-bold text-teal-300">Credencial Física Oficial Entregada</p>
+                                        <p className="text-[11px] text-teal-400/80">Entregada formalmente en plantel por {data.physical_card.delivered_by || 'Administración'}.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-3">
+                                    <ShieldCheck className="w-5 h-5 text-brand-teal shrink-0" />
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-300">Verificación Digital Activa</p>
+                                        <p className="text-[11px] text-slate-500">Credencial institucional en línea vinculada a la base de datos de ULTEC.</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Verification Footer Stamp */}
                             <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
                                 <span>Verificado: {new Date(data.verified_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>

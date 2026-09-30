@@ -4,20 +4,20 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.23",
-    versionCode: 33,
+    version: "1.2.0",
+    versionCode: 34,
     minVersion: "1.0.0",
     releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.23 - Módulo LMS: Guías Digitales, Entregas y Retroalimentación",
+    title: "Actualización v1.2.0 - Carnets Digitales Estudiantiles y Emisión Controlada",
     releaseNotes: [
-        "Materiales y Guías de Estudio para Docentes: Capacidad de adjuntar guías PDF y documentos digitales directos a cada tarea.",
-        "Experiencia de Entrega para Alumnos: Descarga directa de material de clase, previsualización de evidencias y soporte hasta 15MB.",
-        "Seguimiento para Tutores y Padres: Visualización de las guías de estudio asignadas y de las evidencias entregadas por sus hijos.",
-        "Retroalimentación Académica: Calificación detallada y retroalimentación personalizada visible para alumnos y tutores.",
-        "Optimización de Almacenamiento: Servicio Nginx estático para entrega ágil de materiales multimedia y documentos."
+        "Carnet Digital Oficial en Pantalla: Identificación estudiantil interactiva con efecto 3D flip card, marcas de agua antifalsificación y código QR institucional dinámico.",
+        "Seguridad Estricta Antifalsificación: Los estudiantes y tutores no pueden imprimir ni descargar carnets de forma descontrolada desde la app; todo carnet físico requiere solicitud formal.",
+        "Solicitud de Carnet Físico a Administración: Estudiantes y padres solicitan su carnet en línea indicando trámite inicial o reposición por extravío.",
+        "Módulo de Emisión y Entrega Presencial: Administración valida solicitudes, imprime en formato estándar PVC CR80 con alta resolución y registra la entrega presencial certificada con firma y fecha.",
+        "Verificación Pública QR Avanzada: El portal público de validación ahora corrobora si el alumno posee credencial física oficial entregada por administración."
     ],
     isCritical: false
 };

@@ -33,6 +33,7 @@ import UserProfile from './pages/UserProfile';
 import PromotionsManager from './features/academic/PromotionsManager';
 import VerifyReceipt from './pages/VerifyReceipt';
 import VerifyStudent from './pages/VerifyStudent';
+import { StudentCredentialsAdmin } from './features/academic/StudentCredentialsAdmin';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { UpdateProvider } from './context/UpdateContext';
 import { IdleTimerProvider } from './context/IdleTimerContext';
@@ -71,6 +72,8 @@ function App() {
                 <Route path="/students" element={<StudentsList />} />
                 <Route path="/enrollments" element={<EnrollmentsList />} />
                 <Route path="/promotions" element={<PromotionsManager />} />
+                <Route path="/credentials" element={<StudentCredentialsAdmin />} />
+                <Route path="/credentials-admin" element={<StudentCredentialsAdmin />} />
                 <Route path="/payments" element={<PaymentsList />} />
                 <Route path="/cash-register" element={<CashRegisterPage />} />
                 <Route path="/invoices" element={<InvoicesList />} />

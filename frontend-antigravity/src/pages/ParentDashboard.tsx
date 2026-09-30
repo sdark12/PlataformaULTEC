@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Users, CalendarCheck, BookOpen, AlertCircle, ChevronDown, ChevronUp, Receipt, CreditCard, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Clock, ClipboardCheck, GraduationCap, FileCheck, ShieldAlert, AlertTriangle, Phone, ShieldCheck, Paperclip } from 'lucide-react';
 import api from '../services/apiClient';
+import { DigitalIDCardModal } from '../features/academic/components/DigitalIDCardModal';
 
 interface StudentLink {
     id: string;
@@ -139,6 +140,7 @@ interface ChildViewProps {
 const ChildView = ({ student, autoExpand, activeTab: controlledTab, onTabChange }: ChildViewProps) => {
     const [expanded, setExpanded] = useState(autoExpand !== undefined ? autoExpand : false);
     const [localTab, setLocalTab] = useState<TabKey>('summary');
+    const [isCredentialModalOpen, setIsCredentialModalOpen] = useState(false);
 
     useEffect(() => {
         if (autoExpand !== undefined) {
@@ -182,8 +184,22 @@ const ChildView = ({ student, autoExpand, activeTab: controlledTab, onTabChange 
                         </div>
                     </div>
                 </div>
-                <div className="p-2 text-slate-400 hover:text-brand-blue transition-colors shrink-0">
-                    {expanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsCredentialModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-brand-blue/10 dark:bg-brand-blue/20 hover:bg-brand-blue/20 text-brand-blue dark:text-blue-400 text-xs font-bold transition-all border border-brand-blue/20 shadow-sm"
+                        title="Ver credencial digital del estudiante"
+                    >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span className="hidden xs:inline">Carnet Digital</span>
+                    </button>
+                    <div className="p-2 text-slate-400 hover:text-brand-blue transition-colors">
+                        {expanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+                    </div>
                 </div>
             </div>
 
@@ -658,6 +674,15 @@ const ChildView = ({ student, autoExpand, activeTab: controlledTab, onTabChange 
                         <div className="text-center py-4 text-slate-500">No se pudo cargar la información.</div>
                     )}
                 </div>
+            )}
+
+            {isCredentialModalOpen && (
+                <DigitalIDCardModal
+                    isOpen={isCredentialModalOpen}
+                    onClose={() => setIsCredentialModalOpen(false)}
+                    studentId={student.student_id}
+                    studentName={student.students?.full_name}
+                />
             )}
         </div>
     );

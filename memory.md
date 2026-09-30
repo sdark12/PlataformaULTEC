@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.23` (Build 33)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.2.0` (Build 34)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -331,6 +331,14 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Soporte de subida de evidencias para estudiantes con formatos extendidos (PDF, imágenes, Word, Excel, PowerPoint, ZIP) hasta 15MB.
   - Monitoreo integral para tutores y padres de familia en `ParentDashboard.tsx` con acceso directo a guías asignadas y comprobantes entregados.
   - Almacenamiento seguro en contenedor y entrega ágil de archivos estáticos vía Nginx `/uploads/`.
+- [x] **Fase 6: Carnets Digitales Estudiantiles con Emisión Física Controlada y Validación QR** (v1.2.0 Build 34)
+  - Carnet Digital Oficial interactivo en pantalla con efecto 3D flip card, marcas de agua antifalsificación y código QR dinámico.
+  - Regla estricta de seguridad: Cero opciones de impresión o descarga para estudiantes y padres desde la app.
+  - Flujo de solicitud formal de carnet físico a administración (trámite inicial o reposición por extravío) persistido en `document_authorizations`.
+  - Panel administrativo para secretaría y dirección con filtros por sede, estado y buscador por nombre/código.
+  - Generación de credenciales físicas en formato estándar PVC CR80 con alta resolución e impresión térmica/láser.
+  - Registro de entrega presencial con sello de `delivered_by` y `delivered_at`.
+  - Verificación pública QR avanzada en `/verify-student/:code` que certifica la validez académica y la posesión de credencial física entregada por administración.
 
 ---
 
@@ -350,6 +358,25 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 - **Supervisión para Padres y Tutores (`ParentDashboard.tsx`):**
   - En la pestaña de Tareas, cada actividad muestra enlaces para revisar tanto la guía oficial proporcionada por el docente como el archivo entregado por el estudiante.
   - Visualización transparente de retroalimentación docente (`feedback`) y punteos obtenidos.
+
+---
+
+## 15. Carnets Digitales Estudiantiles y Emisión Física Controlada (v1.2.0 Build 34)
+
+- **Arquitectura de Seguridad Antifalsificación:**
+  - **Identificación Virtual en Pantalla:** Alumnos y tutores visualizan un carnet interactivo 3D con reverso giratorio, datos de contacto de emergencia, sede, curso y marca de agua institucional dinámica con marca de tiempo.
+  - **Restricción de Emisión Física:** Por directriz estricta de seguridad institucional, los estudiantes y tutores tienen deshabilitada cualquier opción de descarga o impresión directa del carnet físico.
+  - **Solicitud de Carnet a Administración:** Estudiantes o tutores envían solicitudes desde la app (`document_authorizations` con `document_type = 'STUDENT_ID'`), indicando tipo de trámite (`FIRST_TIME` o `REPLACEMENT`) y motivo.
+- **Módulo Administrativo de Carnets (`/credentials-admin`):**
+  - Disponible exclusivamente para `superadmin`, `admin` y `secretary`.
+  - Pestañas de estado (`Pendientes`, `Listos en Plantel`, `Entregados`, `Todas`).
+  - Filtro por sede institucional con aislamiento multisede y buscador por nombre o código.
+  - **Impresión Profesional PVC CR80:** Generador de credenciales con dimensiones exactas ISO 7810 ID-1 (85.60 mm × 53.98 mm), foto, QR de verificación, datos de sede, vigencia y código de barras de seguridad.
+  - **Entrega Presencial Certificada:** Al entregar la credencial en físico, el personal administrativo registra la entrega, estampando en base de datos `delivered_at` y `delivered_by`.
+- **Verificación Pública QR (`/verify-student/:code`):**
+  - Escaneable desde cámaras de celular o lectores de control de acceso en portería.
+  - Muestra el estado oficial de matrícula, sede, ciclo escolar y un distintivo de seguridad que confirma si el alumno cuenta con credencial física oficial entregada por administración.
+
 
 
 

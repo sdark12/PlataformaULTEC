@@ -6,9 +6,9 @@ import {
     Loader2, Users, BookOpen, DollarSign, AlertCircle, Clock,
     TrendingUp, FileText, Megaphone,
     UserPlus, AlertTriangle,
-    Zap, Flame, QrCode, Maximize2, Download,
-    MapPin, X, ChevronRight, CheckCircle2,
-    Copy, Check, Video, Image as ImageIcon, Link as LinkIcon,
+    Zap, Flame, QrCode, Maximize2,
+    MapPin, ChevronRight, CheckCircle2,
+    Video, Image as ImageIcon, Link as LinkIcon,
     Eye
 } from 'lucide-react';
 import { getDashboardStats, getStudentDashboardStats, getAdminDashboardExtended } from '../features/finance/reportService';
@@ -19,12 +19,12 @@ import api from '../services/apiClient';
 import ParentDashboard from './ParentDashboard';
 import MediaViewerModal from '../features/academic/components/MediaViewerModal';
 import type { ViewableResource } from '../features/academic/components/MediaViewerModal';
+import { DigitalIDCardModal } from '../features/academic/components/DigitalIDCardModal';
 
 const DashboardHome = () => {
     const navigate = useNavigate();
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [qrDataUrl, setQrDataUrl] = useState<string>('');
-    const [copiedQr, setCopiedQr] = useState(false);
     const [viewerResource, setViewerResource] = useState<ViewableResource | null>(null);
     const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
     let currentUser: any = null;
@@ -112,21 +112,6 @@ const DashboardHome = () => {
             });
         }
     }, [isStudent, studentCode]);
-
-    const handleCopyVerificationLink = () => {
-        const verifyUrl = `${window.location.origin}/verify-student/${encodeURIComponent(studentCode)}`;
-        navigator.clipboard.writeText(verifyUrl);
-        setCopiedQr(true);
-        setTimeout(() => setCopiedQr(false), 2500);
-    };
-
-    const handleDownloadQr = () => {
-        if (!qrDataUrl) return;
-        const link = document.createElement('a');
-        link.download = `Credencial_${studentCode}.png`;
-        link.href = qrDataUrl;
-        link.click();
-    };
 
     const handleOpenResource = (r: any) => {
         if (!r.file_url) {
@@ -608,77 +593,13 @@ const DashboardHome = () => {
                     )}
                 </section>
 
-                {/* Fullscreen Interactive QR Modal */}
-                {isQrModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="bg-slate-900 border border-white/20 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-                            <button
-                                onClick={() => setIsQrModalOpen(false)}
-                                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-slate-300 hover:text-white hover:bg-white/20 transition-colors"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-
-                            <div className="w-12 h-12 rounded-2xl bg-brand-blue/20 text-brand-teal flex items-center justify-center mb-2">
-                                <QrCode className="h-6 w-6" />
-                            </div>
-
-                            <h3 className="text-xl font-black text-white tracking-tight">Pase Estudiantil Activo</h3>
-                            <p className="text-xs text-slate-400 mt-0.5 mb-4">Escanee para verificar credencial o registrar acceso</p>
-
-                            {/* Scannable Real QR Code */}
-                            <div className="p-3 bg-white rounded-2xl border-4 border-brand-teal/40 shadow-[0_0_35px_rgba(37,192,244,0.3)] mb-4">
-                                {qrDataUrl ? (
-                                    <img 
-                                        src={qrDataUrl} 
-                                        alt={`QR ${studentCode}`} 
-                                        className="w-52 h-52 object-contain" 
-                                    />
-                                ) : (
-                                    <div className="w-52 h-52 bg-slate-100 flex items-center justify-center">
-                                        <QrCode className="h-16 w-16 text-slate-400 animate-pulse" />
-                                    </div>
-                                )}
-                            </div>
-
-                            <p className="text-base font-black text-white">{currentUser?.full_name}</p>
-                            <p className="text-xs text-brand-teal font-mono font-bold mt-0.5">{studentCode}</p>
-                            <span className="mt-2 text-[11px] px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                                Acceso Autorizado • ULTEC
-                            </span>
-
-                            {/* Action Buttons */}
-                            <div className="grid grid-cols-2 gap-2 w-full mt-5">
-                                <button
-                                    type="button"
-                                    onClick={handleCopyVerificationLink}
-                                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700 cursor-pointer"
-                                >
-                                    {copiedQr ? (
-                                        <>
-                                            <Check className="h-3.5 w-3.5 text-emerald-400" />
-                                            <span className="text-emerald-400">¡Copiado!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Copy className="h-3.5 w-3.5" />
-                                            <span>Copiar Enlace</span>
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleDownloadQr}
-                                    disabled={!qrDataUrl}
-                                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-blue to-brand-teal hover:opacity-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                                >
-                                    <Download className="h-3.5 w-3.5" />
-                                    <span>Guardar QR</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Official Digital Credential Modal with strict security anti-print */}
+                <DigitalIDCardModal
+                    isOpen={isQrModalOpen}
+                    onClose={() => setIsQrModalOpen(false)}
+                    studentId="me"
+                    studentName={currentUser?.full_name}
+                />
 
                 {/* Media Viewer Modal for direct video and document previews */}
                 <MediaViewerModal

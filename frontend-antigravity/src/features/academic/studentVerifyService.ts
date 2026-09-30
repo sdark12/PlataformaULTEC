@@ -13,6 +13,11 @@ export interface VerifyStudentData {
     cycle: string;
     issued_at?: string;
     verified_at: string;
+    physical_card?: {
+        is_delivered: boolean;
+        delivered_at: string | null;
+        delivered_by: string | null;
+    };
     message?: string;
 }
 

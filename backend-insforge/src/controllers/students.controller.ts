@@ -458,6 +458,17 @@ export const verifyStudentPublic = async (req: Request, res: Response) => {
         const isRegularActive = student.status === 'active' || student.status === 'activo' || (activeCourses.length > 0);
         const studentCode = student.personal_code || student.academy_code || `UT-${new Date().getFullYear()}-${student.id.slice(0, 4).toUpperCase()}`;
 
+        // Consultar si cuenta con credencial física oficial entregada
+        const { data: physicalAuth } = await adminClient
+            .from('document_authorizations')
+            .select('status, delivered_at, delivered_by')
+            .eq('student_id', student.id)
+            .eq('document_type', 'STUDENT_ID')
+            .eq('status', 'DELIVERED')
+            .order('delivered_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
         res.json({
             valid: true,
             student_id: student.id,
@@ -470,7 +481,12 @@ export const verifyStudentPublic = async (req: Request, res: Response) => {
             courses: activeCourses,
             cycle: `Ciclo Lectivo ${new Date().getFullYear()}`,
             issued_at: student.created_at,
-            verified_at: new Date().toISOString()
+            verified_at: new Date().toISOString(),
+            physical_card: {
+                is_delivered: !!physicalAuth,
+                delivered_at: physicalAuth?.delivered_at || null,
+                delivered_by: physicalAuth?.delivered_by || null
+            }
         });
     } catch (error) {
         console.error('Error verifying student public:', error);
