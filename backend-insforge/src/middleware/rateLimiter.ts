@@ -12,7 +12,7 @@ export const loginRateLimiter = rateLimit({
 
 export const apiRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minuto
-    max: 100, // 100 peticiones por minuto por IP
+    max: 300, // 300 peticiones por minuto por IP para acomodar cargas iniciales
     message: {
         message: 'Demasiadas solicitudes. Inténtelo de nuevo en un momento.'
     },

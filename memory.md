@@ -67,9 +67,12 @@ Todos los servicios se ejecutan en contenedores Docker gestionados mediante Dock
 - **Seguridad:**
   - `helmet` (configurado para no bloquear descargas ni CORS cross-origin).
   - `cors` dinámico con soporte explícito de cabeceras personalizadas (`X-Branch-Id`, `x-branch-id`).
-  - `express-rate-limit` protegiendo endpoints sensibles.
+  - `express-rate-limit` protegiendo endpoints globales (300 peticiones/min para evitar falsos positivos por ráfagas legítimas) y login (5 intentos / 15 min).
   - Middleware de auditoría [`audit.middleware.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/middleware/audit.middleware.ts) registrando operaciones en la tabla `audit_logs`.
   - [`auth.middleware.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/middleware/auth.middleware.ts) verificando expiración de JWT, revocación de cuentas desactivadas y modo de mantenimiento.
+- **Orden de Enrutamiento en `app.ts` (CRITICAL ARCHITECTURAL RULE):**
+  - Todas las rutas públicas o semi-públicas (verificación de comprobantes, estudiantes, versión de app y consulta pública de sedes `/api/branches`) DEBEN montarse en `app.ts` **ANTES** de los enrutadores genéricos como `academicRoutes` (`/api`). Los routers montados en `/api` aplican `router.use(requireAuth)` a nivel raíz, por lo que cualquier ruta montada posteriormente heredará la exigencia de token si Express la evalúa después.
+  - La ruta `GET /api/branches` maneja la falta de token de forma segura devolviendo `[]` con `HTTP 200 OK` para proteger clientes desactualizados o pantallas previas a autenticación.
 
 ---
 

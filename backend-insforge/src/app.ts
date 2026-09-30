@@ -74,11 +74,12 @@ app.use('/api', auditLogger);
 app.use('/auth', authRoutes);
 app.use('/api/auth', authRoutes);
 
-// Public routes (no auth required)
+// Public / semi-public routes (handle unauthenticated gracefully)
 app.get('/api/invoices/verify/:invoiceNumber', verifyInvoicePublic);
 app.get('/api/students/verify/:identifier', verifyStudentPublic);
 app.get('/api/app-version/latest', getLatestAppVersion);
 app.get('/api/app-version/download', downloadLatestApk);
+app.use('/api/branches', branchesRoutes);
 
 // API routes
 app.use('/api', academicRoutes);
@@ -91,7 +92,6 @@ app.use('/api', subgradesRoutes);
 app.use('/api', notificationsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/assignments', assignmentsRoutes);
-app.use('/api/branches', branchesRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/announcements', announcementsRoutes);
