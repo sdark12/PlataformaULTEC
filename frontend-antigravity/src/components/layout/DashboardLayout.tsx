@@ -225,7 +225,7 @@ const DashboardLayout = () => {
                         )}
 
                         {/* Documentos: Única instancia oficial */}
-                        {['admin', 'superadmin', 'secretary', 'student'].includes(role) && (
+                        {['admin', 'superadmin', 'secretary'].includes(role) && (
                             <SidebarItem to="/documents" icon={FileBadge} label="Documentos" onClick={() => setIsMobileMenuOpen(false)} />
                         )}
 

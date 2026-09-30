@@ -1,40 +1,77 @@
 import { Request, Response } from 'express';
 import { adminClient } from '../config/insforge';
 
-// Helper to resolve student ID from caller or requested student_id
+// Helper to resolve student record from caller or requested student_id
 const resolveStudent = async (caller: any, requestedStudentId?: any) => {
-    let studentId = requestedStudentId ? String(requestedStudentId).trim() : undefined;
+    let studentId = (requestedStudentId && requestedStudentId !== 'me' && requestedStudentId !== 'undefined' && requestedStudentId !== 'null') 
+        ? String(requestedStudentId).trim() 
+        : undefined;
 
-    if (!studentId && caller?.role === 'student') {
-        const { data: st } = await adminClient
+    // 1. Si no se especificó un ID explícito, o es 'me', resolver desde el usuario autenticado
+    if (!studentId && (caller?.role === 'student' || caller?.id)) {
+        const { data: st, error: stErr } = await adminClient
             .from('students')
-            .select('id, full_name, personal_code, branch_id, user_id')
+            .select('id')
             .or(`id.eq.${caller.id},user_id.eq.${caller.id}`)
             .maybeSingle();
+
+        if (stErr) console.warn('Warning looking up student by caller.id in resolveStudent:', stErr);
         if (st) studentId = st.id;
     }
 
     if (!studentId) return null;
 
-    const { data: student } = await adminClient
-        .from('students')
-        .select(`
+    // 2. Si studentId es un UUID válido o un código (personal_code / academy_code)
+    let student: any = null;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);
+
+    const baseSelect = `
+        id,
+        user_id,
+        full_name,
+        personal_code,
+        academy_code,
+        branch_id,
+        status,
+        branches:branch_id ( id, name, address, phone ),
+        enrollments (
             id,
-            user_id,
-            full_name,
-            personal_code,
-            academy_code,
-            branch_id,
-            status,
-            branches:branch_id ( id, name, address, phone ),
-            enrollments (
-                id,
-                is_active,
-                courses:course_id ( id, name )
-            )
-        `)
-        .or(`id.eq.${studentId},user_id.eq.${studentId}`)
-        .maybeSingle();
+            is_active,
+            courses:course_id ( id, name )
+        )
+    `;
+
+    if (isUuid) {
+        const { data, error } = await adminClient
+            .from('students')
+            .select(baseSelect)
+            .or(`id.eq.${studentId},user_id.eq.${studentId}`)
+            .maybeSingle();
+
+        if (error) console.error('Error fetching student by UUID in resolveStudent:', error);
+        student = data;
+    } else {
+        const { data, error } = await adminClient
+            .from('students')
+            .select(baseSelect)
+            .or(`personal_code.eq.${studentId},academy_code.eq.${studentId}`)
+            .maybeSingle();
+
+        if (error) console.error('Error fetching student by code in resolveStudent:', error);
+        student = data;
+    }
+
+    // 3. Fallback defensivo: Si no se encontró y el caller tiene rol student, buscar su registro por caller.id
+    if (!student && caller?.role === 'student' && caller?.id) {
+        const { data, error } = await adminClient
+            .from('students')
+            .select(baseSelect)
+            .or(`id.eq.${caller.id},user_id.eq.${caller.id}`)
+            .maybeSingle();
+
+        if (error) console.error('Error in fallback student lookup in resolveStudent:', error);
+        student = data;
+    }
 
     return student;
 };

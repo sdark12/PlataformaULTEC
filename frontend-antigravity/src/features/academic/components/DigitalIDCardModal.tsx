@@ -254,8 +254,12 @@ export const DigitalIDCardModal: React.FC<DigitalIDCardModalProps> = ({
                                                     <Phone className="w-3.5 h-3.5 text-brand-teal mt-0.5 shrink-0" />
                                                     <div className="min-w-0">
                                                         <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Contacto de Emergencia</span>
-                                                        <p className="font-bold text-white text-xs truncate">{cardData.emergency_contact.name} ({cardData.emergency_contact.relationship})</p>
-                                                        <p className="text-[11px] text-brand-teal font-mono">{cardData.emergency_contact.phone}</p>
+                                                        <p className="font-bold text-white text-xs truncate">
+                                                            {cardData.emergency_contact?.name || 'Dirección / Secretaría'} ({cardData.emergency_contact?.relationship || 'Tutor'})
+                                                        </p>
+                                                        <p className="text-[11px] text-brand-teal font-mono">
+                                                            {cardData.emergency_contact?.phone || cardData.branch_phone || 'PBX: 2200-0000'}
+                                                        </p>
                                                     </div>
                                                 </div>
 

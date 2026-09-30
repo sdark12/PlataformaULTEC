@@ -16,6 +16,7 @@ router.use(requireAuth);
 router.post('/request', requestPhysicalCredential);
 router.get('/my-status', getMyCredentialStatus);
 router.get('/my-status/:studentId', getMyCredentialStatus);
+router.get('/card-data', getStudentCredentialCard);
 router.get('/card-data/:studentId', getStudentCredentialCard);
 
 // Admin & Secretary endpoints
