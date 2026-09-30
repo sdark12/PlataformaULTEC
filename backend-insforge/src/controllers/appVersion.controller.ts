@@ -4,19 +4,20 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.1.21",
-    versionCode: 31,
+    version: "1.1.22",
+    versionCode: 32,
     minVersion: "1.0.0",
     releaseDate: "2026-09-29",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.1.21 - Modo Offline-First para Registro de Asistencia y Calificaciones",
+    title: "Actualización v1.1.22 - Portal del Estudiante y Tutor Móvil Optimizado (PWA / App)",
     releaseNotes: [
-        "Modo Offline-First para Docentes: Registro ágil de asistencia y notas en aulas o laboratorios sin conexión o con Wi-Fi inestable.",
-        "Almacenamiento Local Seguro en IndexedDB: Persistencia en el dispositivo de nóminas de estudiantes, asistencias diarias y notas por unidad.",
-        "Cola de Salida (Outbox Pattern) y Sincronización Automática: Detección inteligente de red y sincronización en segundo plano al recuperar señal.",
-        "Centro de Control y Monitoreo Offline: Barra de estado con contador en tiempo real, banner informativo y modal de gestión de pendientes."
+        "Navegación Móvil Personalizada para Estudiantes y Tutores: Dock inferior y barra lateral optimizados con accesos rápidos directos.",
+        "Acceso Inmediato a Calificaciones (/my-grades): Vista integral de boleta de notas para estudiantes con cálculo de promedios.",
+        "Selector de Hijos para Padres con Múltiples Estudiantes: Selector horizontal táctil para alternar fluidamente entre hijos.",
+        "Tarjetas Financieras Móviles Responsivas: Historial de pagos y desglose con verificación digital inmediata de recibos.",
+        "Soporte Safe-Area Inset: Adaptabilidad completa para dispositivos con barra de gestos o notch."
     ],
     isCritical: false
 };

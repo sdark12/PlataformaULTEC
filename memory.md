@@ -11,7 +11,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.1.21` (Build 31)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.1.22` (Build 32)** — Desplegada en producción el 29 de Septiembre de 2026.
 
 ---
 
@@ -317,8 +317,13 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Almacenamiento local IndexedDB para aulas sin conectividad y sincronización background.
   - Patrón Outbox con idempotencia para asistencia y calificaciones.
   - Indicadores reactivos de red, banner contextual y centro de sincronización.
-- [ ] **Fase 4: Portal del Estudiante y Tutor Móvil Optimizado (PWA / App)**
-  - Experiencia optimizada para smartphones y tablets de alumnos y padres.
+- [x] **Fase 4: Portal del Estudiante y Tutor Móvil Optimizado (PWA / App)** (v1.1.22)
+  - Dock inferior móvil dinámico personalizado por rol (`student` y `parent`) con safe-area inset bottom padding (`pb-[env(safe-area-inset-bottom)]`).
+  - Ruta directa `/my-grades` para estudiantes enlazada al Centro Documental y Boleta de Calificaciones.
+  - Selector táctil horizontal de hijos (`selectedStudentId`) con avatar y distintivo de estatus en campus para tutores con múltiples estudiantes vinculados.
+  - Sincronización bidireccional de pestañas con parámetros URL (`?tab=grades`, `assignments`, `attendance`, `finance`, `discipline`, `summary`).
+  - Tarjetas financieras móviles responsivas para historial de pagos y desglose por curso con enlace directo a verificación digital de recibos (`/verify-receipt/:receiptNumber`).
+  - Barras visuales de progreso de rendimiento académico por materia.
 - [ ] **Fase 5: Módulo de Tareas, Recursos Digitales y Entrega de Actividades (LMS)**
   - Carga de guías de trabajo, tareas estudiantiles y retroalimentación docente.
 

@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Users, CalendarCheck, BookOpen, AlertCircle, ChevronDown, ChevronUp, Receipt, CreditCard, DollarSign, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Clock, ClipboardCheck, GraduationCap, FileCheck, ShieldAlert, AlertTriangle, Phone, ShieldCheck } from 'lucide-react';
 import api from '../services/apiClient';
@@ -128,9 +129,28 @@ const TABS: { key: TabKey; label: string; icon: any }[] = [
 ];
 
 /* ──── Child View Component ──── */
-const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?: boolean }) => {
-    const [expanded, setExpanded] = useState(autoExpand || false);
-    const [activeTab, setActiveTab] = useState<TabKey>('summary');
+interface ChildViewProps {
+    student: StudentLink;
+    autoExpand?: boolean;
+    activeTab?: TabKey;
+    onTabChange?: (tab: TabKey) => void;
+}
+
+const ChildView = ({ student, autoExpand, activeTab: controlledTab, onTabChange }: ChildViewProps) => {
+    const [expanded, setExpanded] = useState(autoExpand !== undefined ? autoExpand : false);
+    const [localTab, setLocalTab] = useState<TabKey>('summary');
+
+    useEffect(() => {
+        if (autoExpand !== undefined) {
+            setExpanded(autoExpand);
+        }
+    }, [autoExpand]);
+
+    const activeTab = controlledTab !== undefined ? controlledTab : localTab;
+    const handleTabSelect = (t: TabKey) => {
+        setLocalTab(t);
+        onTabChange?.(t);
+    };
 
     const { data: info, isLoading } = useQuery({ queryKey: ['childDashboard', student.student_id], queryFn: () => fetchChildDashboard(student.student_id), enabled: expanded });
     const { data: gradesData } = useQuery({ queryKey: ['childGrades', student.student_id], queryFn: () => fetchChildGrades(student.student_id), enabled: expanded });
@@ -242,7 +262,7 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
                                         return (
                                             <button
                                                 key={tab.key}
-                                                onClick={() => setActiveTab(tab.key)}
+                                                onClick={() => handleTabSelect(tab.key)}
                                                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-xl transition-all whitespace-nowrap
                                                     ${isActive
                                                         ? 'bg-white dark:bg-slate-800 text-brand-blue border border-slate-200 dark:border-slate-700 border-b-white dark:border-b-slate-800 -mb-px shadow-sm'
@@ -309,17 +329,26 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
                                     <div className="animate-in fade-in duration-300">
                                         {gradesData && gradesData.courses && gradesData.courses.length > 0 ? (
                                             <div className="space-y-4">
-                                                <div className="flex items-center justify-between mb-2">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                                                     <h4 className="font-bold text-slate-900 dark:text-white">Boleta de Calificaciones</h4>
-                                                    <span className={`text-sm font-black px-3 py-1 rounded-lg ${gradesData.general_average >= 60 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'}`}>
-                                                        Promedio General: {gradesData.general_average}
+                                                    <span className={`text-sm font-black px-3 py-1 rounded-lg self-start sm:self-auto ${gradesData.general_average >= 60 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'}`}>
+                                                        Promedio General: {gradesData.general_average} pts
                                                     </span>
                                                 </div>
                                                 {gradesData.courses.map((course: any, ci: number) => (
-                                                    <div key={ci} className="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5">
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <h5 className="font-bold text-slate-800 dark:text-slate-200">{course.course_name}</h5>
-                                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${course.average >= 60 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'}`}>Promedio: {course.average}</span>
+                                                    <div key={ci} className="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 sm:p-5">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm sm:text-base">{course.course_name}</h5>
+                                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${course.average >= 60 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'}`}>
+                                                                Promedio: {course.average} pts
+                                                            </span>
+                                                        </div>
+                                                        {/* Course Visual Progress Bar */}
+                                                        <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full mb-3.5 overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all duration-500 ${Number(course.average) >= 60 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                                                style={{ width: `${Math.min(100, Math.max(0, Number(course.average) || 0))}%` }}
+                                                            />
                                                         </div>
                                                         {course.payment_restricted && (
                                                             <div className="mb-3 p-2.5 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/30 rounded-xl flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
@@ -450,7 +479,26 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
                                                     <DollarSign className="w-4 h-4 text-brand-blue" />
                                                     <h4 className="font-bold text-sm text-slate-900 dark:text-white">Desglose por Curso</h4>
                                                 </div>
-                                                <div className="overflow-x-auto">
+                                                {/* Mobile Course Breakdown Cards */}
+                                                <div className="sm:hidden p-3 space-y-2.5">
+                                                    {info.course_breakdown.map((course, i) => (
+                                                        <div key={i} className="p-3.5 bg-white dark:bg-slate-700/40 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-bold text-slate-900 dark:text-white text-sm">{course.course_name}</span>
+                                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${course.pending_amount > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30'}`}>
+                                                                    {course.pending_amount > 0 ? `Pendiente: Q${course.pending_amount.toFixed(2)}` : 'Al día'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-3 gap-2 text-xs pt-1 border-t border-slate-100 dark:border-slate-700/50">
+                                                                <div><span className="text-slate-400 block text-[10px]">Cuota</span><span className="font-semibold text-slate-700 dark:text-slate-300">Q{course.monthly_fee.toFixed(2)}</span></div>
+                                                                <div><span className="text-slate-400 block text-[10px]">Total Pagado</span><span className="font-bold text-emerald-600">Q{course.total_paid.toFixed(2)}</span></div>
+                                                                <div><span className="text-slate-400 block text-[10px]">Meses</span><span className="font-semibold text-slate-700 dark:text-slate-300">{course.months_charged}</span></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                {/* Desktop Course Breakdown Table */}
+                                                <div className="hidden sm:block overflow-x-auto">
                                                     <table className="w-full text-sm">
                                                         <thead>
                                                             <tr className="bg-slate-100/50 dark:bg-slate-700/30 text-slate-500 text-xs uppercase tracking-wider">
@@ -488,41 +536,90 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
                                                 <span className="ml-auto text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-lg">{info.payment_history?.length || 0} registros</span>
                                             </div>
                                             {info.payment_history && info.payment_history.length > 0 ? (
-                                                <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                                                    <table className="w-full text-sm">
-                                                        <thead className="sticky top-0 z-10">
-                                                            <tr className="bg-slate-100/50 dark:bg-slate-700/30 text-slate-500 text-xs uppercase tracking-wider">
-                                                                <th className="px-5 py-2.5 text-left font-bold">Fecha</th>
-                                                                <th className="px-5 py-2.5 text-left font-bold">Descripción</th>
-                                                                <th className="px-5 py-2.5 text-left font-bold">Curso</th>
-                                                                <th className="px-5 py-2.5 text-left font-bold">Tipo</th>
-                                                                <th className="px-5 py-2.5 text-left font-bold">Método</th>
-                                                                <th className="px-5 py-2.5 text-right font-bold">Monto</th>
-                                                                <th className="px-5 py-2.5 text-right font-bold">Recibo</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                            {info.payment_history.map((payment) => (
-                                                                <tr key={payment.id} className="hover:bg-white/50 dark:hover:bg-white/[0.02]">
-                                                                    <td className="px-5 py-2.5 text-slate-600 whitespace-nowrap">{formatDate(payment.payment_date)}</td>
-                                                                    <td className="px-5 py-2.5 text-slate-900 dark:text-white font-medium max-w-[200px] truncate" title={payment.description}>{payment.description || payment.tuition_month || '—'}</td>
-                                                                    <td className="px-5 py-2.5 text-slate-600">{payment.course_name}</td>
-                                                                    <td className="px-5 py-2.5">
-                                                                        <span className={`inline-flex text-xs font-bold px-2 py-1 rounded-lg ${payment.payment_type === 'TUITION' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' : payment.payment_type === 'ENROLLMENT' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20' : 'bg-slate-100 text-slate-600 dark:bg-slate-700'}`}>
+                                                <>
+                                                    {/* Mobile Payment Cards */}
+                                                    <div className="sm:hidden p-3 space-y-2.5">
+                                                        {info.payment_history.map((payment) => (
+                                                            <div key={payment.id} className="p-3.5 bg-white dark:bg-slate-700/40 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col gap-2">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <div className="min-w-0">
+                                                                        <span className={`inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full ${payment.payment_type === 'TUITION' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300' : payment.payment_type === 'ENROLLMENT' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700'}`}>
                                                                             {paymentTypeLabel(payment.payment_type)}
                                                                         </span>
-                                                                    </td>
-                                                                    <td className="px-5 py-2.5 text-slate-600"><span className="inline-flex items-center gap-1 text-xs"><CreditCard className="w-3 h-3" />{methodLabel(payment.method)}</span></td>
-                                                                    <td className="px-5 py-2.5 text-right font-bold text-emerald-600 whitespace-nowrap">
-                                                                        Q{Number(payment.amount).toFixed(2)}
-                                                                        {Number(payment.discount) > 0 && <span className="block text-xs text-amber-500 font-medium">-Q{Number(payment.discount).toFixed(2)} desc.</span>}
-                                                                    </td>
-                                                                    <td className="px-5 py-2.5 text-right text-slate-500 font-mono text-xs">{payment.receipt_number || '—'}</td>
+                                                                        <h5 className="font-bold text-slate-900 dark:text-white text-sm mt-1 truncate">{payment.description || payment.course_name || 'Pago'}</h5>
+                                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{payment.course_name} • {formatDate(payment.payment_date)}</p>
+                                                                    </div>
+                                                                    <div className="text-right shrink-0">
+                                                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400">Q{Number(payment.amount).toFixed(2)}</p>
+                                                                        {Number(payment.discount) > 0 && <span className="text-[10px] text-amber-500 block">-Q{Number(payment.discount).toFixed(2)}</span>}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700 text-xs">
+                                                                    <span className="text-slate-500 dark:text-slate-400 text-xs flex items-center gap-1">
+                                                                        <CreditCard className="w-3 h-3 text-slate-400" />
+                                                                        {methodLabel(payment.method)}
+                                                                    </span>
+                                                                    {payment.receipt_number ? (
+                                                                        <Link
+                                                                            to={`/verify-receipt/${payment.receipt_number}`}
+                                                                            className="inline-flex items-center gap-1 font-mono text-brand-blue font-bold text-xs hover:underline bg-brand-blue/5 dark:bg-brand-blue/15 px-2 py-0.5 rounded-lg"
+                                                                        >
+                                                                            <Receipt className="w-3 h-3" />
+                                                                            #{payment.receipt_number}
+                                                                        </Link>
+                                                                    ) : (
+                                                                        <span className="text-slate-400 font-mono text-xs">—</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Desktop Table */}
+                                                    <div className="hidden sm:block overflow-x-auto max-h-[400px] overflow-y-auto">
+                                                        <table className="w-full text-sm">
+                                                            <thead className="sticky top-0 z-10">
+                                                                <tr className="bg-slate-100/50 dark:bg-slate-700/30 text-slate-500 text-xs uppercase tracking-wider">
+                                                                    <th className="px-5 py-2.5 text-left font-bold">Fecha</th>
+                                                                    <th className="px-5 py-2.5 text-left font-bold">Descripción</th>
+                                                                    <th className="px-5 py-2.5 text-left font-bold">Curso</th>
+                                                                    <th className="px-5 py-2.5 text-left font-bold">Tipo</th>
+                                                                    <th className="px-5 py-2.5 text-left font-bold">Método</th>
+                                                                    <th className="px-5 py-2.5 text-right font-bold">Monto</th>
+                                                                    <th className="px-5 py-2.5 text-right font-bold">Recibo</th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                                                {info.payment_history.map((payment) => (
+                                                                    <tr key={payment.id} className="hover:bg-white/50 dark:hover:bg-white/[0.02]">
+                                                                        <td className="px-5 py-2.5 text-slate-600 whitespace-nowrap">{formatDate(payment.payment_date)}</td>
+                                                                        <td className="px-5 py-2.5 text-slate-900 dark:text-white font-medium max-w-[200px] truncate" title={payment.description}>{payment.description || payment.tuition_month || '—'}</td>
+                                                                        <td className="px-5 py-2.5 text-slate-600">{payment.course_name}</td>
+                                                                        <td className="px-5 py-2.5">
+                                                                            <span className={`inline-flex text-xs font-bold px-2 py-1 rounded-lg ${payment.payment_type === 'TUITION' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' : payment.payment_type === 'ENROLLMENT' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20' : 'bg-slate-100 text-slate-600 dark:bg-slate-700'}`}>
+                                                                                {paymentTypeLabel(payment.payment_type)}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-5 py-2.5 text-slate-600"><span className="inline-flex items-center gap-1 text-xs"><CreditCard className="w-3 h-3" />{methodLabel(payment.method)}</span></td>
+                                                                        <td className="px-5 py-2.5 text-right font-bold text-emerald-600 whitespace-nowrap">
+                                                                            Q{Number(payment.amount).toFixed(2)}
+                                                                            {Number(payment.discount) > 0 && <span className="block text-xs text-amber-500 font-medium">-Q{Number(payment.discount).toFixed(2)} desc.</span>}
+                                                                        </td>
+                                                                        <td className="px-5 py-2.5 text-right font-mono text-xs">
+                                                                            {payment.receipt_number ? (
+                                                                                <Link to={`/verify-receipt/${payment.receipt_number}`} className="text-brand-blue hover:underline font-bold">
+                                                                                    #{payment.receipt_number}
+                                                                                </Link>
+                                                                            ) : (
+                                                                                <span className="text-slate-400">—</span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </>
                                             ) : (
                                                 <div className="text-center py-10"><Receipt className="w-10 h-10 text-slate-300 mx-auto mb-2" /><p className="text-sm text-slate-500">No hay pagos registrados aún.</p></div>
                                             )}
@@ -543,6 +640,36 @@ const ChildView = ({ student, autoExpand }: { student: StudentLink; autoExpand?:
 /* ──── Main Page ──── */
 const ParentDashboard = () => {
     const { data: students, isLoading } = useQuery({ queryKey: ['my-students'], queryFn: fetchMyStudents });
+    const [searchParams, setSearchParams] = useSearchParams();
+    const queryTab = searchParams.get('tab') as TabKey | null;
+
+    const [activeTab, setActiveTab] = useState<TabKey>(
+        queryTab && ['summary', 'grades', 'assignments', 'attendance', 'finance', 'discipline'].includes(queryTab)
+            ? queryTab
+            : 'summary'
+    );
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (queryTab && ['summary', 'grades', 'assignments', 'attendance', 'finance', 'discipline'].includes(queryTab)) {
+            setActiveTab(queryTab);
+        }
+    }, [queryTab]);
+
+    useEffect(() => {
+        if (students && students.length > 0 && !selectedStudentId) {
+            setSelectedStudentId(students[0].student_id);
+        }
+    }, [students, selectedStudentId]);
+
+    const handleTabChange = (newTab: TabKey) => {
+        setActiveTab(newTab);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('tab', newTab);
+            return next;
+        });
+    };
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
@@ -552,7 +679,7 @@ const ParentDashboard = () => {
     );
 
     return (
-        <div className="max-w-6xl mx-auto pb-20 md:pb-12 animate-in fade-in duration-500 space-y-6">
+        <div className="max-w-6xl mx-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-12 animate-in fade-in duration-500 space-y-5">
             {/* Warm Header with Campus Conectado and Support Calling */}
             <div className="flex flex-col gap-2 pt-1">
                 <div className="flex items-center justify-between">
@@ -584,6 +711,41 @@ const ParentDashboard = () => {
                 </div>
             </div>
 
+            {/* Child Selector Pills for Multi-Child Parents */}
+            {students && students.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5" /> Hijos:
+                    </span>
+                    {students.map((s) => {
+                        const isSelected = (selectedStudentId || students[0].student_id) === s.student_id;
+                        return (
+                            <button
+                                key={s.student_id}
+                                onClick={() => setSelectedStudentId(s.student_id)}
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 border ${
+                                    isSelected
+                                        ? 'bg-brand-blue text-white border-brand-blue shadow-md shadow-brand-blue/20 scale-[1.02]'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-blue/40'
+                                }`}
+                            >
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${
+                                    isSelected ? 'bg-white/20 text-white' : 'bg-brand-blue/10 text-brand-blue'
+                                }`}>
+                                    {s.students?.full_name?.charAt(0) || 'E'}
+                                </div>
+                                <span className="truncate max-w-[140px] sm:max-w-none">{s.students?.full_name || 'Estudiante'}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                                    isSelected ? 'bg-white/25 text-white' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                }`}>
+                                    En Campus
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
             {!students || students.length === 0 ? (
                 <div className="text-center py-20 glass-card rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
                     <Users className="mx-auto h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
@@ -594,7 +756,18 @@ const ParentDashboard = () => {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {students.map(s => <ChildView key={s.student_id} student={s} autoExpand={students.length === 1} />)}
+                    {students.map((s) => {
+                        const isSelected = (selectedStudentId || students[0].student_id) === s.student_id;
+                        return (
+                            <ChildView
+                                key={s.student_id}
+                                student={s}
+                                autoExpand={students.length === 1 ? true : isSelected}
+                                activeTab={activeTab}
+                                onTabChange={handleTabChange}
+                            />
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -33,6 +33,7 @@ import ProfilePopover from './ProfilePopover';
 import BranchSwitcher from './BranchSwitcher';
 import { NetworkStatusBar, NetworkIndicatorBadge } from '../common/NetworkStatusBar';
 import { fetchCurrentUser, getCurrentUser } from '../../features/auth/authService';
+import { APP_CONFIG } from '../../config/appConfig';
 
 const SidebarItem = ({ 
     to, 
@@ -230,6 +231,7 @@ const DashboardLayout = () => {
 
                         {role === 'student' && (
                             <>
+                                <SidebarItem to="/my-grades" icon={GraduationCap} label="Mis Calificaciones" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem to="/student-assignments" icon={ClipboardCheck} label="Mis Tareas" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem to="/my-attendance" icon={Calendar} label="Mi Asistencia" onClick={() => setIsMobileMenuOpen(false)} />
                                 <SidebarItem to="/my-schedule" icon={Calendar} label="Mi Horario" onClick={() => setIsMobileMenuOpen(false)} />
@@ -284,7 +286,7 @@ const DashboardLayout = () => {
                         <LogOut className="h-4 w-4" />
                         <span>Cerrar Sesión</span>
                     </button>
-                    <p className="text-[10px] text-center text-slate-600 mt-4 tracking-wider">v1.3.0 • Premium Build</p>
+                    <p className="text-[10px] text-center text-slate-500 mt-4 tracking-wider">v{APP_CONFIG.version} (Build {APP_CONFIG.buildNumber}) • ULTEC</p>
                 </div>
             </div>
 
@@ -350,7 +352,7 @@ const DashboardLayout = () => {
                 </main>
 
                 {/* Mobile Bottom Navigation Bar (Stitch Dock Style) */}
-                <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+                <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-[env(safe-area-inset-bottom)]">
                     <div className="flex justify-around items-center h-16 px-1">
                         <Link
                             to="/"
@@ -371,7 +373,7 @@ const DashboardLayout = () => {
                                     location.pathname.startsWith('/courses') || location.pathname.startsWith('/students')
                                         ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
                                         : 'text-slate-400 hover:text-slate-200'
-                                }`}
+                                    }`}
                             >
                                 <GraduationCap className="h-5 w-5" />
                                 <span className="text-[10px] tracking-wide mt-1">Académico</span>
@@ -409,6 +411,17 @@ const DashboardLayout = () => {
                         {role === 'student' && (
                             <>
                                 <Link
+                                    to="/my-grades"
+                                    className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                                        location.pathname.startsWith('/my-grades') || location.pathname.startsWith('/documents')
+                                            ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
+                                            : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    <GraduationCap className="h-5 w-5" />
+                                    <span className="text-[10px] tracking-wide mt-1">Notas</span>
+                                </Link>
+                                <Link
                                     to="/student-assignments"
                                     className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
                                         location.pathname.startsWith('/student-assignments')
@@ -431,15 +444,64 @@ const DashboardLayout = () => {
                                     <span className="text-[10px] tracking-wide mt-1">Horario</span>
                                 </Link>
                                 <Link
-                                    to="/resources"
+                                    to="/profile"
                                     className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-                                        location.pathname.startsWith('/resources')
+                                        location.pathname.startsWith('/profile')
                                             ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
                                             : 'text-slate-400 hover:text-slate-200'
                                     }`}
                                 >
-                                    <Library className="h-5 w-5" />
-                                    <span className="text-[10px] tracking-wide mt-1">Material</span>
+                                    <User className="h-5 w-5" />
+                                    <span className="text-[10px] tracking-wide mt-1">Perfil</span>
+                                </Link>
+                            </>
+                        )}
+
+                        {role === 'parent' && (
+                            <>
+                                <Link
+                                    to="/parent-dashboard?tab=grades"
+                                    className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                                        location.pathname.startsWith('/parent-dashboard') && location.search.includes('tab=grades')
+                                            ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
+                                            : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    <GraduationCap className="h-5 w-5" />
+                                    <span className="text-[10px] tracking-wide mt-1">Notas</span>
+                                </Link>
+                                <Link
+                                    to="/parent-dashboard?tab=assignments"
+                                    className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                                        location.pathname.startsWith('/parent-dashboard') && location.search.includes('tab=assignments')
+                                            ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
+                                            : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    <ClipboardCheck className="h-5 w-5" />
+                                    <span className="text-[10px] tracking-wide mt-1">Tareas</span>
+                                </Link>
+                                <Link
+                                    to="/parent-dashboard?tab=attendance"
+                                    className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                                        location.pathname.startsWith('/parent-dashboard') && location.search.includes('tab=attendance')
+                                            ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
+                                            : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    <Calendar className="h-5 w-5" />
+                                    <span className="text-[10px] tracking-wide mt-1">Asistencia</span>
+                                </Link>
+                                <Link
+                                    to="/parent-dashboard?tab=finance"
+                                    className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                                        location.pathname.startsWith('/parent-dashboard') && location.search.includes('tab=finance')
+                                            ? 'text-brand-teal drop-shadow-[0_0_12px_rgba(37,192,244,0.45)] font-semibold' 
+                                            : 'text-slate-400 hover:text-slate-200'
+                                    }`}
+                                >
+                                    <DollarSign className="h-5 w-5" />
+                                    <span className="text-[10px] tracking-wide mt-1">Pagos</span>
                                 </Link>
                             </>
                         )}

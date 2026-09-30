@@ -106,6 +106,7 @@ function App() {
 
               {/* Student Only */}
               <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+                <Route path="/my-grades" element={<DocumentCenter />} />
                 <Route path="/student-assignments" element={<StudentAssignments />} />
                 <Route path="/my-attendance" element={<StudentAttendance />} />
                 <Route path="/my-schedule" element={<StudentSchedule />} />
