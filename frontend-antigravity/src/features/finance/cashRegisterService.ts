@@ -93,49 +93,49 @@ export interface ShiftDetailsResponse {
 export const cashRegisterService = {
     // 1. Obtener estado del turno activo en la sede actual
     getCurrentShift: async (): Promise<CurrentShiftResponse> => {
-        const response = await api.get('/cash-register/current');
+        const response = await api.get('/api/cash-register/current');
         return response.data;
     },
 
     // 2. Abrir nuevo turno de caja
     openShift: async (payload: OpenShiftPayload): Promise<{ message: string; shift: CashShift }> => {
-        const response = await api.post('/cash-register/open', payload);
+        const response = await api.post('/api/cash-register/open', payload);
         return response.data;
     },
 
     // 3. Registrar egreso menor de caja chica
     recordExpense: async (payload: ExpensePayload): Promise<{ message: string; expense: CashExpense }> => {
-        const response = await api.post('/cash-register/expense', payload);
+        const response = await api.post('/api/cash-register/expense', payload);
         return response.data;
     },
 
     // 4. Eliminar egreso menor
     deleteExpense: async (id: string): Promise<{ message: string }> => {
-        const response = await api.delete(`/cash-register/expense/${id}`);
+        const response = await api.delete(`/api/cash-register/expense/${id}`);
         return response.data;
     },
 
     // 5. Arqueo y cierre de turno
     closeShift: async (payload: CloseShiftPayload): Promise<{ message: string; shift: CashShift; summary: any }> => {
-        const response = await api.post('/cash-register/close', payload);
+        const response = await api.post('/api/cash-register/close', payload);
         return response.data;
     },
 
     // 6. Consultar historial de turnos cerrados
     getShiftsHistory: async (limit: number = 30): Promise<CashShift[]> => {
-        const response = await api.get('/cash-register/history', { params: { limit } });
+        const response = await api.get('/api/cash-register/history', { params: { limit } });
         return response.data;
     },
 
     // 7. Detalle completo de turno para arqueo / comprobante
     getShiftDetails: async (id: string): Promise<ShiftDetailsResponse> => {
-        const response = await api.get(`/cash-register/shifts/${id}`);
+        const response = await api.get(`/api/cash-register/shifts/${id}`);
         return response.data;
     },
 
     // 8. Visar / auditar turno
     auditShift: async (id: string, audit_notes?: string): Promise<{ message: string; shift: CashShift }> => {
-        const response = await api.patch(`/cash-register/shifts/${id}/audit`, { audit_notes });
+        const response = await api.patch(`/api/cash-register/shifts/${id}/audit`, { audit_notes });
         return response.data;
     }
 };

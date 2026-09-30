@@ -266,13 +266,18 @@ export const CashRegisterPage: React.FC = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={openShiftMutation.isPending}
-                                    className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer"
+                                    disabled={openShiftMutation.isPending || selectedBranchId === 'all'}
+                                    className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                                 >
                                     {openShiftMutation.isPending ? (
                                         <>
                                             <Loader2 className="h-5 w-5 animate-spin" />
                                             <span>Abriendo Turno...</span>
+                                        </>
+                                    ) : selectedBranchId === 'all' ? (
+                                        <>
+                                            <AlertTriangle className="h-5 w-5" />
+                                            <span>Seleccione una Sede arriba para Abrir Caja</span>
                                         </>
                                     ) : (
                                         <>
