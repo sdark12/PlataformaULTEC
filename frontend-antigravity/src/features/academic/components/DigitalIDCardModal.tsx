@@ -34,6 +34,16 @@ export const DigitalIDCardModal: React.FC<DigitalIDCardModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
 
+    // Cerrar al presionar la tecla Escape
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     useEffect(() => {
         if (!isOpen) return;
 
@@ -100,10 +110,13 @@ export const DigitalIDCardModal: React.FC<DigitalIDCardModalProps> = ({
     const request = statusData?.request;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-            <div className="relative w-full max-w-lg my-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/40">
+        <div 
+            className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex justify-center items-start p-3 sm:p-6 animate-in fade-in duration-200"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="relative w-full max-w-lg my-4 sm:my-8 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                {/* Header - Sticky pinned at the top */}
+                <div className="sticky top-0 z-30 flex items-center justify-between px-5 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-xl bg-brand-blue/10 border border-brand-blue/20 flex items-center justify-center text-brand-blue">
                             <ShieldCheck className="w-4 h-4" />
@@ -115,9 +128,11 @@ export const DigitalIDCardModal: React.FC<DigitalIDCardModalProps> = ({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        className="px-3.5 py-1.5 rounded-xl text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-700 shadow-sm active:scale-95"
+                        title="Cerrar credencial (Esc)"
                     >
-                        <X className="w-5 h-5" />
+                        <span>Salir</span>
+                        <X className="w-4 h-4 text-slate-400 group-hover:text-white" />
                     </button>
                 </div>
 
@@ -436,6 +451,18 @@ export const DigitalIDCardModal: React.FC<DigitalIDCardModalProps> = ({
                                         </form>
                                     )
                                 )}
+                            </div>
+
+                            {/* Bottom Exit Button */}
+                            <div className="pt-2 border-t border-slate-800/80 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors flex items-center justify-center gap-2 border border-slate-700/60 shadow-sm active:scale-95"
+                                >
+                                    <X className="w-4 h-4 text-slate-400" />
+                                    <span>Cerrar Credencial</span>
+                                </button>
                             </div>
                         </>
                     )}
