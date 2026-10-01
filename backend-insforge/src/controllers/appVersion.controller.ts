@@ -4,19 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.2.1",
-    versionCode: 35,
+    version: "1.2.2",
+    versionCode: 36,
     minVersion: "1.0.0",
     releaseDate: "2026-09-30",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.2.1 - Inteligencia Institucional, Cartera Vencida y Alerta Temprana",
+    title: "Actualización v1.2.2 - Ciclos Lectivos Nativos y Optimización BI",
     releaseNotes: [
-        "Semáforo de Alerta Temprana de Deserción Escolar (EWS): Algoritmo de Índice de Retención Escolar (IRE 0-100) que cruza asistencia (40%), promedio académico (35%), mora (20%) y disciplina (5%).",
-        "Bitácora de Intervención y Retención Estudiantil: Registro de llamadas, convenios de pago pactados, citas presenciales y tutorías con enlaces rápidos de WhatsApp institucional.",
-        "Análisis de Cartera Vencida y Antigüedad de Saldos (Aging Buckets): Desglose de morosidad en tramos de 0-30, 31-60, 61-90 y más de 90 días con proyección de facturación.",
-        "Centro de Reportes y BI Unificado: Tablero integrado en ReportsHub con métricas ejecutivas, tasa de cobranza mensual y exportación profesional en PDF y Excel."
+        "Gestión Integral de Ciclo Lectivo: Soporte nativo de año escolar en cursos con filtrado dinámico por pestañas y badges visuales.",
+        "Estabilización BI en ReportsHub: Resolución del error 500 al filtrar reportes analíticos por carreras específicas.",
+        "Optimización de Carnets y Credenciales: Implementación de Batch Hydration para consultas masivas de impresión segura.",
+        "Semáforo EWS y Alerta Temprana de Deserción: Algoritmo IRE de retención escolar y análisis de cartera vencida por antigüedad."
     ],
     isCritical: false
 };

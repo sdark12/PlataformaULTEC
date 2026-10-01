@@ -12,7 +12,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.2.1` (Build 35)** — Desplegada en producción el 30 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.2.2` (Build 36)** — Desplegada en producción el 30 de Septiembre de 2026.
 
 ---
 
@@ -418,6 +418,33 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - El parámetro `course_id` en los endpoints `/api/intelligence/debt-aging` y `/api/intelligence/early-warning` es resuelto mediante `resolveCourseIds`, admitiendo tanto identificadores `UUID` como nombres textuales de cursos (ej. `"TAC 1-2026"`), evitando el error `22P02 (invalid input syntax for type uuid)`.
   - El selector en el frontend ([`DebtAgingDashboard.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/DebtAgingDashboard.tsx) y [`EarlyWarningDashboard.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/EarlyWarningDashboard.tsx)) carga de forma estable el catálogo de cursos vía `getCourses()` desde `academicService.ts`, impidiendo que las opciones desaparezcan al seleccionar un filtro.
   - La recaudación del mes (`paymentsQuery`) en el reporte de cartera vencida se encuentra acotada a las matrículas del curso seleccionado para garantizar precisión contable.
+
+---
+
+## 17. Gestión Nativa de Ciclos Lectivos / Año Escolar en Cursos (v1.2.2 Build 36)
+
+- **Motivación:**
+  - Los cursos requerían incluir el año manualmente en el nombre (ej. `TAC 1-2026`, `TAC1-2027`) para poder diferenciarse.
+  - Se requería soporte de primer nivel para ciclo escolar (`academic_year`) con filtrado rápido e insignias visuales sin romper retrocompatibilidad.
+- **Base de Datos (PostgreSQL):**
+  - Columna agregada: `ALTER TABLE courses ADD COLUMN IF NOT EXISTS academic_year integer DEFAULT 2026;`
+  - Backfill retroactivo de datos existentes: asignación de `2027` a `TAC1-2027` y `2026` al resto de cursos.
+- **Backend Express (`backend-insforge`):**
+  - Validación Zod: `academic_year: z.number().int().min(2020).max(2040).optional()` en `createCourseSchema` y `updateCourseSchema`.
+  - Endpoint `GET /api/courses`: Soporte de query param `?academic_year=...` y ordenamiento nativo por `academic_year DESC, name ASC`.
+  - Endpoints `POST /api/courses` y `PUT /api/courses/:id`: Inferencia automática desde `start_date` o año actual y persistencia explícita.
+- **Frontend React (`frontend-antigravity`):**
+  - Interfaz `Course` en `academicService.ts` actualizada con `academic_year?: number;` y soporte polimórfico en `getCourses(academicYear?)` blindado contra `QueryFunctionContext` de TanStack Query.
+  - `CoursesList.tsx`:
+    - Pestañas de filtrado dinámico por píldoras (`Todos`, `Ciclo 2027`, `Ciclo 2026`, etc.).
+    - Badge morado `🏷️ Ciclo {year}` en cada tarjeta de curso.
+    - Selector numérico `Ciclo / Año Lectivo *` en el modal de creación y edición.
+- **Suite de Pruebas Pre-Despliegue:**
+  - Verificación automatizada de 9 pruebas en contenedor aislado `test-backend` validando autenticación, listados con año numérico, filtros 2026/2027, creación 2028, actualización a 2029, reclasificación y limpieza (100% aprobado).
+- **Actualización de Reglas de Gobernanza en [`AGENTS.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/AGENTS.md):**
+  - **Regla 0:** Aprobación obligatoria y propuesta previa antes de realizar modificaciones.
+  - **Regla 6:** Verificación y actualización obligatoria de la Build y Versión ante cambios significativos.
+
 
 
 

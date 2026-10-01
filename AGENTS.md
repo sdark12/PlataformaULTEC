@@ -109,6 +109,11 @@ When performing a version bump, the following **5 files** must be updated simult
 5. `backend-insforge/src/controllers/appVersion.controller.ts` (`version`, `versionCode`)
 6. `memory.md` (Update current active version and changelog)
 
+### 6. Build Verification & Automatic Increment Policy (CRITICAL RULE)
+- **VERIFICAR, COMPARAR Y ACTUALIZAR BUILD ANTE CAMBIOS SIGNIFICATIVOS:** Cada vez que se desarrolle una funcionalidad nueva, se modifique el esquema de base de datos, se agreguen campos a entidades clave, o se solucionen incidencias críticas que impacten la lógica de negocio o la experiencia de usuario, el agente **DEBE verificar la Build y Versión actual**, compararla con el alcance de las modificaciones realizadas, y actualizar la numeración correlativa de la Build (ejemplo: Build 35 -> Build 36) y la versión semántica (ejemplo: v1.2.1 -> v1.2.2).
+- Esta actualización debe ejecutarse de forma sincronizada y obligatoria en los 5 archivos del protocolo anterior y registrarse con sus notas de versión en `memory.md`.
+
+
 ---
 
 ## 5. Prohibited Operations & Operational Boundaries
