@@ -384,6 +384,10 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 - **Verificación Pública QR (`/verify-student/:code`):**
   - Escaneable desde cámaras de celular o lectores de control de acceso en portería.
   - Muestra el estado oficial de matrícula, sede, ciclo escolar y un distintivo de seguridad que confirma si el alumno cuenta con credencial física oficial entregada por administración.
+- **Resolución de Error PGRST200 (Batch Hydration Pattern):**
+  - La tabla `document_authorizations` almacena `student_id` como `varchar(255)` sin llave foránea explícita hacia `students(id)`.
+  - Las consultas directas con sintaxis embebida de PostgREST (`students:student_id(...)`) fallaban con `PGRST200`.
+  - Se implementó el patrón de **Batch Hydration** en [`credentials.controller.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/controllers/credentials.controller.ts) (consultando primero `document_authorizations`, extrayendo los IDs únicos de alumnos e hidratando en lote desde `students` junto a sus sedes y matrículas en memoria), blindando `getCredentialRequests`, `updateCredentialRequestStatus` y `getStudentCredentialCard`.
 
 ---
 
