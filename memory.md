@@ -1,8 +1,9 @@
 # MEMORY.md — Base de Conocimiento y Memoria Operativa de Plataforma ULTEC
 
 > **REGLA DE ORO DE DESARROLLO (MANDATORY OPERATIONAL RULE):**
-> 1. **Lectura Previa Obligatoria:** Este archivo DEBE ser consultado antes de realizar cualquier cambio arquitectónico, modificar la base de datos, alterar el backend o refactorizar flujos en el frontend.
-> 2. **Actualización Continua:** Al concluir cada fase de trabajo, corregir un bug de infraestructura o agregar una nueva característica, este archivo DEBE ser actualizado con el nuevo estado, versión y lecciones aprendidas.
+> 1. **Instrucciones Rápidas y Estándares de Codificación:** Consultar [`AGENTS.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/AGENTS.md) para comandos de compilación, convenciones de arquitectura y límites de seguridad del sistema.
+> 2. **Memoria Operativa e Histórica:** Este archivo (`memory.md`) almacena la bitácora de despliegues, infraestructura VPS en vivo, topología Docker y estado de la Hoja de Ruta institucional.
+> 3. **Actualización Continua:** Al concluir cada fase de trabajo, corregir un bug de infraestructura o agregar una nueva característica, este archivo DEBE ser actualizado con el nuevo estado, versión y lecciones aprendidas.
 
 ---
 
@@ -339,6 +340,10 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Generación de credenciales físicas en formato estándar PVC CR80 con alta resolución e impresión térmica/láser.
   - Registro de entrega presencial con sello de `delivered_by` y `delivered_at`.
   - Verificación pública QR avanzada en `/verify-student/:code` que certifica la validez académica y la posesión de credencial física entregada por administración.
+- [ ] **Fase 7: Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción** (Próxima Fase `v1.3.0`)
+  - Semáforo de riesgo de deserción por ausentismo y bajo rendimiento académico acumulado.
+  - Módulo de análisis de cartera vencida, morosidad por sede y proyección de recaudación mensual.
+  - Exportación de reportes analíticos para dirección y recordatorios inteligentes de cobro.
 
 ---
 
