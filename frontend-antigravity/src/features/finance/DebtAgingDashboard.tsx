@@ -6,6 +6,7 @@ import {
     Search, Building2, MessageSquare, Clock
 } from 'lucide-react';
 import { getDebtAgingReport } from './intelligenceService';
+import { getCourses } from '../academic/academicService';
 import type { TopDebtor } from '../../types/intelligence';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,6 +18,13 @@ export const DebtAgingDashboard = () => {
     const [selectedCourse, setSelectedCourse] = useState<string>('all');
     const [isExportingPdf, setIsExportingPdf] = useState(false);
     const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+    // Full catalog of courses for stable dropdown
+    const { data: coursesList } = useQuery({
+        queryKey: ['academicCoursesList'],
+        queryFn: getCourses,
+        staleTime: 1000 * 60 * 5,
+    });
 
     const { data, isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['debtAgingReport', selectedCourse],
@@ -40,12 +48,15 @@ export const DebtAgingDashboard = () => {
     const branchComparison = data?.branch_comparison || [];
     const topDebtors = data?.top_debtors || [];
 
-    // Unique courses list from top debtors
-    const uniqueCourses = useMemo(() => {
+    // Stable courses list combining academicService and topDebtors fallback
+    const availableCourses = useMemo(() => {
+        if (coursesList && coursesList.length > 0) {
+            return coursesList.map(c => ({ id: c.id, name: c.name }));
+        }
         const coursesSet = new Set<string>();
         topDebtors.forEach(d => d.courses.forEach(c => coursesSet.add(c)));
-        return Array.from(coursesSet).sort();
-    }, [topDebtors]);
+        return Array.from(coursesSet).sort().map(name => ({ id: name, name }));
+    }, [coursesList, topDebtors]);
 
     // Filtered debtors for table
     const filteredDebtors = useMemo(() => {
@@ -414,8 +425,8 @@ export const DebtAgingDashboard = () => {
                         className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-blue"
                     >
                         <option value="all">Todas las Carreras</option>
-                        {uniqueCourses.map(c => (
-                            <option key={c} value={c}>{c}</option>
+                        {availableCourses.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                     </select>
 

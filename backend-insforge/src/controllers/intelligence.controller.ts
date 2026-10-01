@@ -26,6 +26,44 @@ function getDaysOverdue(monthStr: string): number {
     }
 }
 
+/**
+ * Helper to resolve course UUIDs from either a UUID string or course name
+ */
+async function resolveCourseIds(courseParam?: any, branchId?: string | null): Promise<string[] | null> {
+    if (!courseParam || courseParam === 'all' || courseParam === 'undefined' || courseParam === 'null') {
+        return null; // Sin filtro de curso
+    }
+
+    const trimmed = String(courseParam).trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+
+    if (isUuid) {
+        return [trimmed];
+    }
+
+    // Es un nombre textual de carrera (ej. "TAC 1-2026", "Programación 1")
+    try {
+        let query = adminClient
+            .from('courses')
+            .select('id')
+            .ilike('name', trimmed);
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.warn('Warning looking up course by name in resolveCourseIds:', error);
+            return [];
+        }
+        return (data || []).map((c: any) => c.id);
+    } catch (err) {
+        console.error('Error resolving course IDs by name:', err);
+        return [];
+    }
+}
+
 // =========================================================================
 // 1. EARLY WARNING SYSTEM (EWS) - SEMÁFORO DE RETENCIÓN ESTUDIANTIL
 // =========================================================================
@@ -42,6 +80,24 @@ export const getEarlyWarningReport = async (req: Request, res: Response) => {
     }
 
     try {
+        const matchedCourseIds = await resolveCourseIds(course_id, branchId);
+        if (matchedCourseIds !== null && matchedCourseIds.length === 0) {
+            // Se especificó un curso pero no coincidió con ninguno en la base de datos
+            return res.json({
+                summary: {
+                    total_students: 0,
+                    critical_count: 0,
+                    moderate_count: 0,
+                    low_count: 0,
+                    critical_pct: 0,
+                    moderate_pct: 0,
+                    low_pct: 0,
+                    avg_retention_index: 100,
+                },
+                students: []
+            });
+        }
+
         // 1. Fetch active students with active enrollments
         let studentQuery = adminClient
             .from('students')
@@ -69,8 +125,8 @@ export const getEarlyWarningReport = async (req: Request, res: Response) => {
         if (branchId) {
             studentQuery = studentQuery.eq('branch_id', branchId);
         }
-        if (course_id && course_id !== 'all') {
-            studentQuery = studentQuery.eq('enrollments.course_id', course_id as string);
+        if (matchedCourseIds && matchedCourseIds.length > 0) {
+            studentQuery = studentQuery.in('enrollments.course_id', matchedCourseIds);
         }
 
         const { data: rawStudents, error: studentsError } = await studentQuery;
@@ -432,6 +488,26 @@ export const getDebtAgingReport = async (req: Request, res: Response) => {
     }
 
     try {
+        const matchedCourseIds = await resolveCourseIds(course_id, branchId);
+        if (matchedCourseIds !== null && matchedCourseIds.length === 0) {
+            // Se especificó un curso pero no coincidió con ninguno en la base de datos
+            return res.json({
+                summary: {
+                    total_debt: 0,
+                    total_debtors: 0,
+                    total_students: 0,
+                    delinquency_rate: 0,
+                    current_month_expected: 0,
+                    current_month_collected: 0,
+                    collection_rate_pct: 0,
+                    next_month_projection: 0
+                },
+                aging_buckets: [],
+                top_debtors: [],
+                branch_comparison: []
+            });
+        }
+
         // 1. Fetch active enrollments with course fee and student data
         let enrollQuery = adminClient
             .from('enrollments')
@@ -459,8 +535,8 @@ export const getDebtAgingReport = async (req: Request, res: Response) => {
         if (branchId) {
             enrollQuery = enrollQuery.eq('branch_id', branchId);
         }
-        if (course_id && course_id !== 'all') {
-            enrollQuery = enrollQuery.eq('course_id', course_id as string);
+        if (matchedCourseIds && matchedCourseIds.length > 0) {
+            enrollQuery = enrollQuery.in('course_id', matchedCourseIds);
         }
 
         const { data: enrollments, error: enrollError } = await enrollQuery;
@@ -495,8 +571,16 @@ export const getDebtAgingReport = async (req: Request, res: Response) => {
             paymentsQuery = paymentsQuery.eq('enrollments.branch_id', branchId);
         }
 
-        const { data: paymentsData } = await paymentsQuery;
-        const currentMonthCollected = paymentsData?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
+        if (matchedCourseIds !== null && enrollmentIds.length > 0) {
+            paymentsQuery = paymentsQuery.in('enrollment_id', enrollmentIds);
+        }
+
+        const { data: paymentsData } = (matchedCourseIds !== null && enrollmentIds.length === 0)
+            ? { data: [] }
+            : await paymentsQuery;
+
+        const paymentsList: any[] = (paymentsData as any) || [];
+        const currentMonthCollected = paymentsList.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
         const collectionRate = currentMonthExpected > 0 
             ? Math.min(100, Math.round((currentMonthCollected / currentMonthExpected) * 1000) / 10) 

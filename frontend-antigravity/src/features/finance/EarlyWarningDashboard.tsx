@@ -6,6 +6,7 @@ import {
     FileText, Download, Loader2, Sparkles
 } from 'lucide-react';
 import { getEarlyWarningReport } from './intelligenceService';
+import { getCourses } from '../academic/academicService';
 import { InterventionModal } from './InterventionModal';
 import type { StudentRiskProfile, RiskLevel } from '../../types/intelligence';
 import jsPDF from 'jspdf';
@@ -22,6 +23,13 @@ export const EarlyWarningDashboard = () => {
     const [isExportingPdf, setIsExportingPdf] = useState(false);
     const [isExportingExcel, setIsExportingExcel] = useState(false);
 
+    // Full catalog of courses for stable dropdown
+    const { data: coursesList } = useQuery({
+        queryKey: ['academicCoursesList'],
+        queryFn: getCourses,
+        staleTime: 1000 * 60 * 5,
+    });
+
     const { data, isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['earlyWarningReport', selectedCourse],
         queryFn: () => getEarlyWarningReport({ 
@@ -29,13 +37,16 @@ export const EarlyWarningDashboard = () => {
         }),
     });
 
-    // Unique courses list for dropdown
-    const uniqueCourses = useMemo(() => {
+    // Stable courses list combining academicService and student courses fallback
+    const availableCourses = useMemo(() => {
+        if (coursesList && coursesList.length > 0) {
+            return coursesList.map(c => ({ id: c.id, name: c.name }));
+        }
         if (!data?.students) return [];
         const coursesSet = new Set<string>();
         data.students.forEach(s => s.courses.forEach(c => coursesSet.add(c)));
-        return Array.from(coursesSet).sort();
-    }, [data?.students]);
+        return Array.from(coursesSet).sort().map(name => ({ id: name, name }));
+    }, [coursesList, data?.students]);
 
     // Client-side filtering for fast interactive search & risk tab
     const filteredStudents = useMemo(() => {
@@ -346,8 +357,8 @@ export const EarlyWarningDashboard = () => {
                         className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-blue"
                     >
                         <option value="all">Todas las Carreras / Cursos</option>
-                        {uniqueCourses.map(c => (
-                            <option key={c} value={c}>{c}</option>
+                        {availableCourses.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                     </select>
 
