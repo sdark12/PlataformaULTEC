@@ -14,13 +14,24 @@ export const enrollStudent = async (req: Request, res: Response) => {
         scholarship_reason
     } = req.body;
     const user = req.currentUser;
-    const finalBranchId = user?.role === 'superadmin'
+    let finalBranchId = user?.role === 'superadmin'
         ? (branch_id || getEffectiveBranchId(req))
-        : (user?.branch_id || null);
+        : (user?.branch_id || branch_id || getEffectiveBranchId(req));
 
     try {
         // Use the authenticated client attached by middleware or adminClient
         const db = req.dbUserClient || adminClient || client;
+
+        // Ensure branch_id is never null (fallback to student's branch or default branch)
+        if (!finalBranchId && student_id) {
+            const { data: std } = await db.from('students').select('branch_id').eq('id', student_id).maybeSingle();
+            if (std?.branch_id) {
+                finalBranchId = std.branch_id;
+            } else {
+                const { data: fb } = await db.from('branches').select('id').limit(1).maybeSingle();
+                if (fb?.id) finalBranchId = fb.id;
+            }
+        }
 
         // 1. Check if subscription already exists
         const { data: existing, error: checkError } = await db
@@ -117,7 +128,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
 export const getEnrollments = async (req: Request, res: Response) => {
     const branchId = getEffectiveBranchId(req);
     const db = req.dbUserClient || adminClient || client;
-    const { student_id } = req.query;
+    const { student_id, academic_year } = req.query;
     try {
         let query = db
             .from('enrollments')
@@ -135,7 +146,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
                 scholarship_amount,
                 scholarship_reason,
                 students (id, full_name, personal_code, identification_document, academy_code),
-                courses (id, name, description, monthly_fee),
+                courses (id, name, description, monthly_fee, academic_year),
                 course_schedules (id, grade, day_of_week, start_time, end_time)
             `)
             .order('enrollment_date', { ascending: false });
@@ -151,7 +162,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
         if (error) throw error;
 
         // Flatten structure for frontend
-        const flatData = (data || []).map((item: any) => ({
+        let flatData = (data || []).map((item: any) => ({
             id: item.id,
             branch_id: item.branch_id,
             student_id: item.student_id,
@@ -168,12 +179,17 @@ export const getEnrollments = async (req: Request, res: Response) => {
             student_code: item.students?.personal_code || item.students?.academy_code || item.students?.identification_document || 'N/A',
             identification_document: item.students?.identification_document || null,
             course_name: item.courses?.name || 'Sin curso',
+            academic_year: item.courses?.academic_year || 2026,
             monthly_fee: Number(item.courses?.monthly_fee || 0),
             schedule_details: item.course_schedules ? `${item.course_schedules.grade ? item.course_schedules.grade + ' - ' : ''}${item.course_schedules.day_of_week || ''} ${item.course_schedules.start_time || ''}`.trim() : null,
             students: item.students,
             courses: item.courses,
             course_schedules: item.course_schedules
         }));
+
+        if (academic_year && academic_year !== 'ALL') {
+            flatData = flatData.filter((item: any) => String(item.academic_year) === String(academic_year));
+        }
 
         res.json(flatData);
     } catch (error) {

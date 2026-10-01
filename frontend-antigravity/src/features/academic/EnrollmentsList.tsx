@@ -47,6 +47,8 @@ const EnrollmentsList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'promoted' | 'inactive'>('active');
     const [filterCourse, setFilterCourse] = useState('');
+    const [selectedYearFilter, setSelectedYearFilter] = useState('ALL');
+    const [modalYearFilter, setModalYearFilter] = useState('ALL');
 
     const user = getCurrentUser();
 
@@ -83,6 +85,21 @@ const EnrollmentsList: React.FC = () => {
         enabled: !user?.branch_id && isModalOpen
     });
 
+    // Distinct cycles for tabs and modal filter
+    const distinctCycles = useMemo(() => {
+        const years = new Set<string>();
+        const current = new Date().getFullYear();
+        years.add(String(current));
+        years.add(String(current + 1));
+        courses.forEach((c: any) => {
+            if (c.academic_year) years.add(String(c.academic_year));
+        });
+        enrollments.forEach((e: any) => {
+            if (e.academic_year) years.add(String(e.academic_year));
+        });
+        return Array.from(years).sort((a, b) => Number(b) - Number(a));
+    }, [courses, enrollments]);
+
     // Extract unique course names
     const uniqueCourses = useMemo(() => {
         return Array.from(new Set(enrollments.map((e: any) => e.course_name).filter(Boolean))).sort();
@@ -108,13 +125,17 @@ const EnrollmentsList: React.FC = () => {
     }, [students]);
 
     const courseSelectOptions: SearchableOption[] = useMemo(() => {
-        return courses.map((c: any) => ({
+        let list = courses;
+        if (modalYearFilter && modalYearFilter !== 'ALL') {
+            list = list.filter((c: any) => String(c.academic_year || 2026) === modalYearFilter);
+        }
+        return list.map((c: any) => ({
             value: c.id,
             label: c.name,
-            badge: c.code || undefined,
-            subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes` : undefined
+            badge: c.academic_year ? `Ciclo ${c.academic_year}` : (c.code || undefined),
+            subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes${c.academic_year ? ` • Ciclo ${c.academic_year}` : ''}` : undefined
         }));
-    }, [courses]);
+    }, [courses, modalYearFilter]);
 
     // Mutations
     const createMutation = useMutation({
@@ -182,6 +203,7 @@ const EnrollmentsList: React.FC = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingId(null);
+        setModalYearFilter('ALL');
         setNewEnrollment({ 
             student_id: '', 
             course_id: '', 
@@ -238,7 +260,8 @@ const EnrollmentsList: React.FC = () => {
             const matchesSearch =
                 (e.student_name && e.student_name.toLowerCase().includes(searchLower)) ||
                 (e.student_code && e.student_code.toLowerCase().includes(searchLower)) ||
-                (e.course_name && e.course_name.toLowerCase().includes(searchLower));
+                (e.course_name && e.course_name.toLowerCase().includes(searchLower)) ||
+                (e.academic_year && String(e.academic_year).includes(searchLower));
 
             const matchesStatus =
                 filterStatus === 'all' ? true :
@@ -247,10 +270,11 @@ const EnrollmentsList: React.FC = () => {
                 (e.is_active === false && e.academic_status !== 'PROMOTED');
 
             const matchesCourse = filterCourse ? e.course_name === filterCourse : true;
+            const matchesYear = selectedYearFilter === 'ALL' || String(e.academic_year || 2026) === selectedYearFilter;
 
-            return matchesSearch && matchesStatus && matchesCourse;
+            return matchesSearch && matchesStatus && matchesCourse && matchesYear;
         });
-    }, [enrollments, searchTerm, filterStatus, filterCourse]);
+    }, [enrollments, searchTerm, filterStatus, filterCourse, selectedYearFilter]);
 
     if (isLoading) {
         return (
@@ -389,6 +413,36 @@ const EnrollmentsList: React.FC = () => {
                 </div>
             </div>
 
+            {/* Filtros de Ciclo Lectivo */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 shrink-0 mr-1">
+                    <Calendar className="h-3.5 w-3.5 text-purple-500" /> Ciclo:
+                </span>
+                <button
+                    onClick={() => setSelectedYearFilter('ALL')}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        selectedYearFilter === 'ALL'
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+                            : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-white/5'
+                    }`}
+                >
+                    Todos los Ciclos
+                </button>
+                {distinctCycles.map((yr: string) => (
+                    <button
+                        key={yr}
+                        onClick={() => setSelectedYearFilter(yr)}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                            selectedYearFilter === yr
+                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+                                : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-white/5'
+                        }`}
+                    >
+                        Ciclo {yr}
+                    </button>
+                ))}
+            </div>
+
             {/* Filtros */}
             <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between bg-white/50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-sm">
                 <div className="flex flex-1 gap-3 flex-col sm:flex-row">
@@ -396,7 +450,7 @@ const EnrollmentsList: React.FC = () => {
                         <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 group-focus-within:text-brand-blue transition-colors" />
                         <input
                             type="text"
-                            placeholder="Buscar por estudiante, código o curso..."
+                            placeholder="Buscar por estudiante, código, curso o ciclo (ej. 2026)..."
                             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue outline-none transition-all placeholder:text-slate-400"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -531,6 +585,12 @@ const EnrollmentsList: React.FC = () => {
                                     <BookOpen className="h-3.5 w-3.5" />
                                     <span>{enrollment.course_name}</span>
                                 </div>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-xs border border-purple-500/20">
+                                    <Calendar className="h-3 w-3" />
+                                    Ciclo {enrollment.academic_year || 2026}
+                                </span>
+
+
                                 {enrollment.scholarship_type && enrollment.scholarship_type !== 'NONE' && (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30" title={enrollment.scholarship_reason || 'Beca asignada'}>
                                         {enrollment.scholarship_type === 'PERCENTAGE' ? `Beca ${enrollment.scholarship_amount}%` : `Beca Q${enrollment.scholarship_amount}`}
@@ -624,6 +684,10 @@ const EnrollmentsList: React.FC = () => {
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-lg text-xs font-bold">
                                                 {enrollment.course_name}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-[11px] border border-purple-500/20">
+                                                <Calendar className="h-3 w-3" />
+                                                Ciclo {enrollment.academic_year || 2026}
                                             </span>
                                             {enrollment.scholarship_type && enrollment.scholarship_type !== 'NONE' && (
                                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30" title={enrollment.scholarship_reason || 'Beca Asignada'}>
@@ -776,9 +840,41 @@ const EnrollmentsList: React.FC = () => {
 
                             {/* Course Picker with Search */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                     Curso *
-                                </label>
+                                    </label>
+                                    {!editingId && distinctCycles.length > 1 && (
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[10px] text-slate-400 font-medium mr-1">Ciclo:</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalYearFilter('ALL')}
+                                                className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                                    modalYearFilter === 'ALL'
+                                                        ? 'bg-blue-600 text-white shadow-xs'
+                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                Todos
+                                            </button>
+                                            {distinctCycles.map((year) => (
+                                                <button
+                                                    key={year}
+                                                    type="button"
+                                                    onClick={() => setModalYearFilter(year)}
+                                                    className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                                        modalYearFilter === year
+                                                            ? 'bg-blue-600 text-white shadow-xs'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    {year}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 {editingId ? (
                                     <div className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {enrollments.find((e: any) => e.id === editingId)?.course_name || 'Curso'}
@@ -789,7 +885,7 @@ const EnrollmentsList: React.FC = () => {
                                         value={newEnrollment.course_id}
                                         onChange={(val) => setNewEnrollment({ ...newEnrollment, course_id: val, schedule_id: '' })}
                                         placeholder="Buscar y seleccionar curso..."
-                                        searchPlaceholder="Escribe el nombre del curso..."
+                                        searchPlaceholder="Escribe el nombre del curso o año..."
                                         required
                                     />
                                 )}

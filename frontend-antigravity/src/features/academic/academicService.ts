@@ -51,6 +51,7 @@ export interface Enrollment {
     student_name: string;
     course_name: string;
     enrollment_date: string;
+    academic_year?: number;
     monthly_fee?: number;
     scholarship_type?: string;
     scholarship_amount?: number;

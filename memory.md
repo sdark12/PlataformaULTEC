@@ -12,7 +12,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.2.2` (Build 36)** — Desplegada en producción el 30 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.2.3` (Build 37)** — Desplegada en producción el 30 de Septiembre de 2026.
 
 ---
 
@@ -444,6 +444,31 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 - **Actualización de Reglas de Gobernanza en [`AGENTS.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/AGENTS.md):**
   - **Regla 0:** Aprobación obligatoria y propuesta previa antes de realizar modificaciones.
   - **Regla 6:** Verificación y actualización obligatoria de la Build y Versión ante cambios significativos.
+
+---
+
+## 18. Segmentación por Ciclo Lectivo en Matrículas e Inscripción Ágil (v1.2.3 Build 37)
+
+- **Motivación:**
+  - Tras implementar los ciclos lectivos (`academic_year`) en cursos (Build 36), el módulo de Matrículas e Inscripción (`/enrollments`) requería integración nativa para identificar el año de cada matrícula, buscar alumnos por ciclo escolar y facilitar la selección de cursos al inscribir estudiantes.
+- **Backend Express (`backend-insforge`):**
+  - [`enrollments.controller.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/controllers/enrollments.controller.ts):
+    - Extensión del join relacional con `courses`: `courses (id, name, description, monthly_fee, academic_year)`.
+    - Flattening de datos con fallback defensivo: `academic_year: item.courses?.academic_year || 2026`.
+    - Soporte de filtrado por ciclo lectivo en la API: `GET /api/enrollments?academic_year=2026`.
+- **Frontend React (`frontend-antigravity`):**
+  - [`academicService.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/academic/academicService.ts): Extensión de la interfaz `Enrollment` con `academic_year?: number;`.
+  - [`EnrollmentsList.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/academic/EnrollmentsList.tsx):
+    - Barra de herramientas con filtros rápidos por píldora de ciclo lectivo (`Todos`, `Ciclo 2027`, `Ciclo 2026`).
+    - Búsqueda en tiempo real habilitada por ciclo lectivo (ej. escribir `2026` o `2027` en la barra de búsqueda general filtra automáticamente las matrículas correspondientes).
+    - Badges visuales identificadores de ciclo en vista de tabla de escritorio y tarjetas móviles.
+    - Modal "Inscribir Estudiante":
+      - Selector por botones de ciclo escolar arriba del campo de curso (`[Todos] [2026] [2027]`).
+      - Inclusión de badge de ciclo y subtexto en las opciones del selector de cursos (`SearchableSelect`).
+      - Soporte de búsqueda por año dentro del autocompletador de cursos.
+- **Verificación y Pruebas Pre-Despliegue:**
+  - Compilación TypeScript frontend (`tsc -b && vite build`) y backend (`tsc`) con cero errores.
+  - Script de validación automatizado ejecutado contra la API en VPS verificando la persistencia y respuesta del campo `academic_year` y el correcto funcionamiento de los filtros.
 
 
 

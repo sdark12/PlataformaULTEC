@@ -4,19 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.2.2",
-    versionCode: 36,
+    version: "1.2.3",
+    versionCode: 37,
     minVersion: "1.0.0",
     releaseDate: "2026-09-30",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.2.2 - Ciclos Lectivos Nativos y Optimización BI",
+    title: "Actualización v1.2.3 - Matrículas por Ciclo Lectivo y Búsqueda Inteligente",
     releaseNotes: [
+        "Matrículas y Admisiones por Ciclo Lectivo: Filtrado rápido por año escolar (2026, 2027, Todos) en el listado de matrículas y badges visuales para identificar el ciclo de cada estudiante.",
+        "Inscripción Ágil y Segmentada: Selector interactivo de ciclo dentro del modal de inscripción y soporte para buscar cursos directamente por año o nombre.",
         "Gestión Integral de Ciclo Lectivo: Soporte nativo de año escolar en cursos con filtrado dinámico por pestañas y badges visuales.",
-        "Estabilización BI en ReportsHub: Resolución del error 500 al filtrar reportes analíticos por carreras específicas.",
-        "Optimización de Carnets y Credenciales: Implementación de Batch Hydration para consultas masivas de impresión segura.",
-        "Semáforo EWS y Alerta Temprana de Deserción: Algoritmo IRE de retención escolar y análisis de cartera vencida por antigüedad."
+        "Estabilización BI en ReportsHub: Resolución del error 500 al filtrar reportes analíticos por carreras específicas."
     ],
     isCritical: false
 };
