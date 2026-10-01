@@ -4,20 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.2.0",
-    versionCode: 34,
+    version: "1.3.0",
+    versionCode: 35,
     minVersion: "1.0.0",
-    releaseDate: "2026-09-29",
+    releaseDate: "2026-09-30",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.2.0 - Carnets Digitales Estudiantiles y Emisión Controlada",
+    title: "Actualización v1.3.0 - Inteligencia Institucional, Cartera Vencida y Alerta Temprana",
     releaseNotes: [
-        "Carnet Digital Oficial en Pantalla: Identificación estudiantil interactiva con efecto 3D flip card, marcas de agua antifalsificación y código QR institucional dinámico.",
-        "Seguridad Estricta Antifalsificación: Los estudiantes y tutores no pueden imprimir ni descargar carnets de forma descontrolada desde la app; todo carnet físico requiere solicitud formal.",
-        "Solicitud de Carnet Físico a Administración: Estudiantes y padres solicitan su carnet en línea indicando trámite inicial o reposición por extravío.",
-        "Módulo de Emisión y Entrega Presencial: Administración valida solicitudes, imprime en formato estándar PVC CR80 con alta resolución y registra la entrega presencial certificada con firma y fecha.",
-        "Verificación Pública QR Avanzada: El portal público de validación ahora corrobora si el alumno posee credencial física oficial entregada por administración."
+        "Semáforo de Alerta Temprana de Deserción Escolar (EWS): Algoritmo de Índice de Retención Escolar (IRE 0-100) que cruza asistencia (40%), promedio académico (35%), mora (20%) y disciplina (5%).",
+        "Bitácora de Intervención y Retención Estudiantil: Registro de llamadas, convenios de pago pactados, citas presenciales y tutorías con enlaces rápidos de WhatsApp institucional.",
+        "Análisis de Cartera Vencida y Antigüedad de Saldos (Aging Buckets): Desglose de morosidad en tramos de 0-30, 31-60, 61-90 y más de 90 días con proyección de facturación.",
+        "Centro de Reportes y BI Unificado: Tablero integrado en ReportsHub con métricas ejecutivas, tasa de cobranza mensual y exportación profesional en PDF y Excel."
     ],
     isCritical: false
 };

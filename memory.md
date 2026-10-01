@@ -12,7 +12,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.2.0` (Build 34)** — Desplegada en producción el 29 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.3.0` (Build 35)** — Desplegada en producción el 30 de Septiembre de 2026.
 
 ---
 
@@ -340,10 +340,13 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Generación de credenciales físicas en formato estándar PVC CR80 con alta resolución e impresión térmica/láser.
   - Registro de entrega presencial con sello de `delivered_by` y `delivered_at`.
   - Verificación pública QR avanzada en `/verify-student/:code` que certifica la validez académica y la posesión de credencial física entregada por administración.
-- [ ] **Fase 7: Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción** (Próxima Fase `v1.3.0`)
-  - Semáforo de riesgo de deserción por ausentismo y bajo rendimiento académico acumulado.
-  - Módulo de análisis de cartera vencida, morosidad por sede y proyección de recaudación mensual.
-  - Exportación de reportes analíticos para dirección y recordatorios inteligentes de cobro.
+- [x] **Fase 7: Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción** (v1.3.0 Build 35)
+  - Algoritmo de Índice de Retención Escolar (IRE 0-100) ponderando asistencia (40%), promedio académico (35%), mora (20%) y disciplina (5%).
+  - Semáforo de riesgo predictivo: 🔴 Crítico (< 60), 🟡 Moderado (60-79) y 🟢 Bajo Riesgo (≥ 80).
+  - Bitácora de intervenciones en PostgreSQL con tabla `student_interventions` y enlaces de WhatsApp oficial.
+  - Matriz de antigüedad de saldos (Aging Buckets: 0-30, 31-60, 61-90, 90+ días) y tasa de cobranza mensual.
+  - Tablero ejecutivo unificado en `ReportsHub.tsx` con exportación en PDF y Excel (.xlsx).
+- [ ] **Fase 8: Auditoría Financiera Avanzada, Facturación Electrónica SAT (FEL) y Portal Docente de Evaluaciones** (Próxima Fase `v1.4.0`)
 
 ---
 
@@ -381,6 +384,33 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 - **Verificación Pública QR (`/verify-student/:code`):**
   - Escaneable desde cámaras de celular o lectores de control de acceso en portería.
   - Muestra el estado oficial de matrícula, sede, ciclo escolar y un distintivo de seguridad que confirma si el alumno cuenta con credencial física oficial entregada por administración.
+
+---
+
+## 16. Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción (v1.3.0 Build 35)
+
+- **Arquitectura de Detección Temprana y Retención Escolar:**
+  - **Algoritmo del Índice de Retención Escolar (IRE 0-100):** Cálculo ponderado multidimensional que cruza en una sola pasada:
+    - **Asistencia (40%):** Asistencia regular (≥85%), faltas intermedias y penalización por 3 o más ausencias consecutivas.
+    - **Rendimiento Académico (35%):** Promedio de calificaciones y conteo de materias/unidades reprobadas (< 60 pts).
+    - **Salud Financiera (20%):** Meses acumulados en mora a través de `financial_status`.
+    - **Disciplina Institucional (5%):** Reportes conductuales abiertos de severidad alta/media.
+  - **Semáforo Predictivo:**
+    - 🔴 **Riesgo Crítico (IRE < 60 pts):** Deserción inminente que requiere intervención prioritaria de dirección.
+    - 🟡 **Riesgo Moderado (IRE 60-79 pts):** Alumnos en observación preventiva por ausencias o primera cuota vencida.
+    - 🟢 **Bajo Riesgo (IRE ≥ 80 pts):** Trayectoria y retención saludable.
+- **Bitácora de Intervenciones Estudiantiles:**
+  - Tabla relacional en PostgreSQL `student_interventions` (`student_id`, `branch_id`, `created_by`, `intervention_type`, `notes`, `commitment`, `follow_up_date`, `status`).
+  - Modal interactivo [`InterventionModal.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/InterventionModal.tsx) para registrar llamadas, citas presenciales, acuerdos o tutorías.
+  - Botón de enlace directo a WhatsApp institucional con mensaje pre-armado dirigido al tutor o padre de familia.
+- **Análisis de Cartera Vencida y Antigüedad de Saldos (Aging Debt):**
+  - Desglose en 4 tramos de mora: **1 a 30 días**, **31 a 60 días**, **61 a 90 días** y **Más de 90 días**.
+  - Cálculo de la **Tasa de Cobranza Mensual (%)** contra la meta institucional de matrículas activas.
+  - Listado priorizado de Top 15 alumnos con mayor deuda y recordatorios de cobro respetuoso por WhatsApp.
+- **Tablero Unificado en [`ReportsHub.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/ReportsHub.tsx):**
+  - Pestaña de alto nivel `Inteligencia BI` con sub-conmutador entre `Alerta Temprana (EWS)` y `Cartera Vencida (Aging)`.
+  - Exportación ejecutiva completa a **PDF** (orientación horizontal para junta directiva) y **Excel** (.xlsx).
+
 
 
 
