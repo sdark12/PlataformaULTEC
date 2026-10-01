@@ -470,6 +470,25 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Compilación TypeScript frontend (`tsc -b && vite build`) y backend (`tsc`) con cero errores.
   - Script de validación automatizado ejecutado contra la API en VPS verificando la persistencia y respuesta del campo `academic_year` y el correcto funcionamiento de los filtros.
 
+---
+
+## 19. Integración de Agent Skills y Gobernanza SDD (Spec-Driven Development)
+
+- **Motivación y Contexto:**
+  - Adopción de las mejores prácticas de la industria (curso "El Nuevo Programador" - Big School / OpenCode) para erradicar el *vibe coding* y estandarizar la ingeniería de agentes en Plataforma ULTEC.
+- **5 Agent Skills Integradas en [`.agent/skills/`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/.agent/skills/):**
+  1. `frontend-design` (Anthropic Oficial adaptada): Diseño intencional con Tailwind CSS, identidad visual institucional, paleta de colores y modo oscuro.
+  2. `systematic-debugging` (Jesse Vincent / Superpowers): Metodología de depuración en 4 fases, Ley de Hierro ("no hay fix sin causa raíz"), instrumentación multicomponente y regla de parada tras 3 intentos.
+  3. `local-dates` (Interna ULTEC): Estandarización de fechas en zona `America/Tegucigalpa` (UTC-6) para backend, frontend, PostgreSQL y cron jobs.
+  4. `ultec-security-auditor` (Interna ULTEC): Auditoría de aislamiento multi-sede (`branch_id`), control de roles y prevención de escalación de privilegios.
+  5. `sdd-spec-workflow` (Interna ULTEC): Flujo formal de desarrollo guiado por especificaciones con sintaxis EARS.
+- **Constitución Institucional ([`docs/constitution.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/docs/constitution.md)):**
+  - 6 principios innegociables: Producción y datos sagrados, aislamiento multi-sede, hora local institucional, pruebas como puerta infranqueable, la spec manda (Regla 0) y trazabilidad de versión (Regla 6).
+- **Repositorio de Especificaciones ([`specs/`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/specs/)):**
+  - Primera especificación modelo formalizada en `specs/001-ciclos-lectivos-y-matriculas/` con `spec.md` (requisitos EARS), `plan.md` y `tasks.md`.
+- **Actualización de [`AGENTS.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/AGENTS.md):**
+  - **Regla 7:** Política obligatoria de Spec-Driven Development (SDD) para funcionalidades grandes o refactorizaciones mayores.
+
 
 
 

@@ -1,7 +1,9 @@
 # AGENTS.md — Plataforma ULTEC (Ultra Tecnología)
 
 > Standard AI Agent Guidelines for Plataforma ULTEC.
-> For active deployment history, live VPS infrastructure, and roadmap progress, see [memory.md](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/memory.md).
+> - **Inviolable Constitution:** Consult [`docs/constitution.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/docs/constitution.md) before proposing or implementing changes.
+> - **Operational Memory & Roadmap:** See [`memory.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/memory.md) for live deployment history and VPS topology.
+> - **Feature Specifications (SDD):** See [`specs/`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/specs/) for active and historical feature specs.
 
 ---
 
@@ -113,6 +115,14 @@ When performing a version bump, the following **5 files** must be updated simult
 - **VERIFICAR, COMPARAR Y ACTUALIZAR BUILD ANTE CAMBIOS SIGNIFICATIVOS:** Cada vez que se desarrolle una funcionalidad nueva, se modifique el esquema de base de datos, se agreguen campos a entidades clave, o se solucionen incidencias críticas que impacten la lógica de negocio o la experiencia de usuario, el agente **DEBE verificar la Build y Versión actual**, compararla con el alcance de las modificaciones realizadas, y actualizar la numeración correlativa de la Build (ejemplo: Build 35 -> Build 36) y la versión semántica (ejemplo: v1.2.1 -> v1.2.2).
 - Esta actualización debe ejecutarse de forma sincronizada y obligatoria en los 5 archivos del protocolo anterior y registrarse con sus notas de versión en `memory.md`.
 
+### 7. Spec-Driven Development (SDD) & EARS Syntax Policy
+- **ESPECIFICACIONES FORMALES PARA CARACTERÍSTICAS NUEVAS O REFACTORS MAYORES:**
+  - Toda nueva funcionalidad o refactorización que involucre más de 2 archivos debe estructurarse mediante la metodología **Spec-Driven Development** (consultar skill [`.agent/skills/sdd-spec-workflow/SKILL.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/.agent/skills/sdd-spec-workflow/SKILL.md)).
+  - Crear la carpeta correlativa en `specs/NNN-nombre/` con `spec.md`, `plan.md` y `tasks.md`.
+  - Redactar los requisitos funcionales en sintaxis **EARS** (`CUANDO... EL SISTEMA...`, `SI... ENTONCES...`, `MIENTRAS...`, `EL SISTEMA...`) para erradicar ambigüedades.
+  - Presentar la especificación al usuario como propuesta formal (Regla 0) antes de escribir código.
+  - Para correcciones puntuales de errores (hotfixes), aplicar directamente la skill [`.agent/skills/systematic-debugging/SKILL.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/.agent/skills/systematic-debugging/SKILL.md).
+
 
 ---
 
@@ -128,6 +138,11 @@ When performing a version bump, the following **5 files** must be updated simult
 
 ```
 PlataformaULTEC/
+├── docs/
+│   └── constitution.md        # Non-negotiable principles of the institution & codebase
+├── specs/                     # Spec-Driven Development specs (spec.md, plan.md, tasks.md)
+│   └── 001-ciclos-lectivos-y-matriculas/
+├── .agent/skills/             # Curated agent skills (frontend-design, systematic-debugging, etc.)
 ├── AGENTS.md                  # This file (Immediate instructions & standards for AI Agents)
 ├── memory.md                  # Operational memory, changelog, VPS layout & roadmap
 ├── frontend-antigravity/       # React 19 + Vite + Tailwind SPA & Capacitor Android
