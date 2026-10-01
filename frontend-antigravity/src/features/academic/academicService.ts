@@ -2,9 +2,11 @@ import api from '../../services/apiClient';
 
 export interface Course {
     id: string;
+    branch_id?: string;
     name: string;
     description: string;
     monthly_fee: number;
+    academic_year?: number;
     start_date?: string;
     end_date?: string;
     is_active?: boolean;
@@ -89,8 +91,12 @@ export interface Announcement {
     course_name?: string | null;
 }
 
-export const getCourses = async () => {
-    const response = await api.get<Course[]>('/api/courses');
+export const getCourses = async (academicYear?: number | string | any): Promise<Course[]> => {
+    const params = new URLSearchParams();
+    if (academicYear && (typeof academicYear === 'number' || typeof academicYear === 'string') && academicYear !== 'ALL') {
+        params.append('academic_year', academicYear.toString());
+    }
+    const response = await api.get<Course[]>('/api/courses', { params });
     return response.data;
 };
 

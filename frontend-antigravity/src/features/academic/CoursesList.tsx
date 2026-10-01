@@ -4,26 +4,36 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCourses, createCourse, updateCourse } from '../../features/academic/academicService';
 import { getBranches } from '../../features/branches/branchesService';
 import { getCurrentUser } from '../../features/auth/authService';
-import { Plus, Loader2, BookOpen, Edit2, Trash2, CalendarClock, Building2, Search, GraduationCap, X } from 'lucide-react';
+import { Plus, Loader2, BookOpen, Edit2, Trash2, CalendarClock, Building2, Search, GraduationCap, X, Calendar } from 'lucide-react';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import { CourseSchedulesModal } from './CourseSchedulesModal';
 
 const CoursesList = () => {
     const queryClient = useQueryClient();
+    const defaultYear = new Date().getFullYear();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [archiveConfirmCourse, setArchiveConfirmCourse] = useState<any | null>(null);
-    const [newCourse, setNewCourse] = useState({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
+    const [newCourse, setNewCourse] = useState({ 
+        name: '', 
+        description: '', 
+        monthly_fee: 0, 
+        start_date: '', 
+        end_date: '', 
+        branch_id: '',
+        academic_year: defaultYear
+    });
     const [selectedCourse, setSelectedCourse] = useState<any>(null);
     const [scheduleCourse, setScheduleCourse] = useState<any>(null);
     const [errorMsg, setErrorMsg] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBranchFilter, setSelectedBranchFilter] = useState('ALL');
+    const [selectedYearFilter, setSelectedYearFilter] = useState('ALL');
 
     const user = getCurrentUser();
 
     const { data: courses, isLoading, isError } = useQuery({
         queryKey: ['courses'],
-        queryFn: getCourses,
+        queryFn: () => getCourses(),
     });
 
     const { data: branches } = useQuery({
@@ -37,7 +47,7 @@ const CoursesList = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             setIsModalOpen(false);
-            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
+            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '', academic_year: defaultYear });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -52,7 +62,7 @@ const CoursesList = () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             setIsModalOpen(false);
             setSelectedCourse(null);
-            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
+            setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '', academic_year: defaultYear });
             setErrorMsg('');
         },
         onError: (err: any) => {
@@ -67,6 +77,7 @@ const CoursesList = () => {
             monthly_fee: course.monthly_fee,
             start_date: course.start_date,
             end_date: course.end_date,
+            academic_year: course.academic_year,
             is_active: false
         }),
         onSuccess: () => {
@@ -96,10 +107,15 @@ const CoursesList = () => {
             return;
         }
 
+        const payload = {
+            ...newCourse,
+            academic_year: Number(newCourse.academic_year) || defaultYear
+        };
+
         if (selectedCourse) {
-            updateMutation.mutate(newCourse);
+            updateMutation.mutate(payload);
         } else {
-            createMutation.mutate(newCourse);
+            createMutation.mutate(payload);
         }
     };
 
@@ -111,7 +127,8 @@ const CoursesList = () => {
             monthly_fee: course.monthly_fee,
             start_date: course.start_date ? course.start_date.split('T')[0] : '',
             end_date: course.end_date ? course.end_date.split('T')[0] : '',
-            branch_id: course.branch_id || ''
+            branch_id: course.branch_id || '',
+            academic_year: course.academic_year || (course.start_date ? new Date(course.start_date).getFullYear() : defaultYear)
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -119,17 +136,40 @@ const CoursesList = () => {
 
     const handleNewCourse = () => {
         setSelectedCourse(null);
-        setNewCourse({ name: '', description: '', monthly_fee: 0, start_date: '', end_date: '', branch_id: '' });
+        setNewCourse({ 
+            name: '', 
+            description: '', 
+            monthly_fee: 0, 
+            start_date: '', 
+            end_date: '', 
+            branch_id: '',
+            academic_year: defaultYear
+        });
         setErrorMsg('');
         setIsModalOpen(true);
     };
+
+    // Distinct cycles for filter tabs
+    const distinctYears = React.useMemo(() => {
+        const years = new Set<string>();
+        const current = new Date().getFullYear();
+        years.add(String(current));
+        years.add(String(current + 1));
+        (courses || []).forEach((c: any) => {
+            if (c.academic_year) years.add(String(c.academic_year));
+            else if (c.start_date) years.add(String(new Date(c.start_date).getFullYear()));
+        });
+        return Array.from(years).sort((a, b) => Number(b) - Number(a));
+    }, [courses]);
 
     const filteredCourses = courses?.filter((course: any) => {
         const matchesSearch = !searchTerm || 
             course.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
             course.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesBranch = selectedBranchFilter === 'ALL' || course.branch_id === selectedBranchFilter;
-        return matchesSearch && matchesBranch;
+        const courseYear = course.academic_year ? String(course.academic_year) : (course.start_date ? String(new Date(course.start_date).getFullYear()) : String(defaultYear));
+        const matchesYear = selectedYearFilter === 'ALL' || courseYear === selectedYearFilter;
+        return matchesSearch && matchesBranch && matchesYear;
     });
 
     const avgFee = courses && courses.length > 0 
@@ -269,6 +309,36 @@ const CoursesList = () => {
                 )}
             </div>
 
+            {/* Ciclo / Año Lectivo Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 shrink-0 mr-1">
+                    <Calendar className="h-3.5 w-3.5 text-purple-500" /> Ciclo:
+                </span>
+                <button
+                    onClick={() => setSelectedYearFilter('ALL')}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        selectedYearFilter === 'ALL'
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+                            : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-white/5'
+                    }`}
+                >
+                    Todos
+                </button>
+                {distinctYears.map((yr: string) => (
+                    <button
+                        key={yr}
+                        onClick={() => setSelectedYearFilter(yr)}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                            selectedYearFilter === yr
+                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+                                : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-white/5'
+                        }`}
+                    >
+                        Ciclo {yr}
+                    </button>
+                ))}
+            </div>
+
             {isError && (
                 <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center space-x-3">
                     <span className="font-medium text-sm">Hubo un problema al cargar los cursos. Por favor, reintente.</span>
@@ -292,6 +362,10 @@ const CoursesList = () => {
                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-bold text-[11px] border border-emerald-500/20">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                         En Curso
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-[11px] border border-purple-500/20">
+                                        <Calendar className="h-3 w-3" />
+                                        Ciclo {course.academic_year || (course.start_date ? new Date(course.start_date).getFullYear() : defaultYear)}
                                     </span>
                                     {!user?.branch_id && course.branches && (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[11px] border border-amber-500/20">
@@ -466,22 +540,44 @@ const CoursesList = () => {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
-                                            Costo Mensual (Q) *
-                                        </label>
-                                        <div className="relative mt-1.5">
-                                            <div className="absolute left-3.5 top-2.5 sm:top-3 text-slate-400 pointer-events-none font-bold text-sm">
-                                                Q
-                                            </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                        <div>
+                                            <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1 flex items-center gap-1">
+                                                <Calendar className="h-3.5 w-3.5 text-purple-400" />
+                                                Ciclo / Año Lectivo *
+                                            </label>
                                             <input
                                                 type="number"
                                                 required
-                                                min="1"
-                                                className="w-full pl-9 pr-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"
-                                                value={newCourse.monthly_fee}
-                                                onChange={(e) => setNewCourse({ ...newCourse, monthly_fee: Number(e.target.value) })}
+                                                min="2020"
+                                                max="2040"
+                                                className="w-full mt-1.5 px-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-sm font-semibold"
+                                                placeholder="Ej: 2026"
+                                                value={newCourse.academic_year}
+                                                onChange={(e) => setNewCourse({ ...newCourse, academic_year: Number(e.target.value) })}
                                             />
+                                            <p className="text-[10px] text-slate-400 mt-1 ml-1 leading-tight">
+                                                Año escolar o ciclo al que pertenece el curso.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs sm:text-sm font-semibold text-slate-300 ml-1">
+                                                Costo Mensual (Q) *
+                                            </label>
+                                            <div className="relative mt-1.5">
+                                                <div className="absolute left-3.5 top-2.5 sm:top-3 text-slate-400 pointer-events-none font-bold text-sm">
+                                                    Q
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    min="1"
+                                                    className="w-full pl-9 pr-3.5 py-2.5 sm:py-3 bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"
+                                                    value={newCourse.monthly_fee}
+                                                    onChange={(e) => setNewCourse({ ...newCourse, monthly_fee: Number(e.target.value) })}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
