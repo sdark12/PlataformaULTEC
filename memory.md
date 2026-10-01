@@ -414,6 +414,10 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 - **Tablero Unificado en [`ReportsHub.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/ReportsHub.tsx):**
   - Pestaña de alto nivel `Inteligencia BI` con sub-conmutador entre `Alerta Temprana (EWS)` y `Cartera Vencida (Aging)`.
   - Exportación ejecutiva completa a **PDF** (orientación horizontal para junta directiva) y **Excel** (.xlsx).
+- **Resolución Polimórfica de Filtrado por Carreras / Cursos:**
+  - El parámetro `course_id` en los endpoints `/api/intelligence/debt-aging` y `/api/intelligence/early-warning` es resuelto mediante `resolveCourseIds`, admitiendo tanto identificadores `UUID` como nombres textuales de cursos (ej. `"TAC 1-2026"`), evitando el error `22P02 (invalid input syntax for type uuid)`.
+  - El selector en el frontend ([`DebtAgingDashboard.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/DebtAgingDashboard.tsx) y [`EarlyWarningDashboard.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/EarlyWarningDashboard.tsx)) carga de forma estable el catálogo de cursos vía `getCourses()` desde `academicService.ts`, impidiendo que las opciones desaparezcan al seleccionar un filtro.
+  - La recaudación del mes (`paymentsQuery`) en el reporte de cartera vencida se encuentra acotada a las matrículas del curso seleccionado para garantizar precisión contable.
 
 
 
