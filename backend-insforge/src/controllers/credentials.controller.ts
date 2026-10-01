@@ -96,7 +96,7 @@ export const requestPhysicalCredential = async (req: Request, res: Response) => 
             const { data: link } = await adminClient
                 .from('parent_student_links')
                 .select('id')
-                .eq('parent_id', caller.id)
+                .eq('parent_user_id', caller.id)
                 .eq('student_id', student.id)
                 .maybeSingle();
 
@@ -273,8 +273,32 @@ export const getCredentialRequests = async (req: Request, res: Response) => {
                 authorized_by,
                 authorized_at,
                 delivered_by,
-                delivered_at,
-                students:student_id (
+                delivered_at
+            `)
+            .eq('document_type', 'STUDENT_ID');
+
+        // Filtro por estado
+        if (status && status !== 'ALL') {
+            query = query.eq('status', status);
+        }
+
+        const { data, error } = await query.order('requested_at', { ascending: false });
+
+        if (error) throw error;
+
+        const authList = data || [];
+        if (authList.length === 0) {
+            return res.json([]);
+        }
+
+        // Obtener IDs únicos de estudiantes para Batch Hydration
+        const studentIds = Array.from(new Set(authList.map((item: any) => item.student_id).filter(Boolean)));
+
+        let studentMap: Record<string, any> = {};
+        if (studentIds.length > 0) {
+            const { data: studentsData, error: stError } = await adminClient
+                .from('students')
+                .select(`
                     id,
                     full_name,
                     personal_code,
@@ -287,50 +311,54 @@ export const getCredentialRequests = async (req: Request, res: Response) => {
                         is_active,
                         courses:course_id ( id, name )
                     )
-                )
-            `)
-            .eq('document_type', 'STUDENT_ID');
+                `)
+                .in('id', studentIds);
 
-        // Filtro por estado
-        if (status && status !== 'ALL') {
-            query = query.eq('status', status);
+            if (stError) {
+                console.error('Error fetching students batch in getCredentialRequests:', stError);
+            } else if (studentsData) {
+                studentsData.forEach((st: any) => {
+                    studentMap[st.id] = st;
+                });
+            }
         }
 
         // Filtro por sede (estricto para administradores de sede local)
         const targetBranch = caller?.role === 'superadmin' ? branch_id : (caller?.branch_id || branch_id);
-        if (targetBranch && targetBranch !== 'ALL') {
-            query = query.eq('students.branch_id', targetBranch);
-        }
 
-        const { data, error } = await query.order('requested_at', { ascending: false });
+        let formatted = authList
+            .map((item: any) => {
+                const st = studentMap[item.student_id];
+                const courses = (st?.enrollments || [])
+                    .filter((e: any) => e.is_active && e.courses)
+                    .map((e: any) => e.courses.name);
 
-        if (error) throw error;
-
-        let formatted = (data || []).map((item: any) => {
-            const st = item.students;
-            const courses = (st?.enrollments || [])
-                .filter((e: any) => e.is_active && e.courses)
-                .map((e: any) => e.courses.name);
-
-            return {
-                id: item.id,
-                student_id: item.student_id,
-                status: item.status,
-                reason: item.reason,
-                request_type: item.notes || 'FIRST_TIME',
-                requested_at: item.requested_at,
-                authorized_by: item.authorized_by,
-                authorized_at: item.authorized_at,
-                delivered_by: item.delivered_by,
-                delivered_at: item.delivered_at,
-                full_name: st?.full_name || 'Desconocido',
-                personal_code: st?.personal_code || st?.academy_code || `UT-${item.student_id?.slice(0, 4)?.toUpperCase()}`,
-                branch_id: st?.branch_id,
-                branch_name: st?.branches?.name || 'Sede Central',
-                courses: courses,
-                is_active: st?.status === 'active' || st?.status === 'activo'
-            };
-        });
+                return {
+                    id: item.id,
+                    student_id: item.student_id,
+                    status: item.status,
+                    reason: item.reason,
+                    request_type: item.notes || 'FIRST_TIME',
+                    requested_by: item.requested_by,
+                    requested_at: item.requested_at,
+                    authorized_by: item.authorized_by,
+                    authorized_at: item.authorized_at,
+                    delivered_by: item.delivered_by,
+                    delivered_at: item.delivered_at,
+                    full_name: st?.full_name || 'Desconocido',
+                    personal_code: st?.personal_code || st?.academy_code || `UT-${item.student_id?.slice(0, 4)?.toUpperCase()}`,
+                    branch_id: st?.branch_id,
+                    branch_name: st?.branches?.name || 'Sede Central',
+                    courses: courses,
+                    is_active: st?.status === 'active' || st?.status === 'activo'
+                };
+            })
+            .filter((item: any) => {
+                if (targetBranch && targetBranch !== 'ALL') {
+                    return item.branch_id === targetBranch;
+                }
+                return true;
+            });
 
         // Filtro de búsqueda textual en memoria
         if (search && typeof search === 'string' && search.trim()) {
@@ -383,17 +411,24 @@ export const updateCredentialRequestStatus = async (req: Request, res: Response)
             .from('document_authorizations')
             .update(updatePayload)
             .eq('id', id)
-            .select(`
-                *,
-                students:student_id ( id, user_id, full_name, personal_code )
-            `)
+            .select('*')
             .single();
 
         if (error) throw error;
 
+        // Cargar datos del estudiante para notificación y respuesta
+        let student: any = null;
+        if (updated?.student_id) {
+            const { data: stData } = await adminClient
+                .from('students')
+                .select('id, user_id, full_name, personal_code')
+                .eq('id', updated.student_id)
+                .maybeSingle();
+            student = stData;
+        }
+
         // Notificar al estudiante si tiene usuario vinculado
-        const st = updated.students;
-        if (st?.user_id) {
+        if (student?.user_id) {
             let notifTitle = '🪪 Actualización de Carnet Físico';
             let notifMessage = `Tu solicitud de carnet institucional ha sido actualizada al estado: ${status}.`;
 
@@ -410,7 +445,7 @@ export const updateCredentialRequestStatus = async (req: Request, res: Response)
 
             try {
                 await adminClient.from('notifications').insert([{
-                    user_id: st.user_id,
+                    user_id: student.user_id,
                     title: notifTitle,
                     message: notifMessage,
                     type: 'SYSTEM',
@@ -424,7 +459,7 @@ export const updateCredentialRequestStatus = async (req: Request, res: Response)
         res.json({
             success: true,
             message: `Solicitud de carnet actualizada a ${status}.`,
-            request: updated
+            request: { ...updated, students: student }
         });
     } catch (error: any) {
         console.error('Error in updateCredentialRequestStatus:', error);
@@ -448,15 +483,38 @@ export const getStudentCredentialCard = async (req: Request, res: Response) => {
         }
 
         // Buscar tutor / contacto de emergencia
-        const { data: parentLink } = await adminClient
-            .from('parent_student_links')
-            .select(`
-                relationship,
-                parents:parent_id ( id, full_name, phone, email )
-            `)
-            .eq('student_id', student.id)
-            .limit(1)
-            .maybeSingle();
+        let emergencyContact = {
+            name: 'Dirección / Secretaría',
+            phone: (student.branches as any)?.phone || 'PBX: 2200-0000',
+            relationship: 'Tutor Institucional'
+        };
+
+        try {
+            const { data: parentLink } = await adminClient
+                .from('parent_student_links')
+                .select('relationship, parent_user_id')
+                .eq('student_id', student.id)
+                .limit(1)
+                .maybeSingle();
+
+            if (parentLink?.parent_user_id) {
+                const { data: parentProfile } = await adminClient
+                    .from('profiles')
+                    .select('id, full_name, phone, email')
+                    .eq('id', parentLink.parent_user_id)
+                    .maybeSingle();
+
+                if (parentProfile) {
+                    emergencyContact = {
+                        name: parentProfile.full_name || emergencyContact.name,
+                        phone: parentProfile.phone || emergencyContact.phone,
+                        relationship: parentLink.relationship || 'Tutor'
+                    };
+                }
+            }
+        } catch (linkErr) {
+            console.warn('Could not load parent link for student card:', linkErr);
+        }
 
         // Buscar última entrega física oficial
         const { data: lastDelivery } = await adminClient
@@ -488,11 +546,7 @@ export const getStudentCredentialCard = async (req: Request, res: Response) => {
             courses: activeCourses,
             cycle: `Ciclo Lectivo ${currentYear}`,
             valid_until: `31/12/${currentYear}`,
-            emergency_contact: {
-                name: (parentLink?.parents as any)?.full_name || 'Dirección / Secretaría',
-                phone: (parentLink?.parents as any)?.phone || (student.branches as any)?.phone || 'PBX: 2200-0000',
-                relationship: parentLink?.relationship || 'Tutor'
-            },
+            emergency_contact: emergencyContact,
             physical_card: {
                 is_delivered: !!lastDelivery,
                 delivered_at: lastDelivery?.delivered_at || null,
