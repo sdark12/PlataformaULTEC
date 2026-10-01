@@ -77,6 +77,10 @@ npm run build
 
 ## 4. Golden Architectural & Security Rules
 
+### 0. Mandatory User Approval & Prior Proposal Policy (CRITICAL RULE)
+- **SIEMPRE PREGUNTAR ANTES DE MODIFICAR:** Antes de realizar cualquier cambio en el código, modificar esquemas de base de datos, alterar rutas o desplegar mejoras en el proyecto, el agente **DEBE presentar primero una propuesta detallada y un plan de implementación estructurado**, y esperar la confirmación y aprobación explícita del usuario.
+- Queda estrictamente prohibido avanzar a la ejecución o realizar cambios sin la autorización previa y directa del usuario.
+
 ### 1. Multi-Tenant Branch Isolation (`X-Branch-Id`)
 - Every authenticated request carries the active branch scope via `X-Branch-Id` header.
 - Use `getEffectiveBranchId(req)` in backend controllers to resolve target branch:
@@ -97,12 +101,13 @@ npm run build
 - In `apiClient.ts`, never trigger `window.location.href = '/login'` on 401/403 if the user is already on a public route (`/login`, `/reset-password`, `/verify-receipt`, `/verify-student`). This prevents infinite browser refresh loops.
 
 ### 5. Multi-File Version Synchronization Protocol
-When performing a version bump (e.g., from `v1.2.0` to `v1.3.0`), the following **5 files** must be updated simultaneously:
+When performing a version bump, the following **5 files** must be updated simultaneously:
 1. `frontend-antigravity/package.json` (`"version"`)
-2. `frontend-antigravity/src/features/system/SystemDashboard.tsx` (version badge)
-3. `frontend-antigravity/android/app/build.gradle` (`versionCode` + 1, `versionName`)
+2. `frontend-antigravity/src/config/appConfig.ts` (`version`, `buildNumber`)
+3. `frontend-antigravity/android/app/build.gradle` (`versionCode`, `versionName`)
 4. `backend-insforge/package.json` (`"version"`)
-5. `memory.md` (Update current active version and changelog)
+5. `backend-insforge/src/controllers/appVersion.controller.ts` (`version`, `versionCode`)
+6. `memory.md` (Update current active version and changelog)
 
 ---
 

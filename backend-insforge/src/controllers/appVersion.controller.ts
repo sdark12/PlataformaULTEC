@@ -4,14 +4,14 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.3.0",
+    version: "1.2.1",
     versionCode: 35,
     minVersion: "1.0.0",
     releaseDate: "2026-09-30",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.3.0 - Inteligencia Institucional, Cartera Vencida y Alerta Temprana",
+    title: "Actualización v1.2.1 - Inteligencia Institucional, Cartera Vencida y Alerta Temprana",
     releaseNotes: [
         "Semáforo de Alerta Temprana de Deserción Escolar (EWS): Algoritmo de Índice de Retención Escolar (IRE 0-100) que cruza asistencia (40%), promedio académico (35%), mora (20%) y disciplina (5%).",
         "Bitácora de Intervención y Retención Estudiantil: Registro de llamadas, convenios de pago pactados, citas presenciales y tutorías con enlaces rápidos de WhatsApp institucional.",

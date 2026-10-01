@@ -12,7 +12,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.3.0` (Build 35)** — Desplegada en producción el 30 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.2.1` (Build 35)** — Desplegada en producción el 30 de Septiembre de 2026.
 
 ---
 
@@ -340,7 +340,7 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Generación de credenciales físicas en formato estándar PVC CR80 con alta resolución e impresión térmica/láser.
   - Registro de entrega presencial con sello de `delivered_by` y `delivered_at`.
   - Verificación pública QR avanzada en `/verify-student/:code` que certifica la validez académica y la posesión de credencial física entregada por administración.
-- [x] **Fase 7: Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción** (v1.3.0 Build 35)
+- [x] **Fase 7: Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción** (v1.2.1 Build 35)
   - Algoritmo de Índice de Retención Escolar (IRE 0-100) ponderando asistencia (40%), promedio académico (35%), mora (20%) y disciplina (5%).
   - Semáforo de riesgo predictivo: 🔴 Crítico (< 60), 🟡 Moderado (60-79) y 🟢 Bajo Riesgo (≥ 80).
   - Bitácora de intervenciones en PostgreSQL con tabla `student_interventions` y enlaces de WhatsApp oficial.
@@ -387,7 +387,7 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 
 ---
 
-## 16. Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción (v1.3.0 Build 35)
+## 16. Inteligencia Institucional, Cartera Vencida y Alerta Temprana de Deserción (v1.2.1 Build 35)
 
 - **Arquitectura de Detección Temprana y Retención Escolar:**
   - **Algoritmo del Índice de Retención Escolar (IRE 0-100):** Cálculo ponderado multidimensional que cruza en una sola pasada:

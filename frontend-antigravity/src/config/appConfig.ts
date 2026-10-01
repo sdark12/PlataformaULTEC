@@ -4,7 +4,7 @@
  */
 export const APP_CONFIG = {
     appName: 'Plataforma ULTEC',
-    version: '1.3.0',
+    version: '1.2.1',
     buildNumber: 35,
     releaseDate: '2026-09-30',
     apiUrl: import.meta.env.VITE_API_URL || 'https://plataformaultec.duckdns.org',
