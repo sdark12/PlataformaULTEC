@@ -20,6 +20,7 @@ const DEFAULT_SPECIAL_UNITS = ['Recuperación'];
 const Grades = () => {
     const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [selectedYearFilter, setSelectedYearFilter] = useState<'ALL' | number>('ALL');
     const [selectedSchedule, setSelectedSchedule] = useState<string>('');
     const [activeTab, setActiveTab] = useState<'general' | 'detailed'>('general');
     const [gradesData, setGradesData] = useState<any[]>([]);
@@ -90,21 +91,46 @@ const Grades = () => {
         }
     }, [courses]);
 
-    const courseOptions = useMemo<SearchableOption[]>(() => {
-        if (!effectiveCourses) return [];
-        return effectiveCourses.map((c: any) => ({
-            value: c.id,
-            label: c.name,
-            subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes` : undefined,
-        }));
+    // Extraer ciclos escolares únicos ordenados descendentemente
+    const distinctCycles = useMemo(() => {
+        const years = new Set<number>();
+        effectiveCourses.forEach((c: any) => {
+            const yr = c.academic_year || 2026;
+            years.add(yr);
+        });
+        return Array.from(years).sort((a, b) => b - a);
     }, [effectiveCourses]);
 
-    // Auto-seleccionar primer curso cuando esté disponible
+    // Filtrar cursos por el ciclo escolar activo
+    const filteredCourses = useMemo(() => {
+        if (!effectiveCourses) return [];
+        if (selectedYearFilter === 'ALL') return effectiveCourses;
+        return effectiveCourses.filter((c: any) => (c.academic_year || 2026) === selectedYearFilter);
+    }, [effectiveCourses, selectedYearFilter]);
+
+    const courseOptions = useMemo<SearchableOption[]>(() => {
+        if (!filteredCourses) return [];
+        return filteredCourses.map((c: any) => ({
+            value: c.id,
+            label: c.name,
+            subLabel: `Ciclo ${c.academic_year || 2026}${c.monthly_fee ? ` • Q${c.monthly_fee}/mes` : ''}`,
+            badge: `Ciclo ${c.academic_year || 2026}`,
+        }));
+    }, [filteredCourses]);
+
+    // Auto-seleccionar primer curso cuando esté disponible o cambie el filtro de ciclo
     useEffect(() => {
-        if (effectiveCourses && effectiveCourses.length > 0 && !selectedCourse) {
-            setSelectedCourse(effectiveCourses[0].id);
+        if (filteredCourses && filteredCourses.length > 0) {
+            const currentValid = filteredCourses.some((c: any) => c.id === selectedCourse);
+            if (!currentValid) {
+                setSelectedCourse(filteredCourses[0].id);
+                setSelectedSchedule('');
+            }
+        } else if (filteredCourses && filteredCourses.length === 0 && selectedCourse) {
+            setSelectedCourse('');
+            setSelectedSchedule('');
         }
-    }, [effectiveCourses, selectedCourse]);
+    }, [filteredCourses, selectedCourse]);
 
     const { data: schedules } = useQuery({
         queryKey: ['course_schedules', selectedCourse],
@@ -366,10 +392,41 @@ const Grades = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 relative z-40 overflow-visible">
                     {/* Selector de Curso */}
                     <div className="relative z-50 overflow-visible">
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                             <BookOpen className="w-3.5 h-3.5 text-blue-400" />
                             <span>Curso / Asignatura</span>
-                        </label>
+                            </label>
+                            {distinctCycles.length > 1 && (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedYearFilter('ALL')}
+                                        className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                            selectedYearFilter === 'ALL'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        Todos
+                                    </button>
+                                    {distinctCycles.map((year) => (
+                                        <button
+                                            key={year}
+                                            type="button"
+                                            onClick={() => setSelectedYearFilter(year)}
+                                            className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                                selectedYearFilter === year
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            {year}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <SearchableSelect
                             options={courseOptions}
                             value={selectedCourse}
@@ -378,7 +435,7 @@ const Grades = () => {
                                 setSelectedSchedule('');
                             }}
                             placeholder="-- Elige un curso --"
-                            searchPlaceholder="Buscar curso o asignatura..."
+                            searchPlaceholder="Buscar curso o año..."
                             disabled={isLoadingCourses}
                         />
                     </div>

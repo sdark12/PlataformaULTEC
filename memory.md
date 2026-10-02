@@ -12,7 +12,7 @@
 - **Propósito:** Sistema Integral de Gestión Académica, Administrativa y Financiera (ERP + LMS) institucional para centros de formación técnica, educación secundaria y bachillerato.
 - **Entorno de Ejecución:** Sistema en producción en vivo con estudiantes reales, expedientes académicos, control financiero y sedes activas.
 - **Ruta Local del Proyecto:** `C:\Users\saul_\.gemini\antigravity\scratch\PlataformaULTEC`
-- **Versión Activa Actual:** **`v1.2.3` (Build 37)** — Desplegada en producción el 30 de Septiembre de 2026.
+- **Versión Activa Actual:** **`v1.2.4` (Build 38)** — Desplegada en producción el 01 de Octubre de 2026.
 
 ---
 
@@ -488,6 +488,28 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
   - Primera especificación modelo formalizada en `specs/001-ciclos-lectivos-y-matriculas/` con `spec.md` (requisitos EARS), `plan.md` y `tasks.md`.
 - **Actualización de [`AGENTS.md`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/AGENTS.md):**
   - **Regla 7:** Política obligatoria de Spec-Driven Development (SDD) para funcionalidades grandes o refactorizaciones mayores.
+
+---
+
+## 20. Segmentación por Ciclo Lectivo en Calificaciones y Asistencia Escolar (v1.2.4 Build 38)
+
+- **Motivación y Alcance:**
+  - Continuando con la hoja de ruta de ciclos lectivos nativos, los módulos de Calificaciones (`/grades`), Sábana de Notas (`/course-gradebook`) y Asistencia Escolar (`/attendance`) continuaban mostrando una lista no segmentada de cursos de todos los años escolares.
+- **Frontend React (`frontend-antigravity`):**
+  - [`Grades.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/academic/Grades.tsx):
+    - Barra de píldoras interactivas de ciclo escolar (`[Todos] [Ciclo 2027] [Ciclo 2026]`) calculada dinámicamente según los cursos activos.
+    - Opciones de `SearchableSelect` enriquecidas con badge `Ciclo YYYY` y subetiqueta de ciclo y mensualidad.
+    - Sincronización automática de selección de curso al conmutar entre ciclos lectivos.
+  - [`Attendance.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/academic/Attendance.tsx):
+    - Píldoras de ciclo escolar en la cabecera del selector de cursos.
+    - Opciones del `<select>` con prefijo `[Ciclo YYYY]` para identificar cursos homónimos al instante.
+    - Validación y persistencia segura en `localStorage ('last_attendance_course')`.
+  - [`CourseGradebook.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/academic/CourseGradebook.tsx):
+    - Píldoras de ciclo escolar y filtrado de cursos en la vista de Sábana de Notas oficial.
+- **Backend Express (`backend-insforge`):**
+  - Sincronización oficial de metadatos en [`appVersion.controller.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/controllers/appVersion.controller.ts) a versión `1.2.4`, Build `38`.
+- **Gobernanza SDD:**
+  - Creada la especificación formal [`specs/002-calificaciones-y-asistencia-por-ciclo/`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/specs/002-calificaciones-y-asistencia-por-ciclo/) con `spec.md` (sintaxis EARS), `plan.md` y `tasks.md`.
 
 
 

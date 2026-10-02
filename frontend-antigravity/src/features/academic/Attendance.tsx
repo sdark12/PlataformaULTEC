@@ -50,6 +50,7 @@ const STATUS_CONFIG = {
 const Attendance = () => {
     const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<'daily' | 'matrix'>('daily');
+    const [selectedYearFilter, setSelectedYearFilter] = useState<'ALL' | number>('ALL');
     const [selectedCourse, setSelectedCourse] = useState<string>(() => {
         return localStorage.getItem('last_attendance_course') || '';
     });
@@ -95,22 +96,45 @@ const Attendance = () => {
         return [];
     }, [courses]);
 
+    // Extraer ciclos escolares únicos ordenados descendentemente
+    const distinctCycles = useMemo(() => {
+        const years = new Set<number>();
+        effectiveCourses.forEach((c: any) => {
+            const yr = c.academic_year || 2026;
+            years.add(yr);
+        });
+        return Array.from(years).sort((a, b) => b - a);
+    }, [effectiveCourses]);
+
+    // Filtrar cursos por el ciclo escolar activo
+    const filteredCourses = useMemo(() => {
+        if (!effectiveCourses) return [];
+        if (selectedYearFilter === 'ALL') return effectiveCourses;
+        return effectiveCourses.filter((c: any) => (c.academic_year || 2026) === selectedYearFilter);
+    }, [effectiveCourses, selectedYearFilter]);
+
     useEffect(() => {
         if (courses && courses.length > 0) {
             localStorage.setItem('ultec_cached_courses_catalog', JSON.stringify(courses));
         }
     }, [courses]);
 
-    // Validar si el curso guardado en localStorage todavía existe en la lista de cursos activos
+    // Validar y sincronizar curso con el ciclo activo y localStorage
     useEffect(() => {
-        if (effectiveCourses && effectiveCourses.length > 0 && selectedCourse) {
-            const exists = effectiveCourses.some((c: any) => c.id === selectedCourse);
+        if (filteredCourses && filteredCourses.length > 0) {
+            const exists = filteredCourses.some((c: any) => c.id === selectedCourse);
             if (!exists) {
-                setSelectedCourse('');
-                localStorage.removeItem('last_attendance_course');
+                const nextCourse = filteredCourses[0].id;
+                setSelectedCourse(nextCourse);
+                setSelectedSchedule('');
+                localStorage.setItem('last_attendance_course', nextCourse);
             }
+        } else if (filteredCourses && filteredCourses.length === 0 && selectedCourse) {
+            setSelectedCourse('');
+            setSelectedSchedule('');
+            localStorage.removeItem('last_attendance_course');
         }
-    }, [effectiveCourses, selectedCourse]);
+    }, [filteredCourses, selectedCourse]);
 
     const handleCourseChange = (courseId: string) => {
         setSelectedCourse(courseId);
@@ -446,10 +470,41 @@ const Attendance = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     {/* Selector de Curso */}
                     <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                             <BookOpen className="w-3.5 h-3.5 text-blue-400" />
                             <span>Curso / Asignatura</span>
-                        </label>
+                            </label>
+                            {distinctCycles.length > 1 && (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedYearFilter('ALL')}
+                                        className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                            selectedYearFilter === 'ALL'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        Todos
+                                    </button>
+                                    {distinctCycles.map((year) => (
+                                        <button
+                                            key={year}
+                                            type="button"
+                                            onClick={() => setSelectedYearFilter(year)}
+                                            className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                                selectedYearFilter === year
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            {year}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <div className="relative">
                             <select
                                 className="w-full pl-3.5 pr-10 py-2.5 bg-slate-800/90 border border-slate-700 text-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none outline-none font-medium text-xs sm:text-sm cursor-pointer"
@@ -458,9 +513,9 @@ const Attendance = () => {
                                 disabled={isLoadingCourses}
                             >
                                 <option value="" className="bg-slate-900 text-slate-400">-- Selecciona un curso --</option>
-                                {effectiveCourses?.map((c: any) => (
+                                {filteredCourses?.map((c: any) => (
                                     <option key={c.id} value={c.id} className="bg-slate-900 text-slate-100">
-                                        {c.name}
+                                        [Ciclo {c.academic_year || 2026}] {c.name}
                                     </option>
                                 ))}
                             </select>

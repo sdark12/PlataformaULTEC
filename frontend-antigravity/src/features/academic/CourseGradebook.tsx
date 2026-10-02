@@ -11,25 +11,48 @@ import SearchableSelect, { type SearchableOption } from '../../components/ui/Sea
 
 const CourseGradebook = () => {
     const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [selectedYearFilter, setSelectedYearFilter] = useState<'ALL' | number>('ALL');
     const [selectedSchedule, setSelectedSchedule] = useState<string>('');
 
     const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
 
-    const courseOptions = useMemo<SearchableOption[]>(() => {
-        if (!courses) return [];
-        return courses.map((c: any) => ({
-            value: c.id,
-            label: c.name,
-            subLabel: c.monthly_fee ? `Q${c.monthly_fee}/mes` : undefined,
-        }));
+    const distinctCycles = useMemo(() => {
+        const years = new Set<number>();
+        (courses || []).forEach((c: any) => {
+            years.add(c.academic_year || 2026);
+        });
+        return Array.from(years).sort((a, b) => b - a);
     }, [courses]);
 
-    // Auto-select first course if none selected
+    const filteredCourses = useMemo(() => {
+        if (!courses) return [];
+        if (selectedYearFilter === 'ALL') return courses;
+        return courses.filter((c: any) => (c.academic_year || 2026) === selectedYearFilter);
+    }, [courses, selectedYearFilter]);
+
+    const courseOptions = useMemo<SearchableOption[]>(() => {
+        if (!filteredCourses) return [];
+        return filteredCourses.map((c: any) => ({
+            value: c.id,
+            label: c.name,
+            subLabel: `Ciclo ${c.academic_year || 2026}${c.monthly_fee ? ` • Q${c.monthly_fee}/mes` : ''}`,
+            badge: `Ciclo ${c.academic_year || 2026}`,
+        }));
+    }, [filteredCourses]);
+
+    // Auto-select first course if none selected or sync with cycle
     useEffect(() => {
-        if (courses && courses.length > 0 && !selectedCourse) {
-            setSelectedCourse(courses[0].id);
+        if (filteredCourses && filteredCourses.length > 0) {
+            const currentValid = filteredCourses.some((c: any) => c.id === selectedCourse);
+            if (!currentValid) {
+                setSelectedCourse(filteredCourses[0].id);
+                setSelectedSchedule('');
+            }
+        } else if (filteredCourses && filteredCourses.length === 0 && selectedCourse) {
+            setSelectedCourse('');
+            setSelectedSchedule('');
         }
-    }, [courses, selectedCourse]);
+    }, [filteredCourses, selectedCourse]);
 
     const { data: schedules } = useQuery({
         queryKey: ['course_schedules', selectedCourse],
@@ -223,7 +246,38 @@ const CourseGradebook = () => {
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 mb-8 max-w-2xl flex flex-col sm:flex-row gap-4 items-end relative z-30 overflow-visible">
                     <div className="flex-1 w-full relative z-40 overflow-visible">
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Seleccionar Curso</label>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-semibold text-slate-700">Curso</label>
+                            {distinctCycles.length > 1 && (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedYearFilter('ALL')}
+                                        className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                            selectedYearFilter === 'ALL'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        Todos
+                                    </button>
+                                    {distinctCycles.map((year) => (
+                                        <button
+                                            key={year}
+                                            type="button"
+                                            onClick={() => setSelectedYearFilter(year)}
+                                            className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                                                selectedYearFilter === year
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {year}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <SearchableSelect
                             options={courseOptions}
                             value={selectedCourse}
@@ -232,7 +286,7 @@ const CourseGradebook = () => {
                                 setSelectedSchedule('');
                             }}
                             placeholder="-- Elige un curso --"
-                            searchPlaceholder="Buscar curso..."
+                            searchPlaceholder="Buscar curso o año..."
                         />
                     </div>
 
