@@ -7,16 +7,20 @@ import {
 } from 'lucide-react';
 import { credentialsService, type CredentialRequestItem, type StudentCredentialCard } from '../../services/credentialsService';
 import { getBranches, type Branch } from '../branches/branchesService';
+import { getCourses } from './academicService';
+import CycleSelectorPills from '../../components/common/CycleSelectorPills';
 
 export const StudentCredentialsAdmin: React.FC = () => {
     const [requests, setRequests] = useState<CredentialRequestItem[]>([]);
     const [branches, setBranches] = useState<Branch[]>([]);
+    const [courses, setCourses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // Filters
     const [activeTab, setActiveTab] = useState<'PENDING' | 'READY' | 'DELIVERED' | 'ALL'>('PENDING');
     const [selectedBranch, setSelectedBranch] = useState<string>('ALL');
+    const [selectedYearFilter, setSelectedYearFilter] = useState<'ALL' | number>('ALL');
     const [searchQuery, setSearchQuery] = useState<string>('');
 
     // Modal for Individual Print / Preview
@@ -31,6 +35,23 @@ export const StudentCredentialsAdmin: React.FC = () => {
 
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
+    // Distinct cycles from courses and requests
+    const distinctCycles = React.useMemo(() => {
+        const years = new Set<number>();
+        courses.forEach((c: any) => {
+            if (c.academic_year) years.add(Number(c.academic_year));
+        });
+        requests.forEach((r: any) => {
+            if (r.academic_year) years.add(Number(r.academic_year));
+        });
+        if (years.size === 0) {
+            const currentYear = new Date().getFullYear();
+            years.add(currentYear);
+            years.add(currentYear + 1);
+        }
+        return Array.from(years).sort((a, b) => b - a);
+    }, [courses, requests]);
+
     const fetchRequests = async () => {
         setLoading(true);
         setError(null);
@@ -38,7 +59,8 @@ export const StudentCredentialsAdmin: React.FC = () => {
             const data = await credentialsService.getCredentialRequests({
                 status: activeTab,
                 branch_id: selectedBranch !== 'ALL' ? selectedBranch : undefined,
-                search: searchQuery.trim() || undefined
+                search: searchQuery.trim() || undefined,
+                academic_year: selectedYearFilter !== 'ALL' ? selectedYearFilter : undefined
             });
             setRequests(data);
         } catch (err: any) {
@@ -51,11 +73,12 @@ export const StudentCredentialsAdmin: React.FC = () => {
 
     useEffect(() => {
         getBranches().then((b: Branch[]) => setBranches(b)).catch(() => {});
+        getCourses().then((c: any[]) => setCourses(c)).catch(() => {});
     }, []);
 
     useEffect(() => {
         fetchRequests();
-    }, [activeTab, selectedBranch]);
+    }, [activeTab, selectedBranch, selectedYearFilter]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,11 +122,14 @@ export const StudentCredentialsAdmin: React.FC = () => {
         }
     };
 
-    const handleOpenPrintPreview = async (studentId: string) => {
+    const handleOpenPrintPreview = async (studentId: string, targetYear?: number) => {
         setIsLoadingPrint(true);
         setIsPrintModalOpen(true);
         try {
-            const card = await credentialsService.getStudentCredentialCard(studentId);
+            const card = await credentialsService.getStudentCredentialCard(
+                studentId,
+                targetYear ? { academic_year: targetYear } : undefined
+            );
             setSelectedPrintStudent(card);
 
             if (card.verification_url) {
@@ -212,22 +238,31 @@ export const StudentCredentialsAdmin: React.FC = () => {
                         })}
                     </div>
 
-                    {/* Sede / Branch Filter if multiple exist */}
-                    {branches.length > 0 && (
-                        <div className="flex items-center gap-2 w-full md:w-auto">
-                            <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
-                            <select
-                                value={selectedBranch}
-                                onChange={(e) => setSelectedBranch(e.target.value)}
-                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30 w-full md:w-48"
-                            >
-                                <option value="ALL">Todas las Sedes</option>
-                                {branches.map(b => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+                    {/* Secondary Filters: Ciclo Lectivo & Sede */}
+                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <CycleSelectorPills
+                            cycles={distinctCycles}
+                            selectedYear={selectedYearFilter}
+                            onSelectYear={(year) => setSelectedYearFilter(year as any)}
+                            maxVisiblePills={1}
+                        />
+
+                        {branches.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                                <select
+                                    value={selectedBranch}
+                                    onChange={(e) => setSelectedBranch(e.target.value)}
+                                    className="px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30 w-full md:w-48"
+                                >
+                                    <option value="ALL">Todas las Sedes</option>
+                                    {branches.map(b => (
+                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Text Search */}
@@ -304,10 +339,15 @@ export const StudentCredentialsAdmin: React.FC = () => {
                                             <h4 className="font-black text-sm text-slate-900 dark:text-white leading-snug truncate" title={item.full_name}>
                                                 {item.full_name}
                                             </h4>
-                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                                 <span className="text-[10px] font-mono font-bold text-brand-blue bg-brand-blue/5 dark:bg-brand-blue/15 px-1.5 py-0.5 rounded">
                                                     {item.personal_code}
                                                 </span>
+                                                {item.academic_year && (
+                                                    <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800/50 px-1.5 py-0.5 rounded">
+                                                        Ciclo {item.academic_year}
+                                                    </span>
+                                                )}
                                                 <span className="text-[10px] text-slate-500 truncate">
                                                     {item.branch_name}
                                                 </span>
@@ -338,7 +378,10 @@ export const StudentCredentialsAdmin: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-2">
                                         {/* Action: Open Print Official PVC format */}
                                         <button
-                                            onClick={() => handleOpenPrintPreview(item.student_id)}
+                                            onClick={() => handleOpenPrintPreview(
+                                                item.student_id,
+                                                selectedYearFilter !== 'ALL' ? Number(selectedYearFilter) : item.academic_year
+                                            )}
                                             className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
                                         >
                                             <Printer className="w-3.5 h-3.5 text-brand-blue" />
@@ -454,7 +497,9 @@ export const StudentCredentialsAdmin: React.FC = () => {
                                 <Printer className="w-5 h-5 text-brand-blue" />
                                 <div>
                                     <h3 className="text-lg font-black text-slate-900 dark:text-white">Formato de Impresión Oficial (PVC CR80)</h3>
-                                    <p className="text-xs text-slate-500">Dimensiones estándar: 85.6 mm × 53.98 mm (Credencial Institucional)</p>
+                                    <p className="text-xs text-slate-500">
+                                        Dimensiones estándar: 85.6 mm × 53.98 mm ({selectedPrintStudent ? selectedPrintStudent.cycle : 'Credencial Institucional'})
+                                    </p>
                                 </div>
                             </div>
                             <button

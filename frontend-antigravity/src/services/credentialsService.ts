@@ -10,6 +10,7 @@ export interface StudentCredentialCard {
     branch_phone: string;
     course_name: string;
     courses: string[];
+    academic_year?: number;
     cycle: string;
     valid_until: string;
     emergency_contact: {
@@ -66,6 +67,7 @@ export interface CredentialRequestItem {
     branch_id?: string;
     branch_name: string;
     courses: string[];
+    academic_year?: number;
     is_active: boolean;
 }
 
@@ -73,8 +75,14 @@ export const credentialsService = {
     /**
      * Obtener datos completos de la credencial/carnet estudiantil
      */
-    getStudentCredentialCard: async (studentId: string = 'me'): Promise<StudentCredentialCard> => {
-        const response = await api.get<StudentCredentialCard>(`/api/credentials/card-data/${encodeURIComponent(studentId)}`);
+    getStudentCredentialCard: async (
+        studentId: string = 'me',
+        params?: { academic_year?: number | string }
+    ): Promise<StudentCredentialCard> => {
+        const response = await api.get<StudentCredentialCard>(
+            `/api/credentials/card-data/${encodeURIComponent(studentId)}`,
+            { params }
+        );
         return response.data;
     },
 
@@ -108,6 +116,7 @@ export const credentialsService = {
         status?: string;
         branch_id?: string;
         search?: string;
+        academic_year?: number | string;
     }): Promise<CredentialRequestItem[]> => {
         const response = await api.get<CredentialRequestItem[]>('/api/credentials/requests', { params });
         return response.data;

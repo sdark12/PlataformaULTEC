@@ -37,7 +37,7 @@ const resolveStudent = async (caller: any, requestedStudentId?: any) => {
         enrollments (
             id,
             is_active,
-            courses:course_id ( id, name )
+            courses:course_id ( id, name, academic_year )
         )
     `;
 
@@ -252,7 +252,7 @@ export const getMyCredentialStatus = async (req: Request, res: Response) => {
  */
 export const getCredentialRequests = async (req: Request, res: Response) => {
     const caller = req.currentUser;
-    const { status, branch_id, search } = req.query;
+    const { status, branch_id, search, academic_year } = req.query;
 
     if (!['superadmin', 'admin', 'secretary'].includes(caller?.role || '')) {
         return res.status(403).json({ message: 'Acceso no autorizado al panel de carnets.' });
@@ -309,7 +309,7 @@ export const getCredentialRequests = async (req: Request, res: Response) => {
                     enrollments (
                         id,
                         is_active,
-                        courses:course_id ( id, name )
+                        courses:course_id ( id, name, academic_year )
                     )
                 `)
                 .in('id', studentIds);
@@ -329,9 +329,10 @@ export const getCredentialRequests = async (req: Request, res: Response) => {
         let formatted = authList
             .map((item: any) => {
                 const st = studentMap[item.student_id];
-                const courses = (st?.enrollments || [])
-                    .filter((e: any) => e.is_active && e.courses)
-                    .map((e: any) => e.courses.name);
+                const activeEnrollments = (st?.enrollments || []).filter((e: any) => e.is_active && e.courses);
+                const courses = activeEnrollments.map((e: any) => e.courses.name);
+                const years = activeEnrollments.map((e: any) => e.courses.academic_year || 2026);
+                const studentYear = years.length > 0 ? Math.max(...years) : 2026;
 
                 return {
                     id: item.id,
@@ -350,12 +351,16 @@ export const getCredentialRequests = async (req: Request, res: Response) => {
                     branch_id: st?.branch_id,
                     branch_name: st?.branches?.name || 'Sede Central',
                     courses: courses,
+                    academic_year: studentYear,
                     is_active: st?.status === 'active' || st?.status === 'activo'
                 };
             })
             .filter((item: any) => {
                 if (targetBranch && targetBranch !== 'ALL') {
-                    return item.branch_id === targetBranch;
+                    if (item.branch_id !== targetBranch) return false;
+                }
+                if (academic_year && academic_year !== 'ALL') {
+                    if (String(item.academic_year) !== String(academic_year)) return false;
                 }
                 return true;
             });
@@ -527,12 +532,13 @@ export const getStudentCredentialCard = async (req: Request, res: Response) => {
             .limit(1)
             .maybeSingle();
 
-        const activeCourses = (student.enrollments || [])
-            .filter((e: any) => e.is_active && e.courses)
-            .map((e: any) => e.courses.name);
+        const reqYear = req.query.academic_year ? Number(req.query.academic_year) : undefined;
+        const activeEnrollments = (student.enrollments || []).filter((e: any) => e.is_active && e.courses);
+        const activeCourses = activeEnrollments.map((e: any) => e.courses.name);
+        const years = activeEnrollments.map((e: any) => e.courses.academic_year).filter(Boolean);
+        const targetYear = reqYear || (years.length > 0 ? Math.max(...years) : new Date().getFullYear());
 
-        const currentYear = new Date().getFullYear();
-        const studentCode = student.personal_code || student.academy_code || `UT-${currentYear}-${student.id.slice(0, 4).toUpperCase()}`;
+        const studentCode = student.personal_code || student.academy_code || `UT-${targetYear}-${student.id.slice(0, 4).toUpperCase()}`;
 
         res.json({
             student_id: student.id,
@@ -544,8 +550,9 @@ export const getStudentCredentialCard = async (req: Request, res: Response) => {
             branch_phone: (student.branches as any)?.phone || '',
             course_name: activeCourses[0] || 'Educación Técnica y Tecnológica',
             courses: activeCourses,
-            cycle: `Ciclo Lectivo ${currentYear}`,
-            valid_until: `31/12/${currentYear}`,
+            academic_year: targetYear,
+            cycle: `Ciclo Lectivo ${targetYear}`,
+            valid_until: `31/12/${targetYear}`,
             emergency_contact: emergencyContact,
             physical_card: {
                 is_delivered: !!lastDelivery,

@@ -5,18 +5,17 @@ import fs from 'fs';
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
     version: "1.2.5",
-    versionCode: 40,
+    versionCode: 41,
     minVersion: "1.0.0",
     releaseDate: "2026-10-02",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.2.5 (Build 40) - Selector Híbrido Escalable de Ciclos",
+    title: "Actualización v1.2.5 (Build 41) - Emisión de Carnets Oficiales por Ciclo Lectivo",
     releaseNotes: [
-        "Semáforo de Deserción Escolar (EWS): Píldoras de ciclo escolar (Todos, 2027, 2026) y selector de cursos filtrado para aislar el Índice de Retención Escolar (IRE) por año.",
-        "Cartera Vencida (Debt Aging): Segmentación de antigüedad de saldos (>90d, 61-90d, 31-60d, 0-30d) y meta de cobranza por ciclo escolar sin contaminación histórica.",
-        "Caché Aislada y Optimización: Partición en memoria (NodeCache) por sede, curso y ciclo lectivo con tiempos de respuesta ultra-rápidos (<100 ms).",
-        "Reportes y Exportaciones: Generación de informes ejecutivos en PDF y Excel respetando fielmente el ciclo lectivo seleccionado."
+        "Emisión y Control de Carnets por Ciclo: Filtrado administrativo de solicitudes de credenciales por ciclo lectivo (2027 vs 2026) con selector híbrido escalable.",
+        "Credenciales PVC Oficiales Dinámicas: La vigencia y el ciclo lectivo impresos en el estándar CR80 se calculan automáticamente según el ciclo activo del alumno o la selección del operador.",
+        "Aislamiento y Auditoría por Sede: Mantiene la trazabilidad multi-sede y el registro de entrega presencial con fecha y responsable institucional."
     ],
     isCritical: false
 };
