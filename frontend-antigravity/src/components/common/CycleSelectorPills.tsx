@@ -1,23 +1,25 @@
-import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
-export interface CycleSelectorPillsProps {
-    cycles: number[];
-    selectedYear: 'ALL' | number;
-    onSelectYear: (year: 'ALL' | number) => void;
+export interface CycleSelectorPillsProps<T extends number | string = number | string> {
+    cycles: T[];
+    selectedYear: 'ALL' | T;
+    onSelectYear: (year: 'ALL' | T) => void;
     maxVisiblePills?: number;
     className?: string;
     showLabelPrefix?: boolean;
     allLabel?: string;
+    activeVariant?: 'blue' | 'purple';
+    hideIfSingle?: boolean;
 }
 
 /**
  * Componente híbrido inteligente para selector de ciclo lectivo:
  * - Si hay pocos ciclos (<= maxVisiblePills), muestra píldoras directas [Todos] [Ciclo 2027] [Ciclo 2026].
  * - Si hay más ciclos, muestra los más recientes y agrupa los históricos en un selector compacto [Más ciclos ▾].
+ * Soporta ciclos numéricos o tipo string de forma retrocompatible.
  * Garantiza escalabilidad indefinida sin desbordar el layout ni saturar la barra de filtros.
  */
-export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
+export function CycleSelectorPills<T extends number | string = number | string>({
     cycles,
     selectedYear,
     onSelectYear,
@@ -25,8 +27,10 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
     className = '',
     showLabelPrefix = true,
     allLabel = 'Todos',
-}) => {
-    if (!cycles || cycles.length <= 1) {
+    activeVariant = 'blue',
+    hideIfSingle = true,
+}: CycleSelectorPillsProps<T>) {
+    if (!cycles || (hideIfSingle && cycles.length <= 1) || cycles.length === 0) {
         return null;
     }
 
@@ -34,7 +38,17 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
     const shouldGroup = cycles.length > maxVisiblePills;
     const recentCycles = shouldGroup ? cycles.slice(0, maxVisiblePills) : cycles;
     const olderCycles = shouldGroup ? cycles.slice(maxVisiblePills) : [];
-    const isOlderSelected = shouldGroup && typeof selectedYear === 'number' && olderCycles.includes(selectedYear);
+    const isOlderSelected = shouldGroup && selectedYear !== 'ALL' && olderCycles.some(c => String(c) === String(selectedYear));
+
+    const activePillClass = activeVariant === 'purple'
+        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs'
+        : 'bg-brand-blue text-white shadow-xs';
+
+    const activeSelectClass = activeVariant === 'purple'
+        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+        : 'bg-brand-blue text-white border-brand-blue shadow-xs';
+
+    const inactivePillClass = 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
 
     return (
         <div 
@@ -46,8 +60,8 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
                 onClick={() => onSelectYear('ALL')}
                 className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
                     selectedYear === 'ALL'
-                        ? 'bg-brand-blue text-white shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        ? activePillClass
+                        : inactivePillClass
                 }`}
             >
                 {allLabel}
@@ -55,16 +69,16 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
 
             {/* Píldoras de Ciclos Recientes */}
             {recentCycles.map((year) => {
-                const isActive = selectedYear === year;
+                const isActive = String(selectedYear) === String(year);
                 return (
                     <button
-                        key={year}
+                        key={String(year)}
                         type="button"
                         onClick={() => onSelectYear(year)}
                         className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
                             isActive
-                                ? 'bg-brand-blue text-white shadow-xs'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                ? activePillClass
+                                : inactivePillClass
                         }`}
                     >
                         {prefix}{year}
@@ -77,16 +91,21 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
                 <div className="relative inline-flex items-center">
                     <select
                         aria-label="Seleccionar ciclo lectivo histórico"
-                        value={isOlderSelected ? selectedYear : ''}
+                        value={isOlderSelected ? String(selectedYear) : ''}
                         onChange={(e) => {
                             const val = e.target.value;
                             if (val) {
-                                onSelectYear(Number(val));
+                                const found = olderCycles.find(c => String(c) === val);
+                                if (found !== undefined) {
+                                    onSelectYear(found);
+                                } else {
+                                    onSelectYear(val as unknown as T);
+                                }
                             }
                         }}
                         className={`appearance-none text-[11px] font-bold py-1 pl-2.5 pr-6 rounded-lg transition-all cursor-pointer border outline-none ${
                             isOlderSelected
-                                ? 'bg-brand-blue text-white border-brand-blue shadow-xs'
+                                ? activeSelectClass
                                 : 'bg-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-transparent'
                         }`}
                     >
@@ -99,8 +118,8 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
                         </option>
                         {olderCycles.map((year) => (
                             <option 
-                                key={year} 
-                                value={year}
+                                key={String(year)} 
+                                value={String(year)}
                                 className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-semibold"
                             >
                                 {prefix}{year}
@@ -116,6 +135,6 @@ export const CycleSelectorPills: React.FC<CycleSelectorPillsProps> = ({
             )}
         </div>
     );
-};
+}
 
 export default CycleSelectorPills;

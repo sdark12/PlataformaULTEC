@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import SearchableSelect, { type SearchableOption } from '../../components/ui/SearchableSelect';
+import CycleSelectorPills from '../../components/common/CycleSelectorPills';
 
 const EnrollmentsList: React.FC = () => {
     const navigate = useNavigate();
@@ -418,29 +419,15 @@ const EnrollmentsList: React.FC = () => {
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 shrink-0 mr-1">
                     <Calendar className="h-3.5 w-3.5 text-purple-500" /> Ciclo:
                 </span>
-                <button
-                    onClick={() => setSelectedYearFilter('ALL')}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        selectedYearFilter === 'ALL'
-                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
-                            : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-white/5'
-                    }`}
-                >
-                    Todos los Ciclos
-                </button>
-                {distinctCycles.map((yr: string) => (
-                    <button
-                        key={yr}
-                        onClick={() => setSelectedYearFilter(yr)}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                            selectedYearFilter === yr
-                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
-                                : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-white/5'
-                        }`}
-                    >
-                        Ciclo {yr}
-                    </button>
-                ))}
+                <CycleSelectorPills
+                    cycles={distinctCycles}
+                    selectedYear={selectedYearFilter}
+                    onSelectYear={setSelectedYearFilter}
+                    activeVariant="purple"
+                    maxVisiblePills={2}
+                    allLabel="Todos los Ciclos"
+                    className="!bg-white/60 dark:!bg-slate-800/60 !border-slate-200 dark:!border-white/5"
+                />
             </div>
 
             {/* Filtros */}

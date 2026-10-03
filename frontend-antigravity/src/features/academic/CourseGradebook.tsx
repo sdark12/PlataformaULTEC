@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { savePdfDoc } from '../../utils/fileDownloader';
 import SearchableSelect, { type SearchableOption } from '../../components/ui/SearchableSelect';
+import CycleSelectorPills from '../../components/common/CycleSelectorPills';
 
 const CourseGradebook = () => {
     const [selectedCourse, setSelectedCourse] = useState<string>('');
@@ -248,35 +249,14 @@ const CourseGradebook = () => {
                     <div className="flex-1 w-full relative z-40 overflow-visible">
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-sm font-semibold text-slate-700">Curso</label>
-                            {distinctCycles.length > 1 && (
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedYearFilter('ALL')}
-                                        className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
-                                            selectedYearFilter === 'ALL'
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                        }`}
-                                    >
-                                        Todos
-                                    </button>
-                                    {distinctCycles.map((year) => (
-                                        <button
-                                            key={year}
-                                            type="button"
-                                            onClick={() => setSelectedYearFilter(year)}
-                                            className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
-                                                selectedYearFilter === year
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                            }`}
-                                        >
-                                            {year}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <CycleSelectorPills
+                                cycles={distinctCycles}
+                                selectedYear={selectedYearFilter}
+                                onSelectYear={setSelectedYearFilter}
+                                maxVisiblePills={2}
+                                showLabelPrefix={false}
+                                className="!bg-slate-100 !border-slate-200"
+                            />
                         </div>
                         <SearchableSelect
                             options={courseOptions}
