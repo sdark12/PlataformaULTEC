@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
     AlertTriangle, ShieldAlert, ShieldCheck, 
@@ -18,6 +18,7 @@ export const EarlyWarningDashboard = () => {
     const [riskFilter, setRiskFilter] = useState<'all' | RiskLevel>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCourse, setSelectedCourse] = useState<string>('all');
+    const [selectedYearFilter, setSelectedYearFilter] = useState<'ALL' | number>('ALL');
     const [selectedStudentForIntervention, setSelectedStudentForIntervention] = useState<StudentRiskProfile | null>(null);
     const [isInterventionModalOpen, setIsInterventionModalOpen] = useState(false);
     const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -30,23 +31,51 @@ export const EarlyWarningDashboard = () => {
         staleTime: 1000 * 60 * 5,
     });
 
+    // Unique academic cycles from courses
+    const distinctCycles = useMemo(() => {
+        const years = new Set<number>();
+        coursesList?.forEach((c: any) => {
+            if (c.academic_year) years.add(c.academic_year);
+        });
+        return Array.from(years).sort((a, b) => b - a);
+    }, [coursesList]);
+
     const { data, isLoading, refetch, isRefetching } = useQuery({
-        queryKey: ['earlyWarningReport', selectedCourse],
+        queryKey: ['earlyWarningReport', selectedCourse, selectedYearFilter],
         queryFn: () => getEarlyWarningReport({ 
-            course_id: selectedCourse !== 'all' ? selectedCourse : undefined 
+            course_id: selectedCourse !== 'all' ? selectedCourse : undefined,
+            academic_year: selectedYearFilter !== 'ALL' ? selectedYearFilter : undefined
         }),
     });
 
-    // Stable courses list combining academicService and student courses fallback
+    // Stable courses list filtered by academic cycle
     const availableCourses = useMemo(() => {
         if (coursesList && coursesList.length > 0) {
-            return coursesList.map(c => ({ id: c.id, name: c.name }));
+            let list = coursesList;
+            if (selectedYearFilter !== 'ALL') {
+                list = list.filter((c: any) => (c.academic_year || 2026) === selectedYearFilter);
+            }
+            return list.map(c => ({
+                id: c.id,
+                name: c.name,
+                academic_year: c.academic_year || 2026
+            }));
         }
         if (!data?.students) return [];
         const coursesSet = new Set<string>();
         data.students.forEach(s => s.courses.forEach(c => coursesSet.add(c)));
-        return Array.from(coursesSet).sort().map(name => ({ id: name, name }));
-    }, [coursesList, data?.students]);
+        return Array.from(coursesSet).sort().map(name => ({ id: name, name, academic_year: 2026 }));
+    }, [coursesList, selectedYearFilter, data?.students]);
+
+    // Reset selectedCourse if no longer in filtered courses
+    useEffect(() => {
+        if (selectedCourse !== 'all' && availableCourses.length > 0) {
+            const exists = availableCourses.some(c => c.id === selectedCourse);
+            if (!exists) {
+                setSelectedCourse('all');
+            }
+        }
+    }, [availableCourses, selectedCourse]);
 
     // Client-side filtering for fast interactive search & risk tab
     const filteredStudents = useMemo(() => {
@@ -349,16 +378,52 @@ export const EarlyWarningDashboard = () => {
                     />
                 </div>
 
-                {/* Course selector */}
-                <div className="flex items-center gap-2">
+                {/* Cycle Pills and Course selector */}
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Academic Year Pills */}
+                    {distinctCycles.length > 1 && (
+                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedYearFilter('ALL')}
+                                className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
+                                    selectedYearFilter === 'ALL'
+                                        ? 'bg-brand-blue text-white shadow-xs'
+                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                            >
+                                Todos
+                            </button>
+                            {distinctCycles.map((year) => (
+                                <button
+                                    key={year}
+                                    type="button"
+                                    onClick={() => setSelectedYearFilter(year)}
+                                    className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
+                                        selectedYearFilter === year
+                                            ? 'bg-brand-blue text-white shadow-xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                                >
+                                    Ciclo {year}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Course selector */}
                     <select
                         value={selectedCourse}
                         onChange={(e) => setSelectedCourse(e.target.value)}
-                        className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                        className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-blue max-w-[240px] truncate"
                     >
-                        <option value="all">Todas las Carreras / Cursos</option>
+                        <option value="all">
+                            Todas las Carreras {selectedYearFilter !== 'ALL' ? `(Ciclo ${selectedYearFilter})` : ''}
+                        </option>
                         {availableCourses.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
+                            <option key={c.id} value={c.id}>
+                                [Ciclo {c.academic_year}] {c.name}
+                            </option>
                         ))}
                     </select>
 

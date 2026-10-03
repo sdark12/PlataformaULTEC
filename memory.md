@@ -511,6 +511,33 @@ Cuando se implemente una nueva versión, seguir rigurosamente este protocolo:
 - **Gobernanza SDD:**
   - Creada la especificación formal [`specs/002-calificaciones-y-asistencia-por-ciclo/`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/specs/002-calificaciones-y-asistencia-por-ciclo/) con `spec.md` (sintaxis EARS), `plan.md` y `tasks.md`.
 
+---
+
+## 21. Segmentación por Ciclo Lectivo en Inteligencia BI y Cartera Vencida (v1.2.5 Build 39)
+
+- **Motivación y Alcance:**
+  - Concluyendo la suite estratégica de ciclos lectivos nativos, los módulos de Business Intelligence y Finanzas Avanzadas en `ReportsHub` (`/reports`) calculaban el Semáforo de Deserción Escolar (EWS) y la Cartera Vencida (Debt Aging) mezclando matrículas y obligaciones de periodos pasados.
+- **Backend Express (`backend-insforge`):**
+  - [`intelligence.controller.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/controllers/intelligence.controller.ts):
+    - Helper `resolveCourseIds` adaptado para recibir `academic_year` y resolver cursos del ciclo específico.
+    - `getEarlyWarningReport` y `getDebtAgingReport` reciben `academic_year` en `req.query`.
+    - Partición de caché en `NodeCache` incluyendo `academic_year` (`ews_${branchId}_${courseId}_${year}`).
+    - Aislamiento de evaluaciones académicas (asistencia, calificaciones y cuotas en mora) al catálogo de cursos del ciclo seleccionado.
+  - Sincronización oficial de metadatos en [`appVersion.controller.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/backend-insforge/src/controllers/appVersion.controller.ts) a versión `1.2.5`, Build `39`.
+- **Frontend React (`frontend-antigravity`):**
+  - [`intelligenceService.ts`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/intelligenceService.ts):
+    - Parámetros `academic_year?: number | string` añadidos a `getEarlyWarningReport` y `getDebtAgingReport`.
+  - [`EarlyWarningDashboard.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/EarlyWarningDashboard.tsx):
+    - Barra de píldoras interactivas de ciclo escolar (`[Todos] [Ciclo 2027] [Ciclo 2026]`).
+    - Opciones de curso con insignias `[Ciclo YYYY]` y auto-reset de selección.
+    - React Query sincronizado con `[selectedCourse, selectedYearFilter]`.
+  - [`DebtAgingDashboard.tsx`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/frontend-antigravity/src/features/finance/DebtAgingDashboard.tsx):
+    - Barra de píldoras de ciclo escolar e insignias de curso en el menú desplegable.
+    - Recálculo reactivo de buckets de antigüedad (0-30d, 31-60d, 61-90d, >90d), meta esperada y mayores deudores.
+- **Gobernanza SDD:**
+  - Especificación formal [`specs/003-inteligencia-bi-y-cartera-por-ciclo/`](file:///C:/Users/saul_/.gemini/antigravity/scratch/PlataformaULTEC/specs/003-inteligencia-bi-y-cartera-por-ciclo/) con `spec.md` (sintaxis EARS), `plan.md` y `tasks.md`.
+
+
 
 
 

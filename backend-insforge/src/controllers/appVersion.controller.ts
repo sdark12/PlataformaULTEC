@@ -4,19 +4,19 @@ import fs from 'fs';
 
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
-    version: "1.2.4",
-    versionCode: 38,
+    version: "1.2.5",
+    versionCode: 39,
     minVersion: "1.0.0",
-    releaseDate: "2026-10-01",
+    releaseDate: "2026-10-02",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.2.4 - Ciclos Lectivos en Calificaciones y Asistencia",
+    title: "Actualización v1.2.5 - Inteligencia BI y Cartera Vencida por Ciclo",
     releaseNotes: [
-        "Calificaciones por Ciclo Lectivo: Píldoras interactivas de ciclo escolar (Todos, 2027, 2026) y selector de cursos filtrado por año con insignias visuales tipo badge.",
-        "Asistencia Escolar Segmentada: Filtrado ágil de cursos por ciclo lectivo en vista diaria y sábana mensual para evitar mezcla de periodos escolares.",
-        "Sábana de Calificaciones (Acta): Integración de ciclo escolar en el libro general de notas consolidado.",
-        "Resiliencia y Modo Offline: Soporte de año escolar persistente en almacenamiento local IndexedDB y localStorage."
+        "Semáforo de Deserción Escolar (EWS): Píldoras de ciclo escolar (Todos, 2027, 2026) y selector de cursos filtrado para aislar el Índice de Retención Escolar (IRE) por año.",
+        "Cartera Vencida (Debt Aging): Segmentación de antigüedad de saldos (>90d, 61-90d, 31-60d, 0-30d) y meta de cobranza por ciclo escolar sin contaminación histórica.",
+        "Caché Aislada y Optimización: Partición en memoria (NodeCache) por sede, curso y ciclo lectivo con tiempos de respuesta ultra-rápidos (<100 ms).",
+        "Reportes y Exportaciones: Generación de informes ejecutivos en PDF y Excel respetando fielmente el ciclo lectivo seleccionado."
     ],
     isCritical: false
 };

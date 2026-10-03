@@ -10,6 +10,7 @@ export const getEarlyWarningReport = async (params?: {
     risk_level?: string;
     search?: string;
     force_refresh?: boolean;
+    academic_year?: number | string;
 }): Promise<EarlyWarningResponse> => {
     const response = await api.get<EarlyWarningResponse>('/api/intelligence/early-warning', {
         params
@@ -20,6 +21,7 @@ export const getEarlyWarningReport = async (params?: {
 export const getDebtAgingReport = async (params?: {
     course_id?: string;
     force_refresh?: boolean;
+    academic_year?: number | string;
 }): Promise<DebtAgingResponse> => {
     const response = await api.get<DebtAgingResponse>('/api/intelligence/debt-aging', {
         params

@@ -27,41 +27,82 @@ function getDaysOverdue(monthStr: string): number {
 }
 
 /**
- * Helper to resolve course UUIDs from either a UUID string or course name
+ * Helper to resolve course UUIDs from either a UUID string, course name, and/or academic year
  */
-async function resolveCourseIds(courseParam?: any, branchId?: string | null): Promise<string[] | null> {
-    if (!courseParam || courseParam === 'all' || courseParam === 'undefined' || courseParam === 'null') {
-        return null; // Sin filtro de curso
+async function resolveCourseIds(
+    courseParam?: any, 
+    branchId?: string | null, 
+    academicYearParam?: any
+): Promise<string[] | null> {
+    const hasYear = academicYearParam !== undefined && academicYearParam !== null && academicYearParam !== 'all' && academicYearParam !== '';
+    const parsedYear = hasYear ? parseInt(String(academicYearParam), 10) : null;
+    const hasCourse = courseParam && courseParam !== 'all' && courseParam !== 'undefined' && courseParam !== 'null';
+
+    if (!hasCourse && !hasYear) {
+        return null; // Sin filtro de curso ni de ciclo
     }
 
-    const trimmed = String(courseParam).trim();
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+    // Caso 1: Se especificó un curso (UUID o nombre textual)
+    if (hasCourse) {
+        const trimmed = String(courseParam).trim();
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
 
-    if (isUuid) {
-        return [trimmed];
-    }
+        try {
+            let query = adminClient
+                .from('courses')
+                .select('id, academic_year');
 
-    // Es un nombre textual de carrera (ej. "TAC 1-2026", "Programación 1")
-    try {
-        let query = adminClient
-            .from('courses')
-            .select('id')
-            .ilike('name', trimmed);
+            if (isUuid) {
+                query = query.eq('id', trimmed);
+            } else {
+                query = query.ilike('name', trimmed);
+            }
 
-        if (branchId) {
-            query = query.eq('branch_id', branchId);
-        }
+            if (branchId) {
+                query = query.eq('branch_id', branchId);
+            }
 
-        const { data, error } = await query;
-        if (error) {
-            console.warn('Warning looking up course by name in resolveCourseIds:', error);
+            if (hasYear && parsedYear !== null && !isNaN(parsedYear)) {
+                query = query.eq('academic_year', parsedYear);
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                console.warn('Warning looking up course in resolveCourseIds:', error);
+                return [];
+            }
+            return (data || []).map((c: any) => c.id);
+        } catch (err) {
+            console.error('Error resolving course IDs:', err);
             return [];
         }
-        return (data || []).map((c: any) => c.id);
-    } catch (err) {
-        console.error('Error resolving course IDs by name:', err);
-        return [];
     }
+
+    // Caso 2: No se especificó curso, pero SÍ se especificó ciclo escolar (academic_year)
+    if (hasYear && parsedYear !== null && !isNaN(parsedYear)) {
+        try {
+            let query = adminClient
+                .from('courses')
+                .select('id')
+                .eq('academic_year', parsedYear);
+
+            if (branchId) {
+                query = query.eq('branch_id', branchId);
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                console.warn('Warning looking up courses by academic year in resolveCourseIds:', error);
+                return [];
+            }
+            return (data || []).map((c: any) => c.id);
+        } catch (err) {
+            console.error('Error resolving courses by academic year:', err);
+            return [];
+        }
+    }
+
+    return null;
 }
 
 // =========================================================================
@@ -69,9 +110,9 @@ async function resolveCourseIds(courseParam?: any, branchId?: string | null): Pr
 // =========================================================================
 export const getEarlyWarningReport = async (req: Request, res: Response) => {
     const branchId = getEffectiveBranchId(req);
-    const { course_id, risk_level, search, force_refresh } = req.query;
+    const { course_id, risk_level, search, force_refresh, academic_year } = req.query;
 
-    const cacheKey = `ews_${branchId || 'all'}_${course_id || 'all'}`;
+    const cacheKey = `ews_${branchId || 'all'}_${course_id || 'all'}_${academic_year || 'all'}`;
     if (!force_refresh) {
         const cached = intelligenceCache.get(cacheKey);
         if (cached) {
@@ -80,9 +121,9 @@ export const getEarlyWarningReport = async (req: Request, res: Response) => {
     }
 
     try {
-        const matchedCourseIds = await resolveCourseIds(course_id, branchId);
+        const matchedCourseIds = await resolveCourseIds(course_id, branchId, academic_year);
         if (matchedCourseIds !== null && matchedCourseIds.length === 0) {
-            // Se especificó un curso pero no coincidió con ninguno en la base de datos
+            // Se especificó un curso o ciclo pero no coincidió con ninguno en la base de datos
             return res.json({
                 summary: {
                     total_students: 0,
@@ -116,7 +157,7 @@ export const getEarlyWarningReport = async (req: Request, res: Response) => {
                     id,
                     course_id,
                     is_active,
-                    courses (id, name)
+                    courses (id, name, academic_year)
                 )
             `)
             .eq('status', 'active')
@@ -167,24 +208,35 @@ export const getEarlyWarningReport = async (req: Request, res: Response) => {
                 });
             }
             const s = studentMap.get(row.id);
-            if (row.enrollments?.courses?.name && !s.courses.includes(row.enrollments.courses.name)) {
-                s.courses.push(row.enrollments.courses.name);
-            }
-            if (row.enrollments?.id && !s.enrollment_ids.includes(row.enrollments.id)) {
-                s.enrollment_ids.push(row.enrollments.id);
-            }
+            const enrollList = Array.isArray(row.enrollments)
+                ? row.enrollments
+                : (row.enrollments ? [row.enrollments] : []);
+
+            enrollList.forEach((e: any) => {
+                if (e.courses?.name && !s.courses.includes(e.courses.name)) {
+                    s.courses.push(e.courses.name);
+                }
+                if (e.id && !s.enrollment_ids.includes(e.id)) {
+                    s.enrollment_ids.push(e.id);
+                }
+            });
         });
 
         const studentList = Array.from(studentMap.values());
         const studentIds = studentList.map(s => s.id);
         const allEnrollmentIds = studentList.flatMap(s => s.enrollment_ids);
 
-        // 2. Fetch Attendance in batch
-        const { data: attendanceData } = await adminClient
+        // 2. Fetch Attendance in batch (isolated to matched courses if filtered)
+        let attendanceQuery = adminClient
             .from('attendance')
-            .select('student_id, status, date')
-            .in('student_id', studentIds)
-            .order('date', { ascending: false });
+            .select('student_id, status, date, course_id')
+            .in('student_id', studentIds);
+
+        if (matchedCourseIds && matchedCourseIds.length > 0) {
+            attendanceQuery = attendanceQuery.in('course_id', matchedCourseIds);
+        }
+
+        const { data: attendanceData } = await attendanceQuery.order('date', { ascending: false });
 
         const attendanceMap = new Map<string, { total: number; present: number; absent: number; consecutiveAbsences: number }>();
         if (attendanceData) {
@@ -207,11 +259,17 @@ export const getEarlyWarningReport = async (req: Request, res: Response) => {
             }
         }
 
-        // 3. Fetch Grades in batch
-        const { data: gradesData } = await adminClient
+        // 3. Fetch Grades in batch (isolated to matched courses if filtered)
+        let gradesQuery = adminClient
             .from('grades')
-            .select('student_id, score')
+            .select('student_id, score, course_id')
             .in('student_id', studentIds);
+
+        if (matchedCourseIds && matchedCourseIds.length > 0) {
+            gradesQuery = gradesQuery.in('course_id', matchedCourseIds);
+        }
+
+        const { data: gradesData } = await gradesQuery;
 
         const gradesMap = new Map<string, { totalScore: number; count: number; failingCount: number }>();
         if (gradesData) {
@@ -479,18 +537,18 @@ function filterEwsResults(data: any, riskLevel?: string, search?: string) {
 // =========================================================================
 export const getDebtAgingReport = async (req: Request, res: Response) => {
     const branchId = getEffectiveBranchId(req);
-    const { course_id, force_refresh } = req.query;
+    const { course_id, force_refresh, academic_year } = req.query;
 
-    const cacheKey = `debt_aging_${branchId || 'all'}_${course_id || 'all'}`;
+    const cacheKey = `debt_aging_${branchId || 'all'}_${course_id || 'all'}_${academic_year || 'all'}`;
     if (!force_refresh) {
         const cached = intelligenceCache.get(cacheKey);
         if (cached) return res.json(cached);
     }
 
     try {
-        const matchedCourseIds = await resolveCourseIds(course_id, branchId);
+        const matchedCourseIds = await resolveCourseIds(course_id, branchId, academic_year);
         if (matchedCourseIds !== null && matchedCourseIds.length === 0) {
-            // Se especificó un curso pero no coincidió con ninguno en la base de datos
+            // Se especificó un curso o ciclo pero no coincidió con ninguno en la base de datos
             return res.json({
                 summary: {
                     total_debt: 0,
@@ -527,7 +585,7 @@ export const getDebtAgingReport = async (req: Request, res: Response) => {
                     guardian_phone, 
                     branch_id
                 ),
-                courses (id, name, monthly_fee),
+                courses (id, name, monthly_fee, academic_year),
                 branches (id, name)
             `)
             .eq('is_active', true);
