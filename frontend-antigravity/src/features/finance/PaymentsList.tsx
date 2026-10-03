@@ -2,10 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPayments, createPayment, updatePayment, deletePayment, getStudentStatement } from '../../features/finance/paymentService';
-import { getEnrollments } from '../../features/academic/academicService';
+import { getEnrollments, getCourses } from '../../features/academic/academicService';
 import { downloadInvoicePdf } from '../../features/finance/invoiceService';
 import { getBranches } from '../../features/branches/branchesService';
 import { getCurrentUser } from '../../features/auth/authService';
+import CycleSelectorPills from '../../components/common/CycleSelectorPills';
 import { 
     Plus, Loader2, Edit2, Trash2, Search, CheckCircle, 
     Printer, X, Building2, Download, TrendingUp, Calendar, Check, 
@@ -62,7 +63,7 @@ const PaymentsList = () => {
 
     const { data: payments, isLoading } = useQuery({
         queryKey: ['payments'],
-        queryFn: getPayments,
+        queryFn: () => getPayments(),
     });
 
     const user = getCurrentUser();
@@ -79,6 +80,32 @@ const PaymentsList = () => {
         queryFn: getEnrollments,
         enabled: isModalOpen || isStatementSearchOpen || isBulkModalOpen
     });
+
+    const [selectedTableCycle, setSelectedTableCycle] = useState<'ALL' | number>('ALL');
+
+    const { data: courses = [] } = useQuery({
+        queryKey: ['courses'],
+        queryFn: getCourses,
+    });
+
+    const distinctCycles = useMemo(() => {
+        const years = new Set<number>();
+        (courses || []).forEach((c: any) => {
+            if (c.academic_year) years.add(Number(c.academic_year));
+        });
+        (payments || []).forEach((p: any) => {
+            if (p.academic_year) years.add(Number(p.academic_year));
+        });
+        (enrollments || []).forEach((e: any) => {
+            if (e.academic_year) years.add(Number(e.academic_year));
+        });
+        if (years.size === 0) {
+            const currentYear = new Date().getFullYear();
+            years.add(currentYear);
+            years.add(currentYear + 1);
+        }
+        return Array.from(years).sort((a, b) => b - a);
+    }, [courses, payments, enrollments]);
 
     const createMutation = useMutation({
         mutationFn: createPayment,
@@ -247,6 +274,26 @@ const PaymentsList = () => {
         setSelectedPayment(null);
         setLastInvoice(null);
         setSearchTerm(studentName);
+
+        // Auto-detect academic cycle from pending courses or student enrollments
+        let detectedCycle: number | null = null;
+        for (const pc of pendingCourses) {
+            if (pc.academic_year) { detectedCycle = Number(pc.academic_year); break; }
+            const cMatch = courses.find((c: any) => c.id === pc.course_id || c.name === pc.course_name);
+            if (cMatch?.academic_year) { detectedCycle = Number(cMatch.academic_year); break; }
+        }
+        if (!detectedCycle) {
+            const studentEnrolls = enrollments?.filter((en: any) => en.student_id === studentId) || [];
+            for (const en of studentEnrolls) {
+                if (en.academic_year) { detectedCycle = Number(en.academic_year); break; }
+                const cMatch = courses.find((c: any) => c.id === en.course_id);
+                if (cMatch?.academic_year) { detectedCycle = Number(cMatch.academic_year); break; }
+            }
+        }
+        if (detectedCycle) {
+            setSelectedYear(detectedCycle);
+        }
+
         setNewPayment({
             student_id: studentId,
             courses: pendingCourses.map(pc => ({
@@ -454,6 +501,18 @@ const PaymentsList = () => {
 
     const selectStudent = (studentId: string, studentName: string) => {
         const studentEnrolls = enrollments?.filter((en: any) => en.student_id === studentId) || [];
+
+        // Auto-detect academic cycle from student's enrolled courses
+        let detectedCycle: number | null = null;
+        for (const en of studentEnrolls) {
+            if (en.academic_year) { detectedCycle = Number(en.academic_year); break; }
+            const cMatch = courses.find((c: any) => c.id === en.course_id);
+            if (cMatch?.academic_year) { detectedCycle = Number(cMatch.academic_year); break; }
+        }
+        if (detectedCycle) {
+            setSelectedYear(detectedCycle);
+        }
+
         const initialCourses: SelectedCourse[] = studentEnrolls.map((en: any) => {
             const rawFee = Number(en.monthly_fee || 150);
             let disc = 0;
@@ -643,6 +702,16 @@ const PaymentsList = () => {
         sevenDaysAgo.setHours(0, 0, 0, 0);
 
         return payments.filter((p: any) => {
+            // Academic Cycle Filter
+            if (selectedTableCycle !== 'ALL') {
+                if (p.academic_year) {
+                    if (Number(p.academic_year) !== Number(selectedTableCycle)) return false;
+                } else if (p.course_name) {
+                    const matchCourse = courses.find((c: any) => c.name === p.course_name);
+                    if (matchCourse?.academic_year && Number(matchCourse.academic_year) !== Number(selectedTableCycle)) return false;
+                }
+            }
+
             // Type filter
             if (filterType === 'TUITION' && p.payment_type !== 'TUITION') return false;
             if (filterType === 'OTHER' && p.payment_type === 'TUITION') return false;
@@ -687,12 +756,12 @@ const PaymentsList = () => {
 
             return true;
         });
-    }, [payments, filterType, methodFilter, datePeriod, customStartDate, customEndDate, tableSearchTerm]);
+    }, [payments, filterType, methodFilter, datePeriod, customStartDate, customEndDate, tableSearchTerm, selectedTableCycle, courses]);
 
     // Reset pagination to page 1 on filter/search change
     useEffect(() => {
         setCurrentPage(1);
-    }, [tableSearchTerm, datePeriod, customStartDate, customEndDate, methodFilter, filterType, pageSize]);
+    }, [tableSearchTerm, datePeriod, customStartDate, customEndDate, methodFilter, filterType, selectedTableCycle, pageSize]);
 
     const totalPages = Math.ceil(filteredPayments.length / pageSize) || 1;
     const paginatedPayments = useMemo(() => {
@@ -720,7 +789,7 @@ const PaymentsList = () => {
 
     const tuitionCount = payments?.filter((p: any) => p.payment_type === 'TUITION').length || 0;
     const otherCount = payments?.filter((p: any) => p.payment_type !== 'TUITION').length || 0;
-    const isFiltered = Boolean(tableSearchTerm.trim() || datePeriod !== 'ALL' || methodFilter !== 'ALL' || filterType !== 'ALL');
+    const isFiltered = Boolean(tableSearchTerm.trim() || datePeriod !== 'ALL' || methodFilter !== 'ALL' || filterType !== 'ALL' || selectedTableCycle !== 'ALL');
 
     const exportToExcel = async () => {
         if (!filteredPayments || filteredPayments.length === 0) {
@@ -748,6 +817,7 @@ const PaymentsList = () => {
                 'ID Pago': p.id,
                 'Estudiante': p.student_name,
                 'Curso': p.course_name,
+                'Ciclo': p.academic_year ? `Ciclo ${p.academic_year}` : '',
                 'Concepto': typeMap[p.payment_type] || p.payment_type,
                 'Mes(es)': formattedMonth,
                 'Descripción': p.description || '',
@@ -764,7 +834,8 @@ const PaymentsList = () => {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Pagos");
         const suffix = datePeriod !== 'ALL' ? `_${datePeriod.toLowerCase()}` : '';
-        await saveWorkbook(workbook, `Reporte_Pagos${suffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        const cycleSuffix = selectedTableCycle !== 'ALL' ? `_ciclo${selectedTableCycle}` : '';
+        await saveWorkbook(workbook, `Reporte_Pagos${cycleSuffix}${suffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
@@ -904,8 +975,16 @@ const PaymentsList = () => {
                         )}
                     </div>
 
-                    {/* Method Dropdown */}
-                    <div className="flex items-center gap-2">
+                    {/* Academic Cycle & Method Filters */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <CycleSelectorPills
+                            cycles={distinctCycles}
+                            selectedYear={selectedTableCycle}
+                            onSelectYear={(y) => setSelectedTableCycle(y as any)}
+                            maxVisiblePills={1}
+                        />
+
+                        {/* Method Dropdown */}
                         <select
                             value={methodFilter}
                             onChange={(e) => setMethodFilter(e.target.value as any)}
@@ -1045,7 +1124,14 @@ const PaymentsList = () => {
                                     <span className="truncate">{payment.student_name}</span>
                                     <ArrowUpRight className="h-3 w-3 text-brand-teal shrink-0" />
                                 </button>
-                                <p className="text-xs text-slate-500 truncate">{payment.course_name}</p>
+                                <p className="text-xs text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
+                                    <span>{payment.course_name}</span>
+                                    {payment.academic_year && (
+                                        <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200/60 dark:border-blue-700/50">
+                                            Ciclo {payment.academic_year}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                             <div className="text-right flex-shrink-0">
                                 <span className="text-base font-black text-brand-teal">Q{payment.amount}</span>
@@ -1152,7 +1238,14 @@ const PaymentsList = () => {
                                         </button>
                                     </td>
                                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
-                                        {payment.course_name}
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span>{payment.course_name}</span>
+                                            {payment.academic_year && (
+                                                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200/60 dark:border-blue-700/50">
+                                                    Ciclo {payment.academic_year}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
@@ -1552,27 +1645,47 @@ const PaymentsList = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Selector de Año Compacto */}
-                                                <div className="flex items-center space-x-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 shadow-sm">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSelectedYear(y => y - 1)}
-                                                        className="p-1 text-slate-500 hover:text-brand-blue dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                                                        title="Año anterior"
-                                                    >
-                                                        <ChevronLeft className="h-3.5 w-3.5" />
-                                                    </button>
-                                                    <span className="text-xs font-black text-slate-800 dark:text-white px-1.5 select-none">
-                                                        {selectedYear}
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSelectedYear(y => y + 1)}
-                                                        className="p-1 text-slate-500 hover:text-brand-blue dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                                                        title="Año siguiente"
-                                                    >
-                                                        <ChevronRight className="h-3.5 w-3.5" />
-                                                    </button>
+                                                {/* Selector de Año Compacto con Atajos de Ciclo */}
+                                                <div className="flex items-center gap-1.5">
+                                                    {distinctCycles.length > 0 && (
+                                                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                            {distinctCycles.slice(0, 3).map((yr) => (
+                                                                <button
+                                                                    key={yr}
+                                                                    type="button"
+                                                                    onClick={() => setSelectedYear(Number(yr))}
+                                                                    className={`px-2 py-0.5 text-[11px] font-bold rounded transition-all ${
+                                                                        selectedYear === Number(yr)
+                                                                            ? 'bg-brand-blue text-white shadow-xs'
+                                                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                                                    }`}
+                                                                >
+                                                                    {yr}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center space-x-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 shadow-sm">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedYear(y => y - 1)}
+                                                            className="p-1 text-slate-500 hover:text-brand-blue dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                                                            title="Año anterior"
+                                                        >
+                                                            <ChevronLeft className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <span className="text-xs font-black text-slate-800 dark:text-white px-1.5 select-none">
+                                                            {selectedYear}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedYear(y => y + 1)}
+                                                            className="p-1 text-slate-500 hover:text-brand-blue dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                                                            title="Año siguiente"
+                                                        >
+                                                            <ChevronRight className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
 

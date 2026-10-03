@@ -5,17 +5,17 @@ import fs from 'fs';
 // Información oficial de la versión más reciente de Plataforma ULTEC
 const LATEST_APP_VERSION = {
     version: "1.2.5",
-    versionCode: 41,
+    versionCode: 42,
     minVersion: "1.0.0",
     releaseDate: "2026-10-02",
     downloadUrl: "https://plataformaultec.duckdns.org/downloads/PlataformaULTEC.apk",
     fileName: "PlataformaULTEC.apk",
     fileSize: 54651711,
-    title: "Actualización v1.2.5 (Build 41) - Emisión de Carnets Oficiales por Ciclo Lectivo",
+    title: "Actualización v1.2.5 (Build 42) - Cobro de Colegiaturas por Ciclo Lectivo",
     releaseNotes: [
-        "Emisión y Control de Carnets por Ciclo: Filtrado administrativo de solicitudes de credenciales por ciclo lectivo (2027 vs 2026) con selector híbrido escalable.",
-        "Credenciales PVC Oficiales Dinámicas: La vigencia y el ciclo lectivo impresos en el estándar CR80 se calculan automáticamente según el ciclo activo del alumno o la selección del operador.",
-        "Aislamiento y Auditoría por Sede: Mantiene la trazabilidad multi-sede y el registro de entrega presencial con fecha y responsable institucional."
+        "Cobro y Gestión de Colegiaturas por Ciclo: Detección automática del ciclo lectivo del alumno al registrar pagos, configurando el selector de mensualidades en el año correspondiente (2027 vs 2026).",
+        "Selector Híbrido y Atajos de Ciclo: Acceso rápido de un clic entre ciclos en el modal de cobro y filtro por ciclo en la tabla de pagos con cálculo en tiempo real de ingresos y exportación a Excel.",
+        "Estados de Cuenta y Trazabilidad: Distintivos de ciclo lectivo en el histórico de recibos, vista móvil y reportes consolidados por sede."
     ],
     isCritical: false
 };

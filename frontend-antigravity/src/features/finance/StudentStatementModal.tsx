@@ -63,6 +63,7 @@ const StudentStatementModal: React.FC<StudentStatementModalProps> = ({
         // Sheet 2: Cursos
         const coursesData = statement.courses.map(c => ({
             'Curso': c.course_name,
+            'Ciclo': c.academic_year ? `Ciclo ${c.academic_year}` : 'General',
             'Horario': c.schedule_label || 'Regular',
             'Cuota Mensual (Q)': c.monthly_fee,
             'Meses Transcurridos': c.months_elapsed,
@@ -81,6 +82,7 @@ const StudentStatementModal: React.FC<StudentStatementModalProps> = ({
             'ID': p.id,
             'Fecha': new Date(p.payment_date).toLocaleDateString(),
             'Curso': p.course_name,
+            'Ciclo': p.academic_year ? `Ciclo ${p.academic_year}` : 'General',
             'Concepto': p.payment_type === 'TUITION' ? 'Colegiatura' : p.payment_type,
             'Mes de Pago': p.tuition_month || '-',
             'Descripción': p.description || '',
@@ -103,7 +105,8 @@ const StudentStatementModal: React.FC<StudentStatementModalProps> = ({
                 enrollment_id: c.enrollment_id,
                 course_name: c.course_name,
                 monthly_fee: c.monthly_fee,
-                pending_amount: c.pending_amount
+                pending_amount: c.pending_amount,
+                academic_year: c.academic_year
             }));
         onPayBalance(statement.student.id, statement.student.full_name, pendingCourses);
         onClose();
@@ -355,6 +358,11 @@ const StudentStatementModal: React.FC<StudentStatementModalProps> = ({
                                                             <div>
                                                                 <div className="flex items-center gap-2 flex-wrap">
                                                                     <span className="font-bold text-sm text-slate-900 dark:text-white">{course.course_name}</span>
+                                                                    {course.academic_year && (
+                                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50">
+                                                                            Ciclo {course.academic_year}
+                                                                        </span>
+                                                                    )}
                                                                     {course.scholarship_type && course.scholarship_type !== 'NONE' && (
                                                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
                                                                             {course.scholarship_type === 'PERCENTAGE' ? `Beca ${course.scholarship_amount}%` : `Beca Q${course.scholarship_amount}`}
@@ -423,8 +431,13 @@ const StudentStatementModal: React.FC<StudentStatementModalProps> = ({
                                             {statement.payments.slice(0, 4).map((p) => (
                                                 <div key={p.id} className="py-2.5 flex items-center justify-between gap-3">
                                                     <div className="min-w-0">
-                                                        <div className="font-bold text-xs text-slate-900 dark:text-white truncate">
-                                                            {p.course_name}
+                                                        <div className="font-bold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                                                            <span>{p.course_name}</span>
+                                                            {p.academic_year && (
+                                                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50">
+                                                                    Ciclo {p.academic_year}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="text-[11px] text-slate-400">
                                                             {new Date(p.payment_date).toLocaleDateString()} • {p.tuition_month || p.payment_type} • Ref: {p.reference_number || 'Efectivo'}
@@ -475,6 +488,11 @@ const StudentStatementModal: React.FC<StudentStatementModalProps> = ({
                                                         <td className="px-4 py-3">
                                                             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                                                                 <span>{course.course_name}</span>
+                                                                {course.academic_year && (
+                                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50">
+                                                                        Ciclo {course.academic_year}
+                                                                    </span>
+                                                                )}
                                                                 {course.scholarship_type && course.scholarship_type !== 'NONE' && (
                                                                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
                                                                         {course.scholarship_type === 'PERCENTAGE' ? `Beca ${course.scholarship_amount}%` : `Beca Q${course.scholarship_amount}`}

@@ -6,6 +6,7 @@ export interface Payment {
     enrollment_id?: string;
     student_name: string;
     course_name: string;
+    academic_year?: number;
     amount: number;
     payment_date: string;
     method: string;
@@ -20,6 +21,7 @@ export interface StudentStatementCourse {
     enrollment_id: string;
     course_id: string;
     course_name: string;
+    academic_year?: number;
     monthly_fee: number;
     effective_monthly_fee?: number;
     scholarship_type?: string;
@@ -52,6 +54,7 @@ export interface StudentStatementPayment {
     payment_type: string;
     enrollment_id?: string;
     course_name: string;
+    academic_year?: number;
 }
 
 export interface StudentStatement {
@@ -120,8 +123,8 @@ export interface BulkPaymentResponse {
     }[];
 }
 
-export const getPayments = async () => {
-    const response = await api.get<Payment[]>('/api/payments');
+export const getPayments = async (params?: { academic_year?: number | string }) => {
+    const response = await api.get<Payment[]>('/api/payments', { params });
     return response.data;
 };
 

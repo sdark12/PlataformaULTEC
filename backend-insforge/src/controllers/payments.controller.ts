@@ -39,7 +39,8 @@ export const getPayments = async (req: Request, res: Response) => {
                     course_id,
                     courses (
                         id,
-                        name
+                        name,
+                        academic_year
                     )
                 )
             `)
@@ -70,6 +71,7 @@ export const getPayments = async (req: Request, res: Response) => {
                 enrollment_id: p.enrollment_id,
                 student_name: p.students?.full_name || 'Estudiante',
                 course_name: courseRealName || (p.enrollment_id ? 'Curso' : (p.description || 'General')),
+                academic_year: p.enrollments?.courses?.academic_year || null,
                 amount: p.amount,
                 payment_date: p.payment_date,
                 method: p.method,
@@ -81,7 +83,13 @@ export const getPayments = async (req: Request, res: Response) => {
             };
         });
 
-        res.json(flatData);
+        const { academic_year } = req.query;
+        let finalData = flatData;
+        if (academic_year && academic_year !== 'ALL') {
+            finalData = finalData.filter((p: any) => String(p.academic_year) === String(academic_year));
+        }
+
+        res.json(finalData);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error retrieving payments' });
@@ -521,6 +529,7 @@ export const getStudentStatement = async (req: Request, res: Response) => {
                 courses (
                     id,
                     name,
+                    academic_year,
                     monthly_fee,
                     duration_months,
                     start_date,
@@ -557,7 +566,7 @@ export const getStudentStatement = async (req: Request, res: Response) => {
                 enrollment_id,
                 student_id,
                 enrollments (
-                    courses (name)
+                    courses (name, academic_year)
                 )
             `)
             .order('payment_date', { ascending: false });
@@ -592,7 +601,8 @@ export const getStudentStatement = async (req: Request, res: Response) => {
                 tuition_month: p.tuition_month,
                 payment_type: p.payment_type || 'TUITION',
                 enrollment_id: p.enrollment_id,
-                course_name: courseName
+                course_name: courseName,
+                academic_year: p.enrollments?.courses?.academic_year || null
             };
         });
 
@@ -636,6 +646,7 @@ export const getStudentStatement = async (req: Request, res: Response) => {
                 enrollment_id: enrollment.id,
                 course_id: course?.id,
                 course_name: course?.name,
+                academic_year: course?.academic_year || null,
                 monthly_fee: rawMonthlyFee,
                 effective_monthly_fee: effectiveMonthlyFee,
                 scholarship_type: enrollment.scholarship_type || 'NONE',
