@@ -253,7 +253,7 @@ const CourseGradebook = () => {
                                 cycles={distinctCycles}
                                 selectedYear={selectedYearFilter}
                                 onSelectYear={setSelectedYearFilter}
-                                maxVisiblePills={2}
+                                maxVisiblePills={1}
                                 showLabelPrefix={false}
                                 className="!bg-slate-100 !border-slate-200"
                             />

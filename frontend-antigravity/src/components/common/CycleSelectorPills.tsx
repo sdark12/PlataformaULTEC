@@ -23,7 +23,7 @@ export function CycleSelectorPills<T extends number | string = number | string>(
     cycles,
     selectedYear,
     onSelectYear,
-    maxVisiblePills = 2,
+    maxVisiblePills = 1,
     className = '',
     showLabelPrefix = true,
     allLabel = 'Todos',
@@ -111,10 +111,10 @@ export function CycleSelectorPills<T extends number | string = number | string>(
                     >
                         <option 
                             value="" 
-                            disabled={!isOlderSelected}
+                            disabled
                             className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-semibold"
                         >
-                            {isOlderSelected ? `${prefix}${selectedYear}` : 'Más ciclos...'}
+                            Más ciclos...
                         </option>
                         {olderCycles.map((year) => (
                             <option 

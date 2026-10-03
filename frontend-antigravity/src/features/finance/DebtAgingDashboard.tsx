@@ -453,7 +453,7 @@ export const DebtAgingDashboard = () => {
                         cycles={distinctCycles}
                         selectedYear={selectedYearFilter}
                         onSelectYear={setSelectedYearFilter}
-                        maxVisiblePills={2}
+                        maxVisiblePills={1}
                     />
 
                     {/* Course Filter */}

@@ -402,7 +402,7 @@ const Grades = () => {
                                 cycles={distinctCycles}
                                 selectedYear={selectedYearFilter}
                                 onSelectYear={setSelectedYearFilter}
-                                maxVisiblePills={2}
+                                maxVisiblePills={1}
                                 showLabelPrefix={false}
                                 className="!bg-slate-800/80 !border-slate-700/60"
                             />

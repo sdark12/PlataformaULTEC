@@ -424,7 +424,7 @@ const EnrollmentsList: React.FC = () => {
                     selectedYear={selectedYearFilter}
                     onSelectYear={setSelectedYearFilter}
                     activeVariant="purple"
-                    maxVisiblePills={2}
+                    maxVisiblePills={1}
                     allLabel="Todos los Ciclos"
                     className="!bg-white/60 dark:!bg-slate-800/60 !border-slate-200 dark:!border-white/5"
                 />

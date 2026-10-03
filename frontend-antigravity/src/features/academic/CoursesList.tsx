@@ -320,7 +320,7 @@ const CoursesList = () => {
                     selectedYear={selectedYearFilter}
                     onSelectYear={setSelectedYearFilter}
                     activeVariant="purple"
-                    maxVisiblePills={2}
+                    maxVisiblePills={1}
                     className="!bg-white/60 dark:!bg-slate-800/60 !border-slate-200 dark:!border-white/5"
                 />
             </div>
