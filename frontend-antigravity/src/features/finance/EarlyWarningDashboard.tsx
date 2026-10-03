@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { savePdfDoc, saveWorkbook } from '../../utils/fileDownloader';
+import { CycleSelectorPills } from '../../components/common/CycleSelectorPills';
 
 export const EarlyWarningDashboard = () => {
     const [riskFilter, setRiskFilter] = useState<'all' | RiskLevel>('all');
@@ -380,36 +381,13 @@ export const EarlyWarningDashboard = () => {
 
                 {/* Cycle Pills and Course selector */}
                 <div className="flex flex-wrap items-center gap-2">
-                    {/* Academic Year Pills */}
-                    {distinctCycles.length > 1 && (
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setSelectedYearFilter('ALL')}
-                                className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
-                                    selectedYearFilter === 'ALL'
-                                        ? 'bg-brand-blue text-white shadow-xs'
-                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                            >
-                                Todos
-                            </button>
-                            {distinctCycles.map((year) => (
-                                <button
-                                    key={year}
-                                    type="button"
-                                    onClick={() => setSelectedYearFilter(year)}
-                                    className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
-                                        selectedYearFilter === year
-                                            ? 'bg-brand-blue text-white shadow-xs'
-                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                    }`}
-                                >
-                                    Ciclo {year}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    {/* Academic Year Pills (Scalable Hybrid) */}
+                    <CycleSelectorPills
+                        cycles={distinctCycles}
+                        selectedYear={selectedYearFilter}
+                        onSelectYear={setSelectedYearFilter}
+                        maxVisiblePills={2}
+                    />
 
                     {/* Course selector */}
                     <select

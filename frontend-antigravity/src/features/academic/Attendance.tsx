@@ -15,6 +15,7 @@ import AttendanceMatrixView from './components/AttendanceMatrixView';
 import JustificationReviewModal from './components/JustificationReviewModal';
 import { offlineStorage } from '../../services/offlineStorage';
 import { offlineSyncService } from '../../services/offlineSyncService';
+import { CycleSelectorPills } from '../../components/common/CycleSelectorPills';
 
 const STATUS_CONFIG = {
     PRESENT: {
@@ -475,35 +476,14 @@ const Attendance = () => {
                             <BookOpen className="w-3.5 h-3.5 text-blue-400" />
                             <span>Curso / Asignatura</span>
                             </label>
-                            {distinctCycles.length > 1 && (
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedYearFilter('ALL')}
-                                        className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
-                                            selectedYearFilter === 'ALL'
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                        }`}
-                                    >
-                                        Todos
-                                    </button>
-                                    {distinctCycles.map((year) => (
-                                        <button
-                                            key={year}
-                                            type="button"
-                                            onClick={() => setSelectedYearFilter(year)}
-                                            className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
-                                                selectedYearFilter === year
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                            }`}
-                                        >
-                                            {year}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <CycleSelectorPills
+                                cycles={distinctCycles}
+                                selectedYear={selectedYearFilter}
+                                onSelectYear={setSelectedYearFilter}
+                                maxVisiblePills={2}
+                                showLabelPrefix={false}
+                                className="!bg-slate-800/80 !border-slate-700/60"
+                            />
                         </div>
                         <div className="relative">
                             <select
